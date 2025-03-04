@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:data_table_2/data_table_2.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -35,6 +34,7 @@ class _MyInventoryTableState extends State<MyInventoryTable> {
       "Total Value",
       "Last Updated"
     ];
+    
     for (int i = 0; i < headers.length; i++) {
       sheet.getRangeByIndex(1, i + 1).setText(headers[i]);
     }

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:valgrow_ui/pages/POS/POS.dart';
 import 'package:valgrow_ui/pages/authpages/change_password.dart';
+import 'package:valgrow_ui/pages/debts/debts.dart';
+import 'package:valgrow_ui/pages/debts/debts_personal_list.dart';
 import 'package:valgrow_ui/pages/inventory/addItem.dart';
 import 'package:valgrow_ui/pages/expenses/expense_info.dart';
 import 'package:valgrow_ui/pages/expenses/expenses.dart';
@@ -50,6 +52,8 @@ class MyApp extends StatelessWidget {
           '/expenses': (context) => const ExpensesPage(),
           '/expense_info': (context) => const ExpenseInfoPage(),
           '/reports': (context) => const ReportsMainPage(),
+          '/debts': (context) => const DebtsPage(),
+          '/personallist': (context) => const DebtsPersonalList(),
         });
   }
 }

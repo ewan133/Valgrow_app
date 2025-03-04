@@ -222,7 +222,9 @@ class _DashboardPageState extends State<DashboardPage> {
                             ),
                             MyHomeButton(
                               text: "Debts",
-                              onPressed: () {},
+                              onPressed: () {
+                                Navigator.pushNamed(context, '/debts');
+                              },
                               icon: Icon(
                                 Icons.note,
                                 color: Color(0xFF1E1E1E),
