@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "202425696620",
+    "project_id": "valgrow-new",
+    "storage_bucket": "valgrow-new.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:202425696620:android:dcac8828b3515ee5b1f349",
+        "android_client_info": {
+          "package_name": "com.example.valgrow_final"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyATKzPAHo6h38ZayTb_M-TQImS1uITzAaE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:202425696620:android:d59e8fff120141a6b1f349",
+        "android_client_info": {
+          "package_name": "com.example.valgrow_ui"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyATKzPAHo6h38ZayTb_M-TQImS1uITzAaE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

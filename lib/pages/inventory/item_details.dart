@@ -1,0 +1,230 @@
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import 'package:valgrow_ui/components/general_components/FBA.dart';
+import 'package:valgrow_ui/components/general_components/appbar.dart';
+import 'package:valgrow_ui/components/general_components/text.dart';
+import 'package:valgrow_ui/components/inventory_components/add_batch_modal.dart';
+import 'package:valgrow_ui/models/batch_details.dart';
+import 'package:valgrow_ui/models/item_details.dart';
+import 'package:valgrow_ui/pages/inventory/edit_item.dart';
+import 'package:valgrow_ui/services/database/database_provider.dart';
+
+class ItemDetailsPage extends StatefulWidget {
+  final ItemDetails item;
+  const ItemDetailsPage({super.key, required this.item});
+
+  @override
+  State<ItemDetailsPage> createState() => _ItemDetailsPageState();
+}
+
+class _ItemDetailsPageState extends State<ItemDetailsPage> {
+  List<ItemBatch> batches = [];
+
+  void initState() {
+    super.initState();
+
+    /// 🔹 Fetch data **AFTER** the first frame is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<DatabaseProvider>(context, listen: false)
+          .fetchBatchByItemId(widget.item.itemId);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: MyAppbar(
+        title: "Item Details",
+        actionWidget: TextButton(
+            onPressed: () => {
+                  showModalBottomSheet(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius:
+                          BorderRadius.vertical(top: Radius.circular(16)),
+                    ),
+                    builder: (context) => EditItemModal(item: widget.item),
+                  )
+                },
+            child: MyText(
+                text: "Edit",
+                fontSize: 16,
+                color: Colors.black,
+                fontWeight: FontWeight.w500)),
+      ),
+      floatingActionButton: MyFloatingActionButton(
+        text: "Add Batch",
+        onPressed: () {
+          showDialog(
+            context: context,
+            builder: (context) {
+              return AddBatchModal(
+                onAddBatch: (batchName, quantity, expirationDate) async {
+                  // Handle added batch here
+                  ItemBatch newBatch = ItemBatch(
+                      batchId: '',
+                      itemId: widget.item.itemId,
+                      quantity: quantity,
+                      expirationDate: expirationDate,
+                      storeId: widget.item.storeId,
+                      createdAt: DateTime.now(),
+                      batchName: batchName);
+
+                  // add it to database
+                  final databaseProvider = context.read<DatabaseProvider>();
+                  await databaseProvider.addNewBatch(newBatch);
+                  await databaseProvider.fetchBatchByItemId(widget.item.itemId);
+
+                  print(
+                      "Batch: $batchName, Quantity: $quantity, Expiration: $expirationDate");
+                },
+              );
+            },
+          );
+        },
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ✅ Item Details Card
+            Card(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+              elevation: 3,
+              child: Padding(
+                  padding: const EdgeInsets.all(10.0),
+                  child: Consumer<DatabaseProvider>(
+                    builder: (context, provider, child) {
+                      final item = provider.items.firstWhere(
+                        (i) => i.itemId == widget.item.itemId,
+                        orElse: () =>
+                            widget.item, // Use widget.item as a fallback
+                      );
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Center(
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: item.item_image.isNotEmpty
+                                  ? Image.network(
+                                      item.item_image,
+                                      height: 200,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : Image.asset(
+                                      'assets/placeholder.png',
+                                      height: 200,
+                                      fit: BoxFit.cover,
+                                    ),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          _buildDetailRow("Name:", item.item_name),
+                          _buildDetailRow("Category:", item.category),
+                          _buildDetailRow("Unit:", item.unit),
+                          _buildDetailRow("Barcode:", item.barcode),
+                          _buildDetailRow("Regular Price:",
+                              "₱${item.regular_price.toStringAsFixed(2)}"),
+                          _buildDetailRow("Unpaid Price:",
+                              "₱${item.unpaid_price.toStringAsFixed(2)}"),
+                          _buildDetailRow(
+                              "Total Stock:", "${item.total_stock}"),
+                          _buildDetailRow(
+                            "Last Updated:",
+                            DateFormat('yyyy-MM-dd HH:mm')
+                                .format(item.last_updated),
+                          ),
+                        ],
+                      );
+                    },
+                  )),
+            ),
+            const SizedBox(height: 20),
+
+            // ✅ Batch Update List Section
+            const MyText(
+                text: "Batch List",
+                fontSize: 16,
+                color: Colors.black,
+                fontWeight: FontWeight.bold),
+            const SizedBox(height: 10),
+
+            // 🔹 Placeholder for ListView.builder (No data yet)
+            Consumer<DatabaseProvider>(
+              builder: (context, provider, child) {
+                final batches = provider.batch; // Get batch list from provider
+
+                if (provider.isLoading) {
+                  return const Center(
+                      child: CircularProgressIndicator()); // Show loader
+                }
+
+                if (batches.isEmpty) {
+                  return const Center(child: Text("No batches available"));
+                }
+
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: batches.length,
+                  itemBuilder: (context, index) {
+                    final batch = batches[index];
+
+                    return Card(
+                      margin: const EdgeInsets.symmetric(vertical: 5),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      elevation: 2,
+                      child: ListTile(
+                        title: Text("Batch ID: ${batch.batchId}"),
+                        subtitle: Text(
+                            "Expiration: ${DateFormat('yyyy-MM-dd').format(batch.expirationDate)}"),
+                        trailing: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text("Qty:",
+                                style: TextStyle(
+                                    fontSize: 12, fontWeight: FontWeight.bold)),
+                            Text(batch.quantity.toString(),
+                                style: const TextStyle(fontSize: 14)),
+                          ],
+                        ),
+                        onTap: () {
+                          print("Tapped on batch ${batch.batchId}");
+                        },
+                      ),
+                    );
+                  },
+                );
+              },
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 🔹 Widget to display each detail row neatly
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label,
+              style:
+                  const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(value, style: const TextStyle(fontSize: 16)),
+        ],
+      ),
+    );
+  }
+}
