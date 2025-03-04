@@ -6,27 +6,29 @@ import 'package:valgrow_ui/models/user_profile.dart';
 import 'package:valgrow_ui/services/database/database_service.dart';
 import 'package:valgrow_ui/services/database/inventory_database.dart';
 
-class DatabaseProvider extends ChangeNotifier {
-  final DatabaseService _db = DatabaseService();
-  final InventoryDatabase _inventoryDatabase = InventoryDatabase();
+  class DatabaseProvider extends ChangeNotifier {
+    final DatabaseService _db = DatabaseService();
+    final InventoryDatabase _inventoryDatabase = InventoryDatabase();
 
-  // loading status
-  bool _isLoading = false;
-  bool get isLoading => _isLoading;
+    // loading status
+    bool _isLoading = false;
+    bool get isLoading => _isLoading;
 
-  // store and use user details
-  UserProfile? _user;
-  StoreProfile? _store;
-  UserProfile? get user => _user;
-  StoreProfile? get store => _store;
+    // store and use user details
+    UserProfile? _user;
+    StoreProfile? _store;
+    UserProfile? get user => _user;
+    StoreProfile? get store => _store;
 
-  // list of store items
-  List<ItemDetails> _items = [];
-  List<ItemDetails> get items => _items;
+    // list of store items
+    List<ItemDetails> _items = [];
+    List<ItemDetails> get items => _items;
 
   // list of store items
   List<ItemBatch> _batch = [];
   List<ItemBatch> get batch => _batch;
+
+  
 
   Future<void> fetchUserProfile(String uid) async {
     try {

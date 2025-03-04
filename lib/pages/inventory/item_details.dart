@@ -19,16 +19,20 @@ class ItemDetailsPage extends StatefulWidget {
 }
 
 class _ItemDetailsPageState extends State<ItemDetailsPage> {
-  List<ItemBatch> batches = [];
-
+  @override
   void initState() {
     super.initState();
 
-    /// 🔹 Fetch data **AFTER** the first frame is built
+    /// 🔹 Fetch batch data AFTER the first frame is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<DatabaseProvider>(context, listen: false)
           .fetchBatchByItemId(widget.item.itemId);
     });
+  }
+
+  /// 🔹 Generate a unique batch name
+  String generateBatchName() {
+    return "${widget.item.item_name}_Batch_${DateFormat('yyyyMMdd-HHmmss').format(DateTime.now())}";
   }
 
   @override
@@ -37,23 +41,24 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
       appBar: MyAppbar(
         title: "Item Details",
         actionWidget: TextButton(
-            onPressed: () => {
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    shape: const RoundedRectangleBorder(
-                      borderRadius:
-                          BorderRadius.vertical(top: Radius.circular(16)),
-                    ),
-                    builder: (context) => EditItemModal(item: widget.item),
-                  )
-                },
-            child: MyText(
-                text: "Edit",
-                fontSize: 16,
-                color: Colors.black,
-                fontWeight: FontWeight.w500)),
+          onPressed: () {
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+              ),
+              builder: (context) => EditItemModal(item: widget.item),
+            );
+          },
+          child: MyText(
+            text: "Edit",
+            fontSize: 16,
+            color: Colors.black,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
       ),
       floatingActionButton: MyFloatingActionButton(
         text: "Add Batch",
@@ -63,23 +68,25 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
             builder: (context) {
               return AddBatchModal(
                 onAddBatch: (batchName, quantity, expirationDate) async {
-                  // Handle added batch here
+                  // ✅ Create new batch
                   ItemBatch newBatch = ItemBatch(
-                      batchId: '',
-                      itemId: widget.item.itemId,
-                      quantity: quantity,
-                      expirationDate: expirationDate,
-                      storeId: widget.item.storeId,
-                      createdAt: DateTime.now(),
-                      batchName: batchName);
+                    batchId: '',
+                    batchName: generateBatchName(), // ✅ Automated batch name
+                    itemId: widget.item.itemId,
+                    quantity: quantity,
+                    purchasePrice: batchName, // ✅ Fix: Ensure purchasePrice is valid
+                    expirationDate: expirationDate,
+                    storeId: widget.item.storeId,
+                    createdAt: DateTime.now(),
+                  );
 
-                  // add it to database
+                  // ✅ Add to database
                   final databaseProvider = context.read<DatabaseProvider>();
                   await databaseProvider.addNewBatch(newBatch);
                   await databaseProvider.fetchBatchByItemId(widget.item.itemId);
 
                   print(
-                      "Batch: $batchName, Quantity: $quantity, Expiration: $expirationDate");
+                      "Added Batch: ${newBatch.batchName}, Quantity: $quantity, Expiration: $expirationDate");
                 },
               );
             },
@@ -94,76 +101,79 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
             // ✅ Item Details Card
             Card(
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
+                borderRadius: BorderRadius.circular(8),
+              ),
               elevation: 3,
               child: Padding(
-                  padding: const EdgeInsets.all(10.0),
-                  child: Consumer<DatabaseProvider>(
-                    builder: (context, provider, child) {
-                      final item = provider.items.firstWhere(
-                        (i) => i.itemId == widget.item.itemId,
-                        orElse: () =>
-                            widget.item, // Use widget.item as a fallback
-                      );
+                padding: const EdgeInsets.all(10.0),
+                child: Consumer<DatabaseProvider>(
+                  builder: (context, provider, child) {
+                    final item = provider.items.firstWhere(
+                      (i) => i.itemId == widget.item.itemId,
+                      orElse: () => widget.item, // Use widget.item as a fallback
+                    );
 
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Center(
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(10),
-                              child: item.item_image.isNotEmpty
-                                  ? Image.network(
-                                      item.item_image,
-                                      height: 200,
-                                      fit: BoxFit.cover,
-                                    )
-                                  : Image.asset(
-                                      'assets/placeholder.png',
-                                      height: 200,
-                                      fit: BoxFit.cover,
-                                    ),
-                            ),
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Center(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: item.item_image.isNotEmpty
+                                ? Image.network(
+                                    item.item_image,
+                                    height: 200,
+                                    fit: BoxFit.cover,
+                                  )
+                                : Image.asset(
+                                    'assets/placeholder.png',
+                                    height: 200,
+                                    fit: BoxFit.cover,
+                                  ),
                           ),
-                          const SizedBox(height: 10),
-                          _buildDetailRow("Name:", item.item_name),
-                          _buildDetailRow("Category:", item.category),
-                          _buildDetailRow("Unit:", item.unit),
-                          _buildDetailRow("Barcode:", item.barcode),
-                          _buildDetailRow("Regular Price:",
-                              "₱${item.regular_price.toStringAsFixed(2)}"),
-                          _buildDetailRow("Unpaid Price:",
-                              "₱${item.unpaid_price.toStringAsFixed(2)}"),
-                          _buildDetailRow(
-                              "Total Stock:", "${item.total_stock}"),
-                          _buildDetailRow(
-                            "Last Updated:",
-                            DateFormat('yyyy-MM-dd HH:mm')
-                                .format(item.last_updated),
-                          ),
-                        ],
-                      );
-                    },
-                  )),
+                        ),
+                        const SizedBox(height: 10),
+                        _buildDetailRow("Name:", item.item_name),
+                        _buildDetailRow("Category:", item.category),
+                        _buildDetailRow("Unit:", item.unit),
+                        _buildDetailRow("Barcode:", item.barcode),
+                        _buildDetailRow(
+                          "Regular Price:",
+                          "₱${item.regular_price.toStringAsFixed(2)}",
+                        ),
+                        _buildDetailRow(
+                          "Unpaid Price:",
+                          "₱${item.unpaid_price.toStringAsFixed(2)}",
+                        ),
+                        _buildDetailRow("Total Stock:", "${item.total_stock}"),
+                        _buildDetailRow(
+                          "Last Updated:",
+                          DateFormat('yyyy-MM-dd HH:mm')
+                              .format(item.last_updated),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
             ),
             const SizedBox(height: 20),
 
-            // ✅ Batch Update List Section
+            // ✅ Batch List Section
             const MyText(
-                text: "Batch List",
-                fontSize: 16,
-                color: Colors.black,
-                fontWeight: FontWeight.bold),
+              text: "Batch List",
+              fontSize: 16,
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
+            ),
             const SizedBox(height: 10),
 
-            // 🔹 Placeholder for ListView.builder (No data yet)
             Consumer<DatabaseProvider>(
               builder: (context, provider, child) {
                 final batches = provider.batch; // Get batch list from provider
 
                 if (provider.isLoading) {
-                  return const Center(
-                      child: CircularProgressIndicator()); // Show loader
+                  return const Center(child: CircularProgressIndicator());
                 }
 
                 if (batches.isEmpty) {
@@ -184,17 +194,24 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
                       ),
                       elevation: 2,
                       child: ListTile(
-                        title: Text("Batch ID: ${batch.batchId}"),
+                        title: Text("Batch Name: ${batch.batchName}"),
                         subtitle: Text(
-                            "Expiration: ${DateFormat('yyyy-MM-dd').format(batch.expirationDate)}"),
+                          "Expiration: ${DateFormat('yyyy-MM-dd').format(batch.expirationDate)}",
+                        ),
                         trailing: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Text("Qty:",
-                                style: TextStyle(
-                                    fontSize: 12, fontWeight: FontWeight.bold)),
-                            Text(batch.quantity.toString(),
-                                style: const TextStyle(fontSize: 14)),
+                            const Text(
+                              "Qty:",
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              batch.quantity.toString(),
+                              style: const TextStyle(fontSize: 14),
+                            ),
                           ],
                         ),
                         onTap: () {
@@ -219,9 +236,10 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label,
-              style:
-                  const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(
+            label,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
           Text(value, style: const TextStyle(fontSize: 16)),
         ],
       ),

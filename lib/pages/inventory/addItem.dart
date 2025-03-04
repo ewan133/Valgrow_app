@@ -11,6 +11,7 @@ import 'package:valgrow_ui/models/user_profile.dart';
 import 'package:valgrow_ui/services/database/database_provider.dart';
 import 'package:valgrow_ui/services/database/inventory_database.dart';
 import 'package:valgrow_ui/services/storage/storage_service.dart';
+import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 
 class AdditemPage extends StatefulWidget {
   const AdditemPage({super.key});
@@ -49,6 +50,31 @@ class _AdditemPageState extends State<AdditemPage> {
     });
   }
 
+  Future<void> scanBarcode() async {
+    String barcodeScanResult;
+    try {
+      barcodeScanResult = await FlutterBarcodeScanner.scanBarcode(
+        "#ff6666", // Scanner overlay color
+        "Cancel", // Cancel button text
+        true, // Show flash icon
+        ScanMode.BARCODE,
+      );
+
+      if (!mounted) return;
+
+      // Update the barcode text field
+      setState(() {
+        if (barcodeScanResult != "-1") {
+          _barcodeController.text = barcodeScanResult;
+        }
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Failed to scan barcode")),
+      );
+    }
+  }
+
   Future<void> _loadCategories() async {
     try {
       final provider = Provider.of<DatabaseProvider>(context, listen: false);
@@ -85,14 +111,26 @@ class _AdditemPageState extends State<AdditemPage> {
 
   void _addItem() async {
     final user = Provider.of<DatabaseProvider>(context, listen: false).user;
+    final items = Provider.of<DatabaseProvider>(context, listen: false).items;
+
     if (_nameController.text.trim().isEmpty ||
         _regularPriceController.text.trim().isEmpty ||
         _unpaidPriceController.text.trim().isEmpty ||
-        _barcodeController.text.trim().isEmpty ||
         unitValue == null ||
         categoryValue == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please fill in all required fields")),
+      );
+      return;
+    }
+
+    String barcode = _barcodeController.text.trim();
+
+    // Check if a barcode is entered and ensure it's unique
+    if (barcode.isNotEmpty && items.any((item) => item.barcode == barcode)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text("An item with this barcode already exists!")),
       );
       return;
     }
@@ -118,18 +156,20 @@ class _AdditemPageState extends State<AdditemPage> {
         unpaid_price: double.parse(_unpaidPriceController.text.trim()),
         category: categoryValue!,
         unit: unitValue!,
-        barcode: _barcodeController.text.trim(),
+        barcode: barcode, // Can be empty but must be unique if filled
         item_image: imageUrl,
-        storeId: user.storeId, // Ensured to be non-null here
+        storeId: user.storeId,
         total_stock: 0,
         last_updated: DateTime.now(),
       );
 
-      await databaseProvider.addNewItem(newItem);
+      await Provider.of<DatabaseProvider>(context, listen: false)
+          .addNewItem(newItem);
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Item Successfully Saved")),
       );
+
       // Clear form after success
       _nameController.clear();
       _regularPriceController.clear();
@@ -140,8 +180,8 @@ class _AdditemPageState extends State<AdditemPage> {
         unitValue = null;
         categoryValue = null;
       });
-      Navigator.pop(context);
 
+      Navigator.pop(context);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Error saving item: ${e.toString()}")),
@@ -227,7 +267,6 @@ class _AdditemPageState extends State<AdditemPage> {
                       onChanged: (newValue) {
                         if (newValue != null) {
                           setState(() {
-        
                             if (!categories.contains(newValue)) {
                               categories.add(newValue);
                             }
@@ -247,11 +286,49 @@ class _AdditemPageState extends State<AdditemPage> {
                       showAddNew: false,
                     ),
                     const SizedBox(height: 8),
-                    MyTextfieldLabeled(
-                      color: Colors.grey.shade400,
-                      controller: _barcodeController,
-                      label: "Barcode:",
-                      hint: '',
+                    Row(
+                      children: [
+                        Expanded(
+                          child: MyTextfieldLabeled(
+                            color: Colors.grey.shade400,
+                            controller: _barcodeController,
+                            label: "Barcode:",
+                            hint: '',
+                          ),
+                        ),
+                        const SizedBox(
+                            width: 8), // Space between text field and button
+                        Padding(
+                          padding: const EdgeInsets.only(top: 22.0),
+                          child: SizedBox(
+                            height: 53, // Set the same height as the text field
+                            child: ElevatedButton.icon(
+                              onPressed:
+                                  scanBarcode, // Function to trigger barcode scan
+                              icon: const Icon(Icons.qr_code_scanner,
+                                  size: 30, color: Colors.black),
+                              label: const Text("Scan"),
+                              style: ElevatedButton.styleFrom(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(
+                                      8), // Circular border radius
+                                  side: BorderSide(
+                                    // Removed 'const' here
+                                    color: Colors.grey.shade400, // Border color
+                                    width: 1, // Border width
+                                  ),
+                                ),
+                                backgroundColor:
+                                    Colors.white, // Adjust button color
+                                foregroundColor:
+                                    Colors.black, // Text and icon color
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16), // Better spacing
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 20),
                     _isUploading

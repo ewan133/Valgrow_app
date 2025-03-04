@@ -3,21 +3,26 @@ import 'package:intl/intl.dart';
 
 class MyDatePicker extends StatefulWidget {
   final String label;
-  const MyDatePicker({super.key, required this.label});
+  final Function(DateTime) onDateSelected; // ✅ Added callback function
+
+  const MyDatePicker({
+    super.key,
+    required this.label,
+    required this.onDateSelected, // ✅ Ensure this is correctly passed
+  });
 
   @override
   State<MyDatePicker> createState() => _MyDatePickerState();
 }
 
 class _MyDatePickerState extends State<MyDatePicker> {
-
   DateTime? selectedDate;
   final DateFormat formatter = DateFormat('MM/dd/yyyy');
 
   Future<void> _selectDate(BuildContext context) async {
     DateTime? pickedDate = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
+      initialDate: selectedDate ?? DateTime.now(),
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
     );
@@ -26,6 +31,8 @@ class _MyDatePickerState extends State<MyDatePicker> {
       setState(() {
         selectedDate = pickedDate;
       });
+      
+      widget.onDateSelected(pickedDate); // ✅ Call the callback function
     }
   }
 
@@ -39,7 +46,7 @@ class _MyDatePickerState extends State<MyDatePicker> {
           padding: const EdgeInsets.only(left: 10.0),
           child: Text(
             widget.label,
-            style: TextStyle(
+            style: const TextStyle(
               fontFamily: 'Inter',
               fontWeight: FontWeight.w500,
               fontSize: 16,
@@ -55,7 +62,7 @@ class _MyDatePickerState extends State<MyDatePicker> {
             width: double.infinity,
             height: 55,
             decoration: BoxDecoration(
-              color: Color(0xFFF6F6F6), // Light gray background
+              color: const Color(0xFFF6F6F6), // Light gray background
               border: Border.all(color: Colors.black, width: 1),
               borderRadius: BorderRadius.circular(8),
             ),
@@ -64,7 +71,7 @@ class _MyDatePickerState extends State<MyDatePicker> {
               children: [
                 // Date Text
                 Padding(
-                  padding: EdgeInsets.only(left: 12),
+                  padding: const EdgeInsets.only(left: 12),
                   child: Text(
                     selectedDate == null
                         ? "MM/DD/YYYY"
@@ -74,14 +81,14 @@ class _MyDatePickerState extends State<MyDatePicker> {
                       fontWeight: FontWeight.w500,
                       fontSize: 16,
                       color: selectedDate == null
-                          ? Color(0xFFBDBDBD) // Placeholder gray
+                          ? const Color(0xFFBDBDBD) // Placeholder gray
                           : Colors.black,
                     ),
                   ),
                 ),
                 
                 // Calendar Icon
-                Padding(
+                const Padding(
                   padding: EdgeInsets.only(right: 12),
                   child: Icon(Icons.calendar_today, color: Color(0xFFAAAAAA), size: 16),
                 ),

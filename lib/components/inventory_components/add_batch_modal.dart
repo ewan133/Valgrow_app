@@ -3,7 +3,7 @@ import 'package:intl/intl.dart';
 
 class AddBatchModal extends StatefulWidget {
 
-  final Function (String, int, DateTime)  onAddBatch;
+  final Function (double, int, DateTime)  onAddBatch;
 
   const AddBatchModal({super.key, required this.onAddBatch});
 
@@ -36,7 +36,7 @@ class _AddBatchModalState extends State<AddBatchModal> {
             TextField(
               controller: batchNameController,
               decoration: const InputDecoration(
-                labelText: "Batch Name",
+                labelText: "Purchase Price",
                 border: OutlineInputBorder(),
               ),
             ),
@@ -46,9 +46,10 @@ class _AddBatchModalState extends State<AddBatchModal> {
             TextField(
               controller: quantityController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
+              decoration:  InputDecoration(
                 labelText: "Quantity",
-                border: OutlineInputBorder(),
+                border: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey.shade400)),
+                
               ),
             ),
             const SizedBox(height: 10),
@@ -107,7 +108,7 @@ class _AddBatchModalState extends State<AddBatchModal> {
                         quantityController.text.isNotEmpty &&
                         selectedDate != null) {
                       widget.onAddBatch(
-                        batchNameController.text,
+                        double.parse(batchNameController.text),
                         int.parse(quantityController.text),
                         selectedDate!,
                       );
