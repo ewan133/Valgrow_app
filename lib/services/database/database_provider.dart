@@ -6,29 +6,31 @@ import 'package:valgrow_ui/models/user_profile.dart';
 import 'package:valgrow_ui/services/database/database_service.dart';
 import 'package:valgrow_ui/services/database/inventory_database.dart';
 
-  class DatabaseProvider extends ChangeNotifier {
-    final DatabaseService _db = DatabaseService();
-    final InventoryDatabase _inventoryDatabase = InventoryDatabase();
+class DatabaseProvider extends ChangeNotifier {
+  final DatabaseService _db = DatabaseService();
+  final InventoryDatabase _inventoryDatabase = InventoryDatabase();
 
-    // loading status
-    bool _isLoading = false;
-    bool get isLoading => _isLoading;
+  // loading status
+  bool _isLoading = false;
+  bool get isLoading => _isLoading;
 
-    // store and use user details
-    UserProfile? _user;
-    StoreProfile? _store;
-    UserProfile? get user => _user;
-    StoreProfile? get store => _store;
+  // store and use user details
+  UserProfile? _user;
+  StoreProfile? _store;
+  UserProfile? get user => _user;
+  StoreProfile? get store => _store;
 
-    // list of store items
-    List<ItemDetails> _items = [];
-    List<ItemDetails> get items => _items;
+  // list of store items
+  List<ItemDetails> _items = [];
+  List<ItemDetails> get items => _items;
 
   // list of store items
   List<ItemBatch> _batch = [];
   List<ItemBatch> get batch => _batch;
 
-  
+  // list of POS items
+  List<ItemDetails> _basket = [];
+  List<ItemDetails> get basket => _basket;
 
   Future<void> fetchUserProfile(String uid) async {
     try {
@@ -183,5 +185,74 @@ import 'package:valgrow_ui/services/database/inventory_database.dart';
       notifyListeners();
     }
   }
-  
+
+  /*
+    Point of Sale System
+  */
+
+  /// ✅ Clears the basket when POSPage is closed
+  void clearBasket() {
+    _basket.clear();
+    notifyListeners();
+  }
+
+  /// ✅ Add item to basket (track quantity separately)
+  void addToBasket(ItemDetails newItem) {
+    int index = _basket.indexWhere((i) => i.barcode == newItem.barcode);
+
+    if (index != -1) {
+      // ✅ If item already exists, increase "total_stock" (as quantity in POS)
+      _basket[index] = ItemDetails(
+        itemId: _basket[index].itemId,
+        item_name: _basket[index].item_name,
+        regular_price: _basket[index].regular_price,
+        unpaid_price: _basket[index].unpaid_price,
+        category: _basket[index].category,
+        unit: _basket[index].unit,
+        barcode: _basket[index].barcode,
+        item_image: _basket[index].item_image,
+        storeId: _basket[index].storeId,
+        total_stock: _basket[index].total_stock + 1, // ✅ Increase quantity
+        last_updated: _basket[index].last_updated,
+      );
+    } else {
+      // ✅ Add new item with total_stock as POS quantity (1)
+      _basket.add(newItem);
+    }
+
+    notifyListeners(); // ✅ Update UI
+  }
+
+  /// ✅ Remove item or decrease quantity
+  void removeFromBasket(String barcode) {
+    int index = _basket.indexWhere((i) => i.barcode == barcode);
+
+    if (index != -1) {
+      if (_basket[index].total_stock > 1) {
+        _basket[index] = ItemDetails(
+          itemId: _basket[index].itemId,
+          item_name: _basket[index].item_name,
+          regular_price: _basket[index].regular_price,
+          unpaid_price: _basket[index].unpaid_price,
+          category: _basket[index].category,
+          unit: _basket[index].unit,
+          barcode: _basket[index].barcode,
+          item_image: _basket[index].item_image,
+          storeId: _basket[index].storeId,
+          total_stock: _basket[index].total_stock - 1, // ✅ Decrease quantity
+          last_updated: _basket[index].last_updated,
+        );
+      } else {
+        _basket.removeAt(index); // ✅ Remove if quantity = 1
+      }
+    }
+
+    notifyListeners();
+  }
+
+  /// ✅ Completely remove an item from the basket
+void complteRemoveFromBasket(String barcode) {
+  _basket.removeWhere((item) => item.barcode == barcode);
+  notifyListeners();
+}
 }

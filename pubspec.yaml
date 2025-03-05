@@ -49,6 +49,7 @@ dependencies:
   syncfusion_flutter_xlsio: ^28.2.9
   path_provider: ^2.1.5
   share_plus: ^10.1.4
+  fluttertoast: ^8.2.12
   
 dev_dependencies:
   flutter_test:

@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:valgrow_ui/pages/POS/POS.dart';
+import 'package:valgrow_ui/pages/POS/transaction.dart';
 import 'package:valgrow_ui/pages/authpages/change_password.dart';
 import 'package:valgrow_ui/pages/debts/debts.dart';
 import 'package:valgrow_ui/pages/debts/debts_personal_list.dart';
@@ -48,6 +49,7 @@ class MyApp extends StatelessWidget {
           '/inventory': (context) => const InventoryPage(),
           '/additem': (context) => const AdditemPage(),
           '/POS': (context) => const POSPage(),
+          '/transaction': (context) => const TransactionPage(),
           '/history': (context) => const HistoryPage(),
           '/expenses': (context) => const ExpensesPage(),
           '/expense_info': (context) => const ExpenseInfoPage(),

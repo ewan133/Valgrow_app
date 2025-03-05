@@ -62,7 +62,7 @@ class _HomePageState extends State<HomePage> {
       final user = databaseProvider.user;
       await databaseProvider.fetchStoreProfile(user!.storeId);
       await databaseProvider.fetchItemsByStoreId();
-      
+
       // ✅ Handle navigation based on user verification status
       if (user.status == 'Unverified' && user.document.isEmpty) {
         print('User not verified');

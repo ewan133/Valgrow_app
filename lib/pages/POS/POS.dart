@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:valgrow_ui/components/general_components/appbar.dart';
 import 'package:valgrow_ui/components/general_components/button.dart';
 import 'package:valgrow_ui/components/POS_components/table_pos.dart';
 import 'package:valgrow_ui/components/general_components/text.dart';
+import 'package:valgrow_ui/pages/POS/items_modal.dart';
+import 'package:valgrow_ui/services/database/database_provider.dart';
 
 class POSPage extends StatefulWidget {
   const POSPage({super.key});
@@ -12,38 +15,22 @@ class POSPage extends StatefulWidget {
 }
 
 class _POSPageState extends State<POSPage> {
-  final List<Map<String, dynamic>> products = [
-    {"Product": "Laptop", "Price": 1000, "Quantity": 1},
-    {"Product": "Smartphone", "Price": 700, "Quantity": 2},
-    {"Product": "Tablet", "Price": 500, "Quantity": 3},
-    {"Product": "Monitor", "Price": 300, "Quantity": 1},
-    {"Product": "Keyboard", "Price": 50, "Quantity": 4},
-    {"Product": "Laptop", "Price": 1000, "Quantity": 1},
-    {"Product": "Smartphone", "Price": 700, "Quantity": 2},
-    {"Product": "Tablet", "Price": 500, "Quantity": 3},
-    {"Product": "Monitor", "Price": 300, "Quantity": 1},
-    {"Product": "Keyboard", "Price": 50, "Quantity": 4},
-  ];
-
-  /// Calculate total cost dynamically
-  double calculateTotal() {
-    return products.fold(
-        0,
-        (sum, product) =>
-            sum + (product["Price"] as num) * (product["Quantity"] as num));
-  }
-
-  /// Calculate total items dynamically
-  double calculateTotalItems() {
-    return products.fold(
-        0, (sum, product) => sum + (product["Quantity"] as num));
-  }
-
   @override
   Widget build(BuildContext context) {
+    final databaseProvider = Provider.of<DatabaseProvider>(context);
     return Scaffold(
       appBar: MyAppbar(
         title: "Point of Sale",
+        actionWidget: TextButton(
+          onPressed: () {
+            // ✅ Use a function block, not an object
+            Provider.of<DatabaseProvider>(context, listen: false).clearBasket();
+          },
+          child: const Text(
+            "Clear",
+            style: TextStyle(color: Colors.black, fontSize: 16),
+          ),
+        ),
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -57,11 +44,21 @@ class _POSPageState extends State<POSPage> {
                   MyButton(
                     text: "Add",
                     color: const Color(0xFF14AE5C),
-                    onTap: () {},
+                    onTap: () {
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.vertical(top: Radius.circular(20)),
+                        ),
+                        builder: (context) => ItemsModal(),
+                      );
+                    },
                     borderRadius: 8,
                     width: 110,
                   ),
-                  const SizedBox(width: 20), // Add spacing between buttons
+                  const SizedBox(width: 20),
                   MyButton(
                     text: "Scan",
                     color: const Color(0xFF38B6FF),
@@ -71,28 +68,25 @@ class _POSPageState extends State<POSPage> {
                   ),
                 ],
               ),
-              SizedBox(
-                height: 10,
-              ),
+              const SizedBox(height: 10),
               MyText(
-                  text: "POS Product Item",
-                  fontSize: 18,
-                  color: Colors.black,
-                  fontWeight: FontWeight.w500),
-              SizedBox(
-                height: 10,
+                text: "POS Product Item",
+                fontSize: 18,
+                color: Colors.black,
+                fontWeight: FontWeight.w500,
               ),
-        
-              MyTable(products: products),
-        
-              /// Complete Transaction Button
-              MyButton(
-                text: "Complete Transaction",
-                color: const Color(0xFF14AE5C),
-                width: double.infinity,
-                borderRadius: 100,
-                onTap: () {},
-              )
+              const SizedBox(height: 10),
+              databaseProvider.isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : MyTable(
+                      products: databaseProvider.basket
+                          .map((item) => {
+                                "Product": item.item_name,
+                                "Price": item.regular_price,
+                                "Quantity": item.total_stock,
+                              })
+                          .toList(),
+                    ),
             ],
           ),
         ),
