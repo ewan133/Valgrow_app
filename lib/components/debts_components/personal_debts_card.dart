@@ -27,13 +27,27 @@ class MyPersonalDebtsCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // Date
-            const Text(
-              "January 10, 2023",
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: Colors.black,
-              ),
+            Row(
+              mainAxisAlignment:
+                  MainAxisAlignment.spaceBetween, // Ensures spacing
+              children: [
+                const Text(
+                  "January 10, 2023",
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                  ),
+                ),
+                const Text(
+                  "Unpaid",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                  ),
+                ),
+              ],
             ),
 
             const SizedBox(height: 5), // Spacing
