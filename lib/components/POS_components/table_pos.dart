@@ -1,5 +1,6 @@
 import 'package:data_table_2/data_table_2.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'package:valgrow_ui/components/general_components/button.dart';
 import 'package:valgrow_ui/services/database/database_provider.dart';
@@ -18,24 +19,146 @@ class MyTable extends StatelessWidget {
     return products.fold(
         0,
         (sum, product) =>
-            sum + (product["regular_price"] as num) * (product["total_stock"] as num));
+            sum +
+            (product["regular_price"] as num) *
+                (product["total_stock"] as num));
   }
 
   int calculateTotalItems(List<Map<String, dynamic>> products) {
-    return products.fold(0, (sum, product) => sum + (product["total_stock"] as int));
+    return products.fold(
+        0, (sum, product) => sum + (product["total_stock"] as int));
   }
 
+  /// ✅ Show confirmation dialog before completing transaction
+ void _showTransactionConfirmation(
+    BuildContext context, DatabaseProvider databaseProvider) {
+  final basket = databaseProvider.basket;
+  final totalItems = basket.fold(0, (sum, item) => sum + item.total_stock);
+  final totalPrice = basket.fold(
+      0.0, (sum, item) => sum + (item.regular_price * item.total_stock));
+
+  if (basket.isEmpty) {
+    Fluttertoast.showToast(
+      msg: "No items in the basket!",
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.TOP,
+      backgroundColor: Colors.red,
+      textColor: Colors.white,
+      fontSize: 16.0,
+    );
+    return;
+  }
+
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) {
+      return AlertDialog(
+        title: const Text("Confirm Transaction",
+            style: TextStyle(fontWeight: FontWeight.bold)),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // ✅ Item Summary
+              SizedBox(
+                height: 250,
+                child: ListView.builder(
+                  itemCount: basket.length,
+                  itemBuilder: (context, index) {
+                    final item = basket[index];
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 0.0),
+                      child: ListTile(
+                        dense: true,
+                        contentPadding:
+                            const EdgeInsets.symmetric(horizontal: 8.0),
+                        title: Text(
+                          item.item_name,
+                          style: const TextStyle(
+                              fontSize: 12, fontWeight: FontWeight.w500),
+                        ),
+                        subtitle: Text(
+                          "₱${item.regular_price} x ${item.total_stock}",
+                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                        trailing: Text(
+                          "₱${(item.regular_price * item.total_stock).toStringAsFixed(2)}",
+                          style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+
+              const Divider(),
+              // ✅ Total Summary
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text("Total Items:",
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text("$totalItems"),
+                ],
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text("Total Price:",
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text("₱${totalPrice.toStringAsFixed(2)}"),
+                ],
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel", style: TextStyle(color: Colors.red)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              databaseProvider.clearBasket();
+
+              // ✅ Show Fluttertoast notification instead of SnackBar
+              Fluttertoast.showToast(
+                msg: "Transaction Completed!",
+                toastLength: Toast.LENGTH_SHORT,
+                gravity: ToastGravity.TOP,
+                backgroundColor: Colors.green,
+                textColor: Colors.white,
+                fontSize: 16.0,
+              );
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: const Text("Confirm", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      );
+    },
+  );
+}
   @override
   Widget build(BuildContext context) {
     return Consumer<DatabaseProvider>(
       builder: (context, databaseProvider, child) {
-        final basket = databaseProvider.basket.map((item) => {
-              "itemId": item.itemId,
-              "item_name": item.item_name,
-              "regular_price": item.regular_price,
-              "total_stock": item.total_stock, // Using total_stock as quantity
-              "barcode": item.barcode,
-            }).toList();
+        final basket = databaseProvider.basket
+            .map((item) => {
+                  "itemId": item.itemId,
+                  "item_name": item.item_name,
+                  "regular_price": item.regular_price,
+                  "total_stock":
+                      item.total_stock, // Using total_stock as quantity
+                  "barcode": item.barcode,
+                })
+            .toList();
 
         return Column(
           children: [
@@ -135,12 +258,14 @@ class MyTable extends StatelessWidget {
                                       size: 18, color: Colors.red),
                                   onPressed: currentStock > 1
                                       ? () {
-                                          databaseProvider.removeFromBasket(product["barcode"].toString());
+                                          databaseProvider.removeFromBasket(
+                                              product["barcode"].toString());
                                         }
                                       : null, // Disable button if quantity is 1
                                 ),
                                 Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6.0),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6.0),
                                   child: Text("$currentStock",
                                       style: const TextStyle(
                                           fontSize: 14,
@@ -153,7 +278,8 @@ class MyTable extends StatelessWidget {
                                       ? () {
                                           final item = databaseProvider.items
                                               .firstWhere((i) =>
-                                                  i.barcode == product["barcode"]);
+                                                  i.barcode ==
+                                                  product["barcode"]);
                                           databaseProvider.addToBasket(item);
                                         }
                                       : null, // Disable if quantity reaches max stock
@@ -177,8 +303,8 @@ class MyTable extends StatelessWidget {
                             child: IconButton(
                               icon: const Icon(Icons.delete, color: Colors.red),
                               onPressed: () {
-                                databaseProvider
-                                    .complteRemoveFromBasket(product["barcode"].toString());
+                                databaseProvider.complteRemoveFromBasket(
+                                    product["barcode"].toString());
                               },
                             ),
                           ),
@@ -207,12 +333,14 @@ class MyTable extends StatelessWidget {
                     children: [
                       const Text(
                         "Item:",
-                        style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+                        style: TextStyle(
+                            fontWeight: FontWeight.w500, fontSize: 14),
                       ),
                       const SizedBox(height: 5),
                       Text(
                         "${calculateTotalItems(basket)}",
-                        style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w500, fontSize: 14),
                       ),
                     ],
                   ),
@@ -223,12 +351,14 @@ class MyTable extends StatelessWidget {
                     children: [
                       const Text(
                         "Total:",
-                        style: TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+                        style: TextStyle(
+                            fontWeight: FontWeight.w500, fontSize: 14),
                       ),
                       const SizedBox(height: 5),
                       Text(
                         "₱${calculateTotal(basket).toStringAsFixed(2)}",
-                        style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w500, fontSize: 14),
                       ),
                     ],
                   ),
@@ -242,9 +372,8 @@ class MyTable extends StatelessWidget {
               color: const Color(0xFF14AE5C),
               width: double.infinity,
               borderRadius: 100,
-              onTap: () {
-                databaseProvider.clearBasket();
-              },
+              onTap: () =>
+                  _showTransactionConfirmation(context, databaseProvider),
             ),
           ],
         );

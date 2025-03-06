@@ -35,7 +35,8 @@ class _ItemsModalState extends State<ItemsModal> {
               color: isError ? Colors.red : Colors.green,
               borderRadius: BorderRadius.circular(10),
               boxShadow: [
-                BoxShadow(color: Colors.black26, blurRadius: 10, spreadRadius: 2),
+                BoxShadow(
+                    color: Colors.black26, blurRadius: 10, spreadRadius: 2),
               ],
             ),
             child: Row(
@@ -58,7 +59,8 @@ class _ItemsModalState extends State<ItemsModal> {
                     },
                     child: const Text(
                       "UNDO",
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                          color: Colors.white, fontWeight: FontWeight.bold),
                     ),
                   ),
               ],
@@ -81,7 +83,8 @@ class _ItemsModalState extends State<ItemsModal> {
 
   @override
   Widget build(BuildContext context) {
-    final databaseProvider = Provider.of<DatabaseProvider>(context, listen: false);
+    final databaseProvider =
+        Provider.of<DatabaseProvider>(context, listen: false);
 
     // Sort items: in-stock items first, then out-of-stock
     final sortedItems = databaseProvider.items.toList()
@@ -180,14 +183,16 @@ class _ItemsModalState extends State<ItemsModal> {
                             last_updated: item.last_updated,
                           );
 
-                          databaseProvider.addToBasket(newItem); // ✅ Add item to basket
+                          databaseProvider
+                              .addToBasket(newItem); // ✅ Add item to basket
 
                           // ✅ Show Floating Notification with UNDO
                           showOverlayNotification(
                             context,
                             "${newItem.item_name} added to basket!",
                             onUndo: () {
-                              databaseProvider.removeFromBasket(newItem.barcode); // ✅ Undo action
+                              databaseProvider.removeFromBasket(
+                                  newItem.barcode); // ✅ Undo action
                             },
                           );
                         },
