@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:valgrow_ui/components/general_components/appbar.dart';
 import 'package:valgrow_ui/components/general_components/button.dart';
 import 'package:valgrow_ui/components/POS_components/table_pos.dart';
@@ -18,122 +18,136 @@ class POSPage extends StatefulWidget {
 }
 
 class _POSPageState extends State<POSPage> {
-  // ✅ Method to scan barcode
-  Future<void> scanBarcode() async {
-    bool keepScanning = true;
+  bool isScanning = false;
 
-    while (keepScanning) {
-      String barcodeScanResult;
-      try {
-        barcodeScanResult = await FlutterBarcodeScanner.scanBarcode(
-          "#ff6666", // Scanner color
-          "Cancel", // Cancel button text
-          true, // Show flash icon
-          ScanMode.BARCODE, // Scan only barcodes
-        );
+  // ✅ Method to scan barcode using MobileScanner
+  void scanBarcode(BuildContext context) {
+    if (isScanning) return;
+    isScanning = true;
 
-        if (barcodeScanResult == "-1") {
-          // ✅ User canceled scan → Exit loop
-          keepScanning = false;
-          break;
-        }
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text("Scan Barcode"),
+        content: SizedBox(
+          height: 100,
+          width: 300,
+          child: MobileScanner(
+            onDetect: (BarcodeCapture capture) {
+              final List<Barcode> barcodes = capture.barcodes;
+              if (barcodes.isEmpty || !isScanning) return;
 
-        final databaseProvider =
-            Provider.of<DatabaseProvider>(context, listen: false);
+              final String scannedCode = barcodes.first.rawValue ?? '';
+              if (scannedCode.isEmpty) return;
 
-        // ✅ Search for item in the database using barcode
-        final scannedItem = databaseProvider.items.firstWhere(
-          (item) => item.barcode == barcodeScanResult,
-          orElse: () => ItemDetails(
-            itemId: '',
-            item_name: '',
-            regular_price: 0,
-            unpaid_price: 0,
-            category: '',
-            unit: '',
-            barcode: '',
-            item_image: '',
-            storeId: '',
-            total_stock: 0,
-            last_updated: DateTime.now(),
+              // ✅ Prevent multiple detections from triggering too fast
+              isScanning = false;
+
+              // ✅ Process scanned barcode
+              _processScannedBarcode(context, scannedCode);
+
+              // ✅ Re-enable scanning after a short delay (prevents duplicate scans)
+              Future.delayed(const Duration(seconds: 2), () {
+                isScanning = true; // ✅ Allow next scan
+              });
+            },
           ),
-        );
-
-        if (scannedItem.itemId.isEmpty) {
-          Fluttertoast.showToast(
-            msg: "Item not found!",
-            toastLength: Toast.LENGTH_SHORT,
-            gravity: ToastGravity.TOP,
-            backgroundColor: Colors.red,
-            textColor: Colors.white,
-            fontSize: 16.0,
-          );
-          continue; // ✅ Continue scanning next item
-        }
-
-        // ✅ Get current quantity in basket
-        final currentQuantity = databaseProvider.basket
-            .where((i) => i.barcode == scannedItem.barcode)
-            .fold(0, (sum, i) => sum + i.total_stock);
-
-        // ✅ Check if adding exceeds available stock
-        if (currentQuantity + 1 > scannedItem.total_stock) {
-          Fluttertoast.showToast(
-            msg: "Stock limit reached for ${scannedItem.item_name}!",
-            toastLength: Toast.LENGTH_SHORT,
-            gravity: ToastGravity.TOP,
-            backgroundColor: Colors.red,
-            textColor: Colors.white,
-            fontSize: 16.0,
-          );
-          continue; // ✅ Continue scanning next item
-        }
-
-        // ✅ Create a new item with quantity 1 for POS
-        final newItem = ItemDetails(
-          itemId: scannedItem.itemId,
-          item_name: scannedItem.item_name,
-          regular_price: scannedItem.regular_price,
-          unpaid_price: scannedItem.unpaid_price,
-          category: scannedItem.category,
-          unit: scannedItem.unit,
-          barcode: scannedItem.barcode,
-          item_image: scannedItem.item_image,
-          storeId: scannedItem.storeId,
-          total_stock: 1, // ✅ Set quantity to 1
-          last_updated: scannedItem.last_updated,
-        );
-
-        // ✅ Add scanned item to basket
-        databaseProvider.addToBasket(newItem);
-
-        // ✅ Show success notification using Fluttertoast
-        Fluttertoast.showToast(
-          msg: "${newItem.item_name} added to basket!",
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.TOP,
-          backgroundColor: Colors.green,
-          textColor: Colors.white,
-          fontSize: 16.0,
-        );
-
-        // ✅ Small delay to prevent accidental rapid scanning
-        await Future.delayed(const Duration(milliseconds: 500));
-      } catch (e) {
-        Fluttertoast.showToast(
-          msg: "Scan failed: $e",
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.TOP,
-          backgroundColor: Colors.red,
-          textColor: Colors.white,
-          fontSize: 16.0,
-        );
-        keepScanning = false; // ✅ Stop scanning if an error occurs
-      }
-    }
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              isScanning = false; // ✅ Stop scanning
+              Navigator.pop(dialogContext); // ✅ Close scanner manually
+            },
+            child: const Text("Close"),
+          ),
+        ],
+      ),
+    );
   }
 
+  // ✅ Process scanned barcode
+  void _processScannedBarcode(BuildContext context, String barcodeScanResult) {
+    final databaseProvider =
+        Provider.of<DatabaseProvider>(context, listen: false);
 
+    // ✅ Search for item in the database using barcode
+    final scannedItem = databaseProvider.items.firstWhere(
+      (item) => item.barcode == barcodeScanResult,
+      orElse: () => ItemDetails(
+        itemId: '',
+        item_name: '',
+        regular_price: 0,
+        unpaid_price: 0,
+        category: '',
+        unit: '',
+        barcode: '',
+        item_image: '',
+        storeId: '',
+        total_stock: 0,
+        last_updated: DateTime.now(),
+      ),
+    );
+
+    if (scannedItem.itemId.isEmpty) {
+      Fluttertoast.showToast(
+        msg: "Item not found!",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.TOP,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+      return;
+    }
+
+    // ✅ Get current quantity in basket
+    final currentQuantity = databaseProvider.basket
+        .where((i) => i.barcode == scannedItem.barcode)
+        .fold(0, (sum, i) => sum + i.total_stock);
+
+    // ✅ Check if adding exceeds available stock
+    if (currentQuantity + 1 > scannedItem.total_stock) {
+      Fluttertoast.showToast(
+        msg: "Stock limit reached for ${scannedItem.item_name}!",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.TOP,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+      return;
+    }
+
+    // ✅ Create a new item with quantity 1 for POS
+    final newItem = ItemDetails(
+      itemId: scannedItem.itemId,
+      item_name: scannedItem.item_name,
+      regular_price: scannedItem.regular_price,
+      unpaid_price: scannedItem.unpaid_price,
+      category: scannedItem.category,
+      unit: scannedItem.unit,
+      barcode: scannedItem.barcode,
+      item_image: scannedItem.item_image,
+      storeId: scannedItem.storeId,
+      total_stock: 1, // ✅ Set quantity to 1
+      last_updated: scannedItem.last_updated,
+    );
+
+    // ✅ Add scanned item to basket
+    databaseProvider.addToBasket(newItem);
+
+    // ✅ Show success notification using Fluttertoast
+    Fluttertoast.showToast(
+      msg: "${newItem.item_name} added to basket!",
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.TOP,
+      backgroundColor: Colors.green,
+      textColor: Colors.white,
+      fontSize: 16.0,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -182,7 +196,7 @@ class _POSPageState extends State<POSPage> {
                   MyButton(
                     text: "Scan",
                     color: const Color(0xFF38B6FF),
-                    onTap: scanBarcode, // ✅ Call scan function
+                    onTap: () => scanBarcode(context), // ✅ Call scan function
                     borderRadius: 8,
                     width: 110,
                   ),

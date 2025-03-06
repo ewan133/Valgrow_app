@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 import 'package:valgrow_ui/components/general_components/appbar.dart';
 import 'package:valgrow_ui/components/general_components/button.dart';
@@ -11,7 +12,6 @@ import 'package:valgrow_ui/models/user_profile.dart';
 import 'package:valgrow_ui/services/database/database_provider.dart';
 import 'package:valgrow_ui/services/database/inventory_database.dart';
 import 'package:valgrow_ui/services/storage/storage_service.dart';
-import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 
 class AdditemPage extends StatefulWidget {
   const AdditemPage({super.key});
@@ -50,29 +50,33 @@ class _AdditemPageState extends State<AdditemPage> {
     });
   }
 
-  Future<void> scanBarcode() async {
-    String barcodeScanResult;
-    try {
-      barcodeScanResult = await FlutterBarcodeScanner.scanBarcode(
-        "#ff6666", // Scanner overlay color
-        "Cancel", // Cancel button text
-        true, // Show flash icon
-        ScanMode.BARCODE,
-      );
+  void scanBarcode(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text("Scan Barcode"),
+        content: SizedBox(
+          height: 300,
+          width: 300,
+          child: MobileScanner(
+            onDetect: (BarcodeCapture capture) {
+              final List<Barcode> barcodes = capture.barcodes;
+              if (barcodes.isEmpty) return;
 
-      if (!mounted) return;
+              final String scannedCode = barcodes.first.rawValue ?? '';
+              if (scannedCode.isEmpty) return;
 
-      // Update the barcode text field
-      setState(() {
-        if (barcodeScanResult != "-1") {
-          _barcodeController.text = barcodeScanResult;
-        }
-      });
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Failed to scan barcode")),
-      );
-    }
+              // ✅ Update the barcode text field
+              if (dialogContext.mounted) {
+                Navigator.pop(dialogContext); // ✅ Close scanner after scanning
+                _barcodeController.text = scannedCode;
+              }
+            },
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _loadCategories() async {
@@ -303,8 +307,8 @@ class _AdditemPageState extends State<AdditemPage> {
                           child: SizedBox(
                             height: 53, // Set the same height as the text field
                             child: ElevatedButton.icon(
-                              onPressed:
-                                  scanBarcode, // Function to trigger barcode scan
+                              onPressed: () => scanBarcode(
+                                  context), // Function to trigger barcode scan
                               icon: const Icon(Icons.qr_code_scanner,
                                   size: 30, color: Colors.black),
                               label: const Text("Scan"),

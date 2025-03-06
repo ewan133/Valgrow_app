@@ -33,7 +33,7 @@ class _PaidTransactionState extends State<PaidTransaction> {
 
             // Payment Method Dropdown
             _buildDropdownField(
-                "Payment Method:", ["Cash", "Credit Card", "Gcash"]),
+                "Payment Method:", ["Cash", "Gcash"]),
 
             const SizedBox(height: 20),
           ],

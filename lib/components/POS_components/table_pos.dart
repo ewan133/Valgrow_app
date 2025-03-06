@@ -125,11 +125,12 @@ class MyTable extends StatelessWidget {
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
-              databaseProvider.clearBasket();
+              Navigator.pushNamed(context, "/transaction");
+              // databaseProvider.clearBasket();
 
               // ✅ Show Fluttertoast notification instead of SnackBar
               Fluttertoast.showToast(
-                msg: "Transaction Completed!",
+                msg: "Items Comfirmed!",
                 toastLength: Toast.LENGTH_SHORT,
                 gravity: ToastGravity.TOP,
                 backgroundColor: Colors.green,
@@ -321,7 +322,7 @@ class MyTable extends StatelessWidget {
               margin: const EdgeInsets.symmetric(vertical: 10),
               padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.black, width: 1),
+                border: Border.all(color: Colors.black, width: 0),
                 borderRadius: BorderRadius.circular(15),
               ),
               child: Row(
