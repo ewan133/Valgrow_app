@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:valgrow_ui/services/database/database_provider.dart';
 
 class PaidTransaction extends StatefulWidget {
   const PaidTransaction({super.key});
@@ -8,63 +10,150 @@ class PaidTransaction extends StatefulWidget {
 }
 
 class _PaidTransactionState extends State<PaidTransaction> {
+  final TextEditingController _receivingAmountController =
+      TextEditingController();
+  double _change = 0.00;
+  double _receivedAmount = 0.00;
+  String _selectedPaymentMethod = "Cash"; // Default selection
+  bool _isAmountValid = true; // Track if entered amount is valid
+
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween, // Prevents overflowing
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Column(
-          children: [
-            // Total Amount
-            _buildTransactionField("Total Amount:", "₱100.00"),
+    final databaseProvider = Provider.of<DatabaseProvider>(context);
 
-            const SizedBox(height: 10),
+    // ✅ Calculate total from basket dynamically
+    double totalAmount = databaseProvider.basket.fold(0.0, (sum, item) {
+      return sum + (item.total_stock * (item.regular_price ?? 0.0));
+    });
 
-            // Receiving Amount
-            _buildTransactionField("Receiving Amount:", "₱50.00"),
-
-            const SizedBox(height: 10),
-
-            // Change
-            _buildTransactionField("Change:", "₱50.00"),
-
-            const SizedBox(height: 10),
-
-            // Payment Method Dropdown
-            _buildDropdownField(
-                "Payment Method:", ["Cash", "Gcash"]),
-
-            const SizedBox(height: 20),
-          ],
-        ),
-
-        // Confirm Payment Button
-        SizedBox(
-          width: double.infinity,
-          height: 55,
-          child: ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF14AE5C),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(100)),
-            ),
-            onPressed: () {},
-            child: const Text(
-              "Confirm Payment",
-              style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header Section
+          const Text(
+            "Payment Details",
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
             ),
           ),
-        ),
-      ],
+
+          const SizedBox(height: 15),
+
+          // Total Amount (Dynamic)
+          _buildSummaryCard(
+            title: "Total Amount",
+            value: "₱${totalAmount.toStringAsFixed(2)}",
+          ),
+
+          const SizedBox(height: 15),
+
+          // Receiving Amount (User Input)
+          _buildInputField(
+            label: "Enter Received Amount",
+            controller: _receivingAmountController,
+            onChanged: (value) => _calculateChange(value, totalAmount),
+          ),
+
+          if (!_isAmountValid)
+            const Padding(
+              padding: EdgeInsets.only(top: 5),
+              child: Text(
+                "⚠ Amount must be at least the total",
+                style: TextStyle(color: Colors.red, fontSize: 14),
+              ),
+            ),
+
+          const SizedBox(height: 15),
+
+          // Change (Read-Only)
+          _buildSummaryCard(
+            title: "Change",
+            value: "₱${_change.toStringAsFixed(2)}",
+          ),
+
+          const SizedBox(height: 15),
+
+          // Payment Method Dropdown
+          _buildDropdownField(
+            label: "Select Payment Method",
+            items: ["Cash", "Gcash"],
+          ),
+
+          const SizedBox(height: 25),
+
+          // Confirm Payment Button (Disabled if amount is insufficient)
+          SizedBox(
+            width: double.infinity,
+            height: 55,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor:
+                    _isAmountValid ? const Color(0xFF14AE5C) : Colors.grey,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(100),
+                ),
+              ),
+              onPressed: _isAmountValid
+                  ? () {
+                      _confirmPayment(totalAmount);
+                    }
+                  : null, // Disable button if amount is invalid
+              child: const Text(
+                "Confirm Payment",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  // Function to build transaction fields
-  Widget _buildTransactionField(String label, String value) {
+  // Function to build summary cards for Total Amount & Change
+  Widget _buildSummaryCard({required String title, required String value}) {
+    final databaseProvider = Provider.of<DatabaseProvider>(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF6F6F6),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.grey.shade400),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Function to build user input field
+  Widget _buildInputField({
+    required String label,
+    required TextEditingController controller,
+    Function(String)? onChanged,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -73,17 +162,20 @@ class _PaidTransactionState extends State<PaidTransaction> {
           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
         ),
         const SizedBox(height: 5),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF6F6F6),
-            border: Border.all(color: Colors.grey.shade400),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(
-            value,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+        TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          onChanged: onChanged,
+          decoration: InputDecoration(
+            hintText: "Enter amount",
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 15),
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(color: Colors.grey.shade400),
+            ),
           ),
         ),
       ],
@@ -91,9 +183,10 @@ class _PaidTransactionState extends State<PaidTransaction> {
   }
 
   // Function to build dropdown field
-  Widget _buildDropdownField(String label, List<String> items) {
-    String selectedValue = items.first; // Default selection
-
+  Widget _buildDropdownField({
+    required String label,
+    required List<String> items,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -112,11 +205,11 @@ class _PaidTransactionState extends State<PaidTransaction> {
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
-              value: selectedValue,
+              value: _selectedPaymentMethod,
               isExpanded: true,
               onChanged: (newValue) {
                 setState(() {
-                  selectedValue = newValue!;
+                  _selectedPaymentMethod = newValue!;
                 });
               },
               items: items.map((String item) {
@@ -132,6 +225,63 @@ class _PaidTransactionState extends State<PaidTransaction> {
           ),
         ),
       ],
+    );
+  }
+
+  // Function to auto-calculate change and validate received amount
+  void _calculateChange(String value, double totalAmount) {
+    double receivedAmount = _parseCurrency(value);
+
+    setState(() {
+      _receivedAmount = receivedAmount;
+      _change = receivedAmount - totalAmount;
+      _isAmountValid = receivedAmount >= totalAmount;
+    });
+  }
+
+  // Function to parse currency values safely
+  double _parseCurrency(String value) {
+    return double.tryParse(value.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0.0;
+  }
+
+  // Placeholder function for payment confirmation
+  void _confirmPayment(double totalAmount) {
+    final databaseProvider =
+        Provider.of<DatabaseProvider>(context, listen: false);
+
+    double receivedAmount = _parseCurrency(_receivingAmountController.text);
+    bool isDebt = receivedAmount <
+        totalAmount; // ✅ If received amount < total, it's a debt
+
+    print("✅ Processing Payment...");
+    print("Total Amount: ₱${totalAmount.toStringAsFixed(2)}");
+    print("Received: ₱${receivedAmount.toStringAsFixed(2)}");
+    print("Change: ₱${_change.toStringAsFixed(2)}");
+    print("Payment Method: $_selectedPaymentMethod");
+
+    // ✅ Call `processPOS()` to store the transaction in Firestore
+    databaseProvider.processPOS(
+      totalAmount: totalAmount,
+      amountPaid: receivedAmount,
+      paymentMethod:
+          _selectedPaymentMethod.toLowerCase(), // Convert "Cash" -> "cash"
+      customerId: null, // Modify if using customer ID
+      isDebt: isDebt,
+    );
+
+    // ✅ Reset UI after confirming payment
+    setState(() {
+      _receivingAmountController.clear();
+      _change = 0.00;
+      _selectedPaymentMethod = "Cash";
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content:
+            Text("Payment ${isDebt ? 'on Debt' : 'Completed'} Successfully!"),
+        backgroundColor: Colors.green,
+      ),
     );
   }
 }

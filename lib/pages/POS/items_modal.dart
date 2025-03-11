@@ -147,9 +147,9 @@ class _ItemsModalState extends State<ItemsModal> {
                       final item = filteredItems[index];
 
                       return MyItemsModalCard(
-                        imageUrl: item.item_image ?? '',
-                        itemName: item.item_name ?? 'Unknown',
-                        category: item.category ?? 'No Category',
+                        imageUrl: item.item_image,
+                        itemName: item.item_name,
+                        category: item.category,
                         stock: item.total_stock.toString(),
                         price: item.regular_price.toString(),
                         onAddPressed: () {

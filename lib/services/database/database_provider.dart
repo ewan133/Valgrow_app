@@ -5,10 +5,12 @@ import 'package:valgrow_ui/models/store_profile.dart';
 import 'package:valgrow_ui/models/user_profile.dart';
 import 'package:valgrow_ui/services/database/database_service.dart';
 import 'package:valgrow_ui/services/database/inventory_database.dart';
+import 'package:valgrow_ui/services/database/pos_database.dart';
 
 class DatabaseProvider extends ChangeNotifier {
   final DatabaseService _db = DatabaseService();
   final InventoryDatabase _inventoryDatabase = InventoryDatabase();
+  final POSDatabase _posDatabase = POSDatabase();
 
   // loading status
   bool _isLoading = false;
@@ -186,6 +188,7 @@ class DatabaseProvider extends ChangeNotifier {
     }
   }
 
+
   /*
     Point of Sale System
   */
@@ -251,8 +254,53 @@ class DatabaseProvider extends ChangeNotifier {
   }
 
   /// ✅ Completely remove an item from the basket
-void complteRemoveFromBasket(String barcode) {
-  _basket.removeWhere((item) => item.barcode == barcode);
-  notifyListeners();
-}
+  void complteRemoveFromBasket(String barcode) {
+    _basket.removeWhere((item) => item.barcode == barcode);
+    notifyListeners();
+  }
+
+  /// ✅ Process a transaction (Paid or Unpaid)
+  Future<void> processPOS({
+    required double totalAmount,
+    required double amountPaid,
+    required String paymentMethod,
+    String? customerId,
+    required bool isDebt,
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      await _posDatabase.processTransaction(
+        storeId: _store!.storeId,
+        userId: _user!.uid,
+        customerId: customerId,
+        totalAmount: totalAmount,
+        amountPaid: amountPaid,
+        paymentMethod: paymentMethod,
+        items: _basket
+            .map((item) => {
+                  "item_id": item.itemId,
+                  "quantity": item.total_stock, // ✅ Using stock as POS quantity
+                  "unit_price": isDebt
+                      ? item.unpaid_price ?? 0.0 // ✅ Use unpaid price for debts
+                      : item.regular_price ??
+                          0.0, // ✅ Use regular price for paid transactions
+                  "storeId": item.storeId,
+                  "discount": 0.0, // Modify this if needed
+                })
+            .toList(),
+      );
+
+      // ✅ Clear basket after transaction
+      fetchItemsByStoreId();
+      clearBasket();
+    } catch (e) {
+      print("❌ Error processing POS transaction: $e");
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+  
 }
