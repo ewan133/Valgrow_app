@@ -26,100 +26,105 @@ class _PaidTransactionState extends State<PaidTransaction> {
       return sum + (item.total_stock * (item.regular_price ?? 0.0));
     });
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header Section
-          const Text(
-            "Payment Details",
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-
-          const SizedBox(height: 15),
-
-          // Total Amount (Dynamic)
-          _buildSummaryCard(
-            title: "Total Amount",
-            value: "₱${totalAmount.toStringAsFixed(2)}",
-          ),
-
-          const SizedBox(height: 15),
-
-          // Receiving Amount (User Input)
-          _buildInputField(
-            label: "Enter Received Amount",
-            controller: _receivingAmountController,
-            onChanged: (value) => _calculateChange(value, totalAmount),
-          ),
-
-          if (!_isAmountValid)
-            const Padding(
-              padding: EdgeInsets.only(top: 5),
-              child: Text(
-                "⚠ Amount must be at least the total",
-                style: TextStyle(color: Colors.red, fontSize: 14),
-              ),
-            ),
-
-          const SizedBox(height: 15),
-
-          // Change (Read-Only)
-          _buildSummaryCard(
-            title: "Change",
-            value: "₱${_change.toStringAsFixed(2)}",
-          ),
-
-          const SizedBox(height: 15),
-
-          // Payment Method Dropdown
-          _buildDropdownField(
-            label: "Select Payment Method",
-            items: ["Cash", "Gcash"],
-          ),
-
-          const SizedBox(height: 25),
-
-          // Confirm Payment Button (Disabled if amount is insufficient)
-          SizedBox(
-            width: double.infinity,
-            height: 55,
-            child: ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor:
-                    _isAmountValid ? const Color(0xFF14AE5C) : Colors.grey,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(100),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header Section
+                const Text(
+                  "Payment Details",
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-              onPressed: _isAmountValid
-                  ? () {
-                      _confirmPayment(totalAmount);
-                    }
-                  : null, // Disable button if amount is invalid
-              child: const Text(
-                "Confirm Payment",
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
+
+                const SizedBox(height: 15),
+
+                // Total Amount (Dynamic)
+                _buildSummaryCard(
+                  title: "Total Amount",
+                  value: "₱${totalAmount.toStringAsFixed(2)}",
                 ),
-              ),
+
+                const SizedBox(height: 15),
+
+                // Receiving Amount (User Input)
+                _buildInputField(
+                  label: "Enter Received Amount",
+                  controller: _receivingAmountController,
+                  onChanged: (value) => _calculateChange(value, totalAmount),
+                ),
+
+                if (!_isAmountValid)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 5),
+                    child: Text(
+                      "⚠ Amount must be at least the total",
+                      style: TextStyle(color: Colors.red, fontSize: 14),
+                    ),
+                  ),
+
+                const SizedBox(height: 15),
+
+                // Change (Read-Only)
+                _buildSummaryCard(
+                  title: "Change",
+                  value: "₱${_change.toStringAsFixed(2)}",
+                ),
+
+                const SizedBox(height: 15),
+
+                // Payment Method Dropdown
+                _buildDropdownField(
+                  label: "Select Payment Method",
+                  items: ["Cash", "Gcash"],
+                ),
+
+                const SizedBox(height: 25),
+
+                // Confirm Payment Button (Disabled if amount is insufficient)
+                SizedBox(
+                  width: double.infinity,
+                  height: 55,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                          _isAmountValid ? const Color(0xFF14AE5C) : Colors.grey,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(100),
+                      ),
+                    ),
+                    onPressed: _isAmountValid
+                        ? () {
+                            _confirmPayment(totalAmount);
+                          }
+                        : null, // Disable button if amount is invalid
+                    child: const Text(
+                      "Confirm Payment",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20), // Extra space for keyboard safety
+              ],
             ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
   // Function to build summary cards for Total Amount & Change
   Widget _buildSummaryCard({required String title, required String value}) {
-    final databaseProvider = Provider.of<DatabaseProvider>(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(15),
@@ -244,32 +249,24 @@ class _PaidTransactionState extends State<PaidTransaction> {
     return double.tryParse(value.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0.0;
   }
 
-  // Placeholder function for payment confirmation
+  // ✅ Function to confirm payment and call `processPOS()`
   void _confirmPayment(double totalAmount) {
     final databaseProvider =
         Provider.of<DatabaseProvider>(context, listen: false);
 
     double receivedAmount = _parseCurrency(_receivingAmountController.text);
-    bool isDebt = receivedAmount <
-        totalAmount; // ✅ If received amount < total, it's a debt
+    bool isDebt = receivedAmount < totalAmount; // ✅ If received amount < total, it's a debt
 
     print("✅ Processing Payment...");
-    print("Total Amount: ₱${totalAmount.toStringAsFixed(2)}");
-    print("Received: ₱${receivedAmount.toStringAsFixed(2)}");
-    print("Change: ₱${_change.toStringAsFixed(2)}");
-    print("Payment Method: $_selectedPaymentMethod");
-
-    // ✅ Call `processPOS()` to store the transaction in Firestore
     databaseProvider.processPOS(
       totalAmount: totalAmount,
       amountPaid: receivedAmount,
-      paymentMethod:
-          _selectedPaymentMethod.toLowerCase(), // Convert "Cash" -> "cash"
-      customerId: null, // Modify if using customer ID
+      paymentMethod: _selectedPaymentMethod.toLowerCase(),
+      customerId: null, 
       isDebt: isDebt,
     );
 
-    // ✅ Reset UI after confirming payment
+    // ✅ Reset UI
     setState(() {
       _receivingAmountController.clear();
       _change = 0.00;
@@ -278,8 +275,7 @@ class _PaidTransactionState extends State<PaidTransaction> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content:
-            Text("Payment ${isDebt ? 'on Debt' : 'Completed'} Successfully!"),
+        content: Text("Payment ${isDebt ? 'on Debt' : 'Completed'} Successfully!"),
         backgroundColor: Colors.green,
       ),
     );

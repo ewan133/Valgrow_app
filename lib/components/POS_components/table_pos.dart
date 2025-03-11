@@ -54,7 +54,7 @@ class MyTable extends StatelessWidget {
     barrierDismissible: false,
     builder: (context) {
       return AlertDialog(
-        title: const Text("Confirm Transaction",
+        title: const Text("Confirm Items",
             style: TextStyle(fontWeight: FontWeight.bold)),
         content: SizedBox(
           width: double.maxFinite,
@@ -126,17 +126,6 @@ class MyTable extends StatelessWidget {
             onPressed: () {
               Navigator.pop(context);
               Navigator.pushNamed(context, "/transaction");
-              // databaseProvider.clearBasket();
-
-              // ✅ Show Fluttertoast notification instead of SnackBar
-              Fluttertoast.showToast(
-                msg: "Items Comfirmed!",
-                toastLength: Toast.LENGTH_SHORT,
-                gravity: ToastGravity.TOP,
-                backgroundColor: Colors.green,
-                textColor: Colors.white,
-                fontSize: 16.0,
-              );
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
             child: const Text("Confirm", style: TextStyle(color: Colors.white)),

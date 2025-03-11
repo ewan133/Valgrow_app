@@ -17,7 +17,7 @@ class MySearchbar extends StatelessWidget {
         height: 50,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).scaffoldBackgroundColor,
           border: Border.all(color: const Color(0xFFD9D9D9)),
           borderRadius: BorderRadius.circular(9999),
         ),

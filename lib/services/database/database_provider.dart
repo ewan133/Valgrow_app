@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:valgrow_ui/models/batch_details.dart';
+import 'package:valgrow_ui/models/customer_model.dart';
 import 'package:valgrow_ui/models/item_details.dart';
 import 'package:valgrow_ui/models/store_profile.dart';
 import 'package:valgrow_ui/models/user_profile.dart';
 import 'package:valgrow_ui/services/database/database_service.dart';
+import 'package:valgrow_ui/services/database/debts_database.dart';
 import 'package:valgrow_ui/services/database/inventory_database.dart';
 import 'package:valgrow_ui/services/database/pos_database.dart';
 
@@ -11,7 +13,7 @@ class DatabaseProvider extends ChangeNotifier {
   final DatabaseService _db = DatabaseService();
   final InventoryDatabase _inventoryDatabase = InventoryDatabase();
   final POSDatabase _posDatabase = POSDatabase();
-
+  final DebtsDatabase _debtsDatabase = DebtsDatabase();
   // loading status
   bool _isLoading = false;
   bool get isLoading => _isLoading;
@@ -33,6 +35,10 @@ class DatabaseProvider extends ChangeNotifier {
   // list of POS items
   List<ItemDetails> _basket = [];
   List<ItemDetails> get basket => _basket;
+
+  // list of store customers
+  List<CustomerDetails> _customers = [];
+  List<CustomerDetails> get customers => _customers;
 
   Future<void> fetchUserProfile(String uid) async {
     try {
@@ -188,18 +194,17 @@ class DatabaseProvider extends ChangeNotifier {
     }
   }
 
-
   /*
     Point of Sale System
   */
 
-  /// ✅ Clears the basket when POSPage is closed
+  // Clears the basket when POSPage is closed
   void clearBasket() {
     _basket.clear();
     notifyListeners();
   }
 
-  /// ✅ Add item to basket (track quantity separately)
+  // Add item to basket (track quantity separately)
   void addToBasket(ItemDetails newItem) {
     int index = _basket.indexWhere((i) => i.barcode == newItem.barcode);
 
@@ -226,7 +231,7 @@ class DatabaseProvider extends ChangeNotifier {
     notifyListeners(); // ✅ Update UI
   }
 
-  /// ✅ Remove item or decrease quantity
+  // Remove item or decrease quantity
   void removeFromBasket(String barcode) {
     int index = _basket.indexWhere((i) => i.barcode == barcode);
 
@@ -253,13 +258,13 @@ class DatabaseProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// ✅ Completely remove an item from the basket
+  // Completely remove an item from the basket
   void complteRemoveFromBasket(String barcode) {
     _basket.removeWhere((item) => item.barcode == barcode);
     notifyListeners();
   }
 
-  /// ✅ Process a transaction (Paid or Unpaid)
+  // Process a transaction (Paid or Unpaid)
   Future<void> processPOS({
     required double totalAmount,
     required double amountPaid,
@@ -302,5 +307,65 @@ class DatabaseProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
-  
+
+  /*
+    Debts Tracking System
+  */
+
+  Future<void> fetchCustomersWithDebts() async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      if (_store != null) {
+        _customers =
+            await _debtsDatabase.fetchCustomersByStoreId(_store!.storeId);
+        notifyListeners();
+      }
+    } catch (e) {
+      print("❌ Error fetching customers with debts: $e");
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Add new customer
+  Future<bool> addNewCustomer({
+    required String name,
+    required String phone,
+    required String imageUrl,
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      if (_store == null) {
+        print("❌ Error: Store is null, cannot add customer.");
+        return false;
+      }
+
+      CustomerDetails? newCustomer = await _debtsDatabase.addNewCustomer(
+        storeId: _store!.storeId,
+        name: name,
+        phone: phone,
+        imageUrl: imageUrl,
+      );
+
+      if (newCustomer != null) {
+
+        fetchCustomersWithDebts();
+        notifyListeners();
+        print("✅ New customer added: ${newCustomer.name}");
+        return true;
+      } else {
+        print("⚠️ Customer already exists!");
+        return false;
+      }
+    } catch (e) {
+      print("❌ Error adding new customer: $e");
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 }
