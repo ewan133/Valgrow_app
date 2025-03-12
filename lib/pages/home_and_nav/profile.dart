@@ -247,11 +247,11 @@ class _ProfilePageState extends State<ProfilePage> {
                                         ? "Loading..."
                                         : store.name,
                                     onTap: (!_isLoading &&
-                                            user.role == "store_owner")
+                                            user.role == "Store Owner")
                                         ? showStoreNameEdittingBox
                                         : null,
                                     editable: !_isLoading &&
-                                        user.role == "store_owner",
+                                        user.role == "Store Owner",
                                   ),
                                   Divider(),
                                   MyProfileDetails(
@@ -261,7 +261,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                     onTap: () {},
                                   ),
                                   Divider(),
-                                  if (!_isLoading && user.role == "store_owner")
+                                  if (!_isLoading && user.role == "Store Owner")
                                     MyProfileDetails(
                                       label: "Store Code",
                                       value: store.storeCode,

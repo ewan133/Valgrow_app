@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:valgrow_ui/services/auth/auth_service.dart';
 import 'package:valgrow_ui/components/general_components/button.dart';
 import 'package:valgrow_ui/components/general_components/logo.dart';
@@ -44,21 +45,25 @@ class _LoginPageState extends State<LoginPage> {
         errorMessage = "Invalid email format.";
       }
 
-      // ✅ Show SnackBar using GlobalKey
-      scaffoldMessengerKey.currentState?.showSnackBar(
-        SnackBar(
-          content: Text(errorMessage),
+      if (errorMessage != null && mounted) {
+        Fluttertoast.showToast(
+          msg: errorMessage,
+          toastLength: Toast.LENGTH_SHORT, // or Toast.LENGTH_LONG
+          gravity: ToastGravity.TOP, // Position of the toast
           backgroundColor: Colors.redAccent,
-        ),
-      );
+          textColor: Colors.white,
+          fontSize: 16.0,
+        );
+      }
     } catch (e) {
       if (!mounted) return;
-
-      scaffoldMessengerKey.currentState?.showSnackBar(
-        SnackBar(
-          content: Text("Error: ${e.toString()}"),
-          backgroundColor: Colors.redAccent,
-        ),
+      Fluttertoast.showToast(
+        msg: "Error: ${e.toString()}",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.redAccent,
+        textColor: Colors.white,
+        fontSize: 16.0,
       );
     }
   }
@@ -136,8 +141,9 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
             // Hide the bottom row when the keyboard is open
-            if (keyboardHeight == 0)
-              Padding(
+            Visibility(
+              visible: MediaQuery.of(context).viewInsets.bottom == 0,
+              child: Padding(
                 padding: const EdgeInsets.only(bottom: 20),
                 child: Align(
                   alignment: Alignment.bottomCenter,
@@ -160,6 +166,7 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
               ),
+            ),
           ],
         ),
       ),

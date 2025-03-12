@@ -50,7 +50,7 @@ class MyItemsModalCard extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: Container(
-                width: 120,
+                width: 100,
                 height: 120,
                 color: Colors.grey[300],
                 child: Stack(
@@ -92,7 +92,7 @@ class MyItemsModalCard extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                       color: Colors.black,
                     ),
-                    maxLines: 2,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 8),
@@ -104,7 +104,6 @@ class MyItemsModalCard extends StatelessWidget {
                       color: Colors.black54,
                     ),
                   ),
-                  const SizedBox(height: 5),
                   Text(
                     isOutOfStock ? "Out of Stock" : "Stocks: $stock",
                     style: TextStyle(
@@ -137,8 +136,8 @@ class MyItemsModalCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-                icon: const Icon(Icons.add_shopping_cart, size: 20, color: Colors.white),
-                label: const Text("Add", style: TextStyle(fontSize: 16)),
+                icon: const Icon(Icons.add_shopping_cart, size: 18, color: Colors.white),
+                label: const Text("Add", style: TextStyle(fontSize: 14)),
               ),
             ),
           ],

@@ -40,7 +40,7 @@ class ProfileFunctions {
       await _firestore.collection('users').doc(userEmail).set({
         'name': name,
         'phone': phone,
-        'role': 'employee',
+        'role': 'Employee',
       });
 
       print('User profile created: $name ($userEmail)');

@@ -158,7 +158,40 @@ class _POSPageState extends State<POSPage> {
         title: "Point of Sale",
         actionWidget: TextButton(
           onPressed: () {
-            Provider.of<DatabaseProvider>(context, listen: false).clearBasket();
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  title: Text("Clear Basket"),
+                  content: Text("Are you sure you want to clear the basket?"),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop(); // Close the dialog
+                      },
+                      child: Text("Cancel"),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        Provider.of<DatabaseProvider>(context, listen: false)
+                            .clearBasket();
+                        Navigator.of(context)
+                            .pop(); // Close the dialog after action
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            Colors.green, // Set background color to green
+                      ),
+                      child: Text(
+                        "Confirm",
+                        style: TextStyle(
+                            color: Colors.white), // Ensure text is readable
+                      ),
+                    ),
+                  ],
+                );
+              },
+            );
           },
           child: const Text(
             "Clear",

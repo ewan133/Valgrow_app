@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:valgrow_ui/models/user_profile.dart';
 import 'package:valgrow_ui/pages/authpages/document_waiting.dart';
 import 'package:valgrow_ui/pages/authpages/verification.dart';
+import 'package:valgrow_ui/pages/history/history.dart';
 import 'package:valgrow_ui/pages/home_and_nav/dashboard.dart';
 import 'package:valgrow_ui/pages/home_and_nav/profile.dart';
 import 'package:valgrow_ui/pages/home_and_nav/settings.dart';
@@ -65,42 +66,42 @@ class _HomePageState extends State<HomePage> {
       await databaseProvider.fetchCustomersByStoreId();
 
       // ✅ Handle navigation based on user verification status
-      if (user.status == 'Unverified' && user.document.isEmpty) {
-        print('User not verified');
+      // if (user.status == 'Unverified' && user.document.isEmpty) {
+      //   print('User not verified');
 
-        // Close any existing loading dialogs before navigating
-        if (mounted) {
-          Navigator.of(context, rootNavigator: true)
-              .popUntil((route) => route.isFirst);
-        }
+      //   // Close any existing loading dialogs before navigating
+      //   if (mounted) {
+      //     Navigator.of(context, rootNavigator: true)
+      //         .popUntil((route) => route.isFirst);
+      //   }
 
-        // Delay navigation to avoid black screen issues
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ImageSubmissionPage(uid: uid),
-              ),
-            );
-          }
-        });
+      //   // Delay navigation to avoid black screen issues
+      //   WidgetsBinding.instance.addPostFrameCallback((_) {
+      //     if (mounted) {
+      //       Navigator.pushReplacement(
+      //         context,
+      //         MaterialPageRoute(
+      //           builder: (context) => ImageSubmissionPage(uid: uid),
+      //         ),
+      //       );
+      //     }
+      //   });
 
-        return; // Stop further execution
-      } else if (user.status == 'Pending') {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => DocumentVerificationPage(),
-              ),
-            );
-          }
-        });
+      //   return; // Stop further execution
+      // } else if (user.status == 'Pending') {
+      //   WidgetsBinding.instance.addPostFrameCallback((_) {
+      //     if (mounted) {
+      //       Navigator.pushReplacement(
+      //         context,
+      //         MaterialPageRoute(
+      //           builder: (context) => DocumentVerificationPage(),
+      //         ),
+      //       );
+      //     }
+      //   });
 
-        return; // Stop further execution
-      }
+      //   return; // Stop further execution
+      // }
 
       // ✅ Set pages for navigation
       if (mounted) {
@@ -108,7 +109,7 @@ class _HomePageState extends State<HomePage> {
           _pages = [
             ProfilePage(uid: uid),
             DashboardPage(),
-            SettingsPage(),
+            HistoryPage(),
           ];
         });
       }
@@ -158,10 +159,10 @@ class _HomePageState extends State<HomePage> {
               )),
           CurvedNavigationBarItem(
               child: Icon(
-                Icons.settings,
+                Icons.history,
                 size: 35,
               ),
-              label: 'Settings',
+              label: 'History',
               labelStyle: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 16,

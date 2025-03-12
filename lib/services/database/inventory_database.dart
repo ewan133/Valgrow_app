@@ -25,31 +25,30 @@ class InventoryDatabase {
     }
   }
 
- Future<List<String>> getUniqueCategories(String storeId) async {
-  try {
-    // Fetch all items that belong to the given storeId
-    QuerySnapshot querySnapshot = await _db
-        .collection('items')
-        .where('storeId', isEqualTo: storeId) // Filter by storeId
-        .get();
+  Future<List<String>> getUniqueCategories(String storeId) async {
+    try {
+      // Fetch all items that belong to the given storeId
+      QuerySnapshot querySnapshot = await _db
+          .collection('items')
+          .where('storeId', isEqualTo: storeId) // Filter by storeId
+          .get();
 
-    // Extract unique categories from the filtered documents
-    Set<String> uniqueCategories = {};
+      // Extract unique categories from the filtered documents
+      Set<String> uniqueCategories = {};
 
-    for (var doc in querySnapshot.docs) {
-      var data = doc.data() as Map<String, dynamic>;
-      if (data.containsKey('category') && data['category'] is String) {
-        uniqueCategories.add(data['category']);
+      for (var doc in querySnapshot.docs) {
+        var data = doc.data() as Map<String, dynamic>;
+        if (data.containsKey('category') && data['category'] is String) {
+          uniqueCategories.add(data['category']);
+        }
       }
+
+      return uniqueCategories.toList(); // Convert Set to List and return
+    } catch (e) {
+      print("❌ Error retrieving categories for storeId ($storeId): $e");
+      return []; // Return an empty list if an error occurs
     }
-
-    return uniqueCategories.toList(); // Convert Set to List and return
-  } catch (e) {
-    print("❌ Error retrieving categories for storeId ($storeId): $e");
-    return []; // Return an empty list if an error occurs
   }
-}
-
 
   // get all items from the database
   Future<List<ItemDetails>> getItemsByStoreId(String storeId) async {
@@ -128,34 +127,52 @@ class InventoryDatabase {
 
       print("✅ Batch added successfully for item: ${batch.itemId}");
 
-      // ✅ Update total_stock of the item
-      await _updateItemStock(batch.itemId, batch.quantity);
+      // ✅ Update total_stock of the item considering total batches - total sales
+      await _updateItemStock(batch.itemId);
     } catch (e) {
       print("❌ Error adding batch: $e");
       throw e;
     }
   }
 
-  Future<void> _updateItemStock(String itemId, int addedQuantity) async {
+  Future<void> _updateItemStock(String itemId) async {
     try {
       // Reference to the item document
       final itemRef = _db.collection('items').doc(itemId);
 
-      // Fetch the current total_stock
-      DocumentSnapshot itemDoc = await itemRef.get();
-      if (itemDoc.exists) {
-        int currentStock = (itemDoc['total_stock'] ?? 0).toInt();
-        int newStock = currentStock + addedQuantity; // Add new batch quantity
+      // Fetch total quantity from batches
+      QuerySnapshot batchQuery = await _db
+          .collection('item_batch')
+          .where('item_id', isEqualTo: itemId)
+          .get();
 
-        // Update the total_stock in Firestore
-        await itemRef.update(
-          {'total_stock': newStock, 'last_updated': DateTime.now()},
-        );
+      int totalBatchQuantity = batchQuery.docs.fold(0, (sum, doc) {
+        return sum +
+            (doc['quantity'] as num? ?? 0).toInt(); // Ensure conversion to int
+      });
 
-        print("✅ Updated total_stock for item $itemId: $newStock");
-      } else {
-        print("⚠️ Item not found: $itemId");
-      }
+      // Fetch total quantity sold from transaction_items
+      QuerySnapshot transactionQuery = await _db
+          .collection('transaction_items')
+          .where('item_id', isEqualTo: itemId)
+          .get();
+
+      int totalSoldQuantity = transactionQuery.docs.fold(0, (sum, doc) {
+        return sum +
+            (doc['quantity'] as num? ?? 0).toInt(); // Ensure conversion to int
+      });
+
+      // Calculate precise stock
+      int newStock = totalBatchQuantity - totalSoldQuantity;
+      if (newStock < 0) newStock = 0; // Ensure stock doesn't go negative
+
+      // Update the total_stock in Firestore
+      await itemRef.update({
+        'total_stock': newStock,
+        'last_updated': FieldValue.serverTimestamp(),
+      });
+
+      print("✅ Updated total_stock for item $itemId: $newStock");
     } catch (e) {
       print("❌ Error updating total_stock: $e");
       throw e;
@@ -184,7 +201,6 @@ class InventoryDatabase {
       await itemRef.update(updatedData);
 
       print("✅ Item updated successfully: ${item.itemId}");
-      
     } catch (e) {
       print("❌ Error updating item: $e");
       throw e;

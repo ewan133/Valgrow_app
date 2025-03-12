@@ -2,7 +2,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:valgrow_ui/pages/POS/POS.dart';
-import 'package:valgrow_ui/pages/POS/sucess_page.dart';
 import 'package:valgrow_ui/pages/POS/transaction.dart';
 import 'package:valgrow_ui/pages/authpages/change_password.dart';
 import 'package:valgrow_ui/pages/debts/debts.dart';
@@ -39,7 +38,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      theme: lightmode,
+        theme: lightmode,
         debugShowCheckedModeBanner: false,
         home: WrapperPage(),
         routes: {
