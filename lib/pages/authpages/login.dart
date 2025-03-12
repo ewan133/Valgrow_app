@@ -114,6 +114,7 @@ class _LoginPageState extends State<LoginPage> {
                       MyTextfieldHintLabel(
                         controller: _passwordController,
                         hint: "Password",
+                        isObscure: true,
                       ),
                       const SizedBox(height: 20),
                       MyButton(

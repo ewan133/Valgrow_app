@@ -57,7 +57,7 @@ class _AdditemPageState extends State<AdditemPage> {
       builder: (dialogContext) => AlertDialog(
         title: const Text("Scan Barcode"),
         content: SizedBox(
-          height: 300,
+          height: 100,
           width: 300,
           child: MobileScanner(
             onDetect: (BarcodeCapture capture) {
@@ -98,6 +98,37 @@ class _AdditemPageState extends State<AdditemPage> {
         SnackBar(content: Text("Error loading categories: $e")),
       );
     }
+  }
+
+  Future<void> _chooseImageSource() async {
+    showModalBottomSheet(
+      context: context,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
+      ),
+      builder: (BuildContext context) {
+        return Wrap(
+          children: [
+            ListTile(
+              leading: Icon(Icons.camera_alt, color: Colors.black),
+              title: Text("Take a Photo"),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.photo_library, color: Colors.black),
+              title: Text("Choose from Gallery"),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -225,7 +256,7 @@ class _AdditemPageState extends State<AdditemPage> {
                           bottom: 5,
                           right: 5,
                           child: GestureDetector(
-                            onTap: () => _pickImage(ImageSource.gallery),
+                            onTap: () => _chooseImageSource(),
                             child: Container(
                               decoration: BoxDecoration(
                                 color: Colors.black54,

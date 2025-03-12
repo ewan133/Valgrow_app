@@ -139,52 +139,52 @@ class DatabaseService {
 
   // get user full details
   Future<UserProfile?> getCurrentUserInfo(String uid) async {
-  try {
-    print('Fetching user info for UID: $uid');
+    try {
+      print('Fetching user info for UID: $uid');
 
-    DocumentSnapshot userDoc = await _db.collection('users').doc(uid).get();
+      DocumentSnapshot userDoc = await _db.collection('users').doc(uid).get();
 
-    if (!userDoc.exists) {
-      print('❌ User not found');
+      if (!userDoc.exists) {
+        print('❌ User not found');
+        return null;
+      }
+
+      Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
+      userData['uid'] = uid; // ✅ Manually add UID to the map
+
+      print('✅ User document data: $userData');
+
+      return UserProfile.fromMap(userData);
+    } catch (e) {
+      print('❌ Error fetching user details: $e');
       return null;
     }
-
-    Map<String, dynamic> userData = userDoc.data() as Map<String, dynamic>;
-    userData['uid'] = uid; // ✅ Manually add UID to the map
-
-    print('✅ User document data: $userData');
-
-    return UserProfile.fromMap(userData);
-  } catch (e) {
-    print('❌ Error fetching user details: $e');
-    return null;
   }
-}
 
   // retrieve store code of the owner
   Future<StoreProfile?> getStoreInfo(String storeId) async {
-  try {
-    print('Fetching store info for Store ID: $storeId');
+    try {
+      print('Fetching store info for Store ID: $storeId');
 
-    DocumentSnapshot storeDoc = await _db.collection('stores').doc(storeId).get();
+      DocumentSnapshot storeDoc =
+          await _db.collection('stores').doc(storeId).get();
 
-    if (!storeDoc.exists) {
-      print('❌ No store found with this store ID.');
+      if (!storeDoc.exists) {
+        print('❌ No store found with this store ID.');
+        return null;
+      }
+
+      Map<String, dynamic> storeData = storeDoc.data() as Map<String, dynamic>;
+      storeData['storeId'] = storeId; // ✅ Manually add storeId to the map
+
+      print('✅ Store document data: $storeData');
+
+      return StoreProfile.fromMap(storeData);
+    } catch (e) {
+      print('❌ Error fetching store details: $e');
       return null;
     }
-
-    Map<String, dynamic> storeData = storeDoc.data() as Map<String, dynamic>;
-    storeData['storeId'] = storeId; // ✅ Manually add storeId to the map
-
-    print('✅ Store document data: $storeData');
-
-    return StoreProfile.fromMap(storeData);
-  } catch (e) {
-    print('❌ Error fetching store details: $e');
-    return null;
   }
-}
-
 
   /*
       Methods for updating user data and store data
@@ -223,4 +223,22 @@ class DatabaseService {
       print("Error updating user profile: $e");
     }
   }
+
+  // Generate and update store code
+  Future<void> generateAndUpdateStoreCode(String storeId) async {
+    try {
+      String newStoreCode = _generateStoreCode(); // Generate a new store code
+
+      // Update the store's storeCode in Firestore
+      await _db
+          .collection('stores')
+          .doc(storeId)
+          .update({'storeCode': newStoreCode});
+
+      print("✅ Store Code updated successfully: $newStoreCode");
+    } catch (e) {
+      print("❌ Error updating store code: $e");
+    }
+  }
+  
 }

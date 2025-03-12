@@ -256,19 +256,23 @@ class _SignupPageState extends State<SignupPage> {
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: MyTextfieldLabeled(
-                    color: Colors.black,
-                    controller: _passwordController,
-                    label: "Password:",
-                    hint: ""),
+                  color: Colors.black,
+                  controller: _passwordController,
+                  label: "Password:",
+                  hint: "",
+                  isObscure: true,
+                ),
               ),
 
               Padding(
                 padding: const EdgeInsets.only(top: 8.0, bottom: 15),
                 child: MyTextfieldLabeled(
-                    color: Colors.black,
-                    controller: _confirmPasswordController,
-                    label: "Confirm Password:",
-                    hint: ""),
+                  color: Colors.black,
+                  controller: _confirmPasswordController,
+                  label: "Confirm Password:",
+                  hint: "",
+                  isObscure: true,
+                ),
               ),
 
               Padding(

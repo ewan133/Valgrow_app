@@ -34,7 +34,7 @@ class _MyInventoryTableState extends State<MyInventoryTable> {
       "Total Value",
       "Last Updated"
     ];
-    
+
     for (int i = 0; i < headers.length; i++) {
       sheet.getRangeByIndex(1, i + 1).setText(headers[i]);
     }
@@ -81,11 +81,16 @@ class _MyInventoryTableState extends State<MyInventoryTable> {
         final filteredItems = provider.items.where((item) {
           if (widget.dateRange == null) return true;
           final itemDate = item.last_updated;
-          return itemDate.isAfter(
-                  widget.dateRange!.start.subtract(const Duration(days: 1))) &&
-              itemDate
-                  .isBefore(widget.dateRange!.end.add(const Duration(days: 1)));
+          return (itemDate.isAfter(widget.dateRange!.start
+                      .subtract(const Duration(days: 0))) ||
+                  itemDate.isAtSameMomentAs(widget.dateRange!.start)) &&
+              (itemDate.isBefore(
+                      widget.dateRange!.end.add(const Duration(days: 1))) ||
+                  itemDate.isAtSameMomentAs(widget.dateRange!.end));
         }).toList();
+
+// Sort items by last_updated in descending order (latest first)
+        filteredItems.sort((a, b) => b.last_updated.compareTo(a.last_updated));
 
         return Column(
           children: [

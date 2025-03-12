@@ -115,6 +115,17 @@ class DatabaseProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> updateStoreCode() async {
+    try {
+      if (_store == null) return;
+      await _db.generateAndUpdateStoreCode(_store!.storeId);
+      await fetchUserProfile(_user!.uid);
+      await fetchStoreProfile(_user!.storeId);
+      notifyListeners();
+    } catch (e) {
+      print("Error updating store name: $e");
+    }
+  }
   /*
     Inventory Management 
   */
@@ -318,7 +329,8 @@ class DatabaseProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      _customers = await _debtsDatabase.fetchAllCustomersByStoreId(_store!.storeId);
+      _customers =
+          await _debtsDatabase.fetchAllCustomersByStoreId(_store!.storeId);
     } catch (e) {
       print("❌ Error fetching customers: $e");
     } finally {
@@ -349,7 +361,6 @@ class DatabaseProvider extends ChangeNotifier {
       );
 
       if (newCustomer != null) {
-
         fetchCustomersByStoreId();
         notifyListeners();
         print("✅ New customer added: ${newCustomer.name}");

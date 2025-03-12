@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'package:valgrow_ui/components/general_components/appbar.dart';
 import 'package:valgrow_ui/components/general_components/singel_text_alert.dart';
@@ -75,31 +77,30 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void showStoreNameEdittingBox() {
-  showDialog(
-    context: context,
-    builder: (context) {
-      return Consumer<DatabaseProvider>(
-        builder: (context, databaseProvider, child) {
-          final store = databaseProvider.store;
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Consumer<DatabaseProvider>(
+          builder: (context, databaseProvider, child) {
+            final store = databaseProvider.store;
 
-          // If store is null, show a loading state or handle accordingly
-          if (store == null) {
-            return Center(child: CircularProgressIndicator());
-          }
+            // If store is null, show a loading state or handle accordingly
+            if (store == null) {
+              return Center(child: CircularProgressIndicator());
+            }
 
-          return MySingelTextAlert(
-            editingController: _storeNameEditController,
-            hintText: _isLoading ? "Loading..." : store.name,
-            onpressedText: "Save",
-            onPressed: saveStoreName,
-            maxChar: 50,
-          );
-        },
-      );
-    },
-  );
-}
-
+            return MySingelTextAlert(
+              editingController: _storeNameEditController,
+              hintText: _isLoading ? "Loading..." : store.name,
+              onpressedText: "Save",
+              onPressed: saveStoreName,
+              maxChar: 50,
+            );
+          },
+        );
+      },
+    );
+  }
 
   // save phone number
   Future<void> savePhone() async {
@@ -243,9 +244,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                   Divider(),
                                   MyProfileDetails(
                                     label: "Affiliated Store",
-                                    value: _isLoading
-                                        ? "Loading..."
-                                        : store.name,
+                                    value:
+                                        _isLoading ? "Loading..." : store.name,
                                     onTap: (!_isLoading &&
                                             user.role == "Store Owner")
                                         ? showStoreNameEdittingBox
@@ -262,10 +262,88 @@ class _ProfilePageState extends State<ProfilePage> {
                                   ),
                                   Divider(),
                                   if (!_isLoading && user.role == "Store Owner")
-                                    MyProfileDetails(
-                                      label: "Store Code",
-                                      value: store.storeCode,
-                                      onTap: () {},
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        // Store Code Text
+                                        Expanded(
+                                          child: MyProfileDetails(
+                                            label: "Store Code",
+                                            value: store.storeCode,
+                                            onTap:
+                                                () {}, // No need for tap action
+                                          ),
+                                        ),
+
+                                        // Copy Button
+                                        IconButton(
+                                          onPressed: () {
+                                            Clipboard.setData(ClipboardData(
+                                                text: store.storeCode));
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              SnackBar(
+                                                  content: Text(
+                                                      "Store Code Copied!")),
+                                            );
+                                          },
+                                          icon: Icon(Icons.copy,
+                                              color: Colors.blueAccent),
+                                          tooltip: "Copy Store Code",
+                                        ),
+
+                                        // Regenerate Button
+
+                                        IconButton(
+                                          onPressed: () async {
+                                            bool confirm = await showDialog(
+                                              context: context,
+                                              builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                  title: Text(
+                                                      "Regenerate Store Code"),
+                                                  content: Text(
+                                                      "Are you sure you want to generate a new store code?"),
+                                                  actions: [
+                                                    TextButton(
+                                                      onPressed: () =>
+                                                          Navigator.of(context)
+                                                              .pop(false),
+                                                      child: Text("Cancel"),
+                                                    ),
+                                                    TextButton(
+                                                      onPressed: () =>
+                                                          Navigator.of(context)
+                                                              .pop(true),
+                                                      child: Text("Confirm",
+                                                          style: TextStyle(
+                                                              color:
+                                                                  Colors.red)),
+                                                    ),
+                                                  ],
+                                                );
+                                              },
+                                            );
+
+                                            if (confirm == true) {
+                                              await databaseProvider
+                                                  .updateStoreCode();
+                                              Fluttertoast.showToast(
+                                                msg:
+                                                    "New Store Code Generated!",
+                                                toastLength: Toast.LENGTH_SHORT,
+                                                gravity: ToastGravity.CENTER,
+                                                backgroundColor: Colors.green,
+                                                textColor: Colors.white,
+                                              );
+                                            }
+                                          },
+                                          icon: Icon(Icons.refresh,
+                                              color: Colors.green),
+                                          tooltip: "Regenerate Store Code",
+                                        ),
+                                      ],
                                     ),
                                   SizedBox(
                                     height: 10,
