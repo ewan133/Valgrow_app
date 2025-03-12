@@ -50,6 +50,8 @@ dependencies:
   share_plus: ^10.1.4
   fluttertoast: ^8.2.12
   mobile_scanner: ^6.0.7
+  collection: ^1.19.1
+  lottie: ^3.3.0
   
 dev_dependencies:
   flutter_test:

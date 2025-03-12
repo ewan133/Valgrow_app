@@ -271,6 +271,7 @@ class DatabaseProvider extends ChangeNotifier {
     required String paymentMethod,
     String? customerId,
     required bool isDebt,
+    DateTime? due_date,
   }) async {
     _isLoading = true;
     notifyListeners();
@@ -283,6 +284,7 @@ class DatabaseProvider extends ChangeNotifier {
         totalAmount: totalAmount,
         amountPaid: amountPaid,
         paymentMethod: paymentMethod,
+        due_date: due_date ?? null,
         items: _basket
             .map((item) => {
                   "item_id": item.itemId,
@@ -312,17 +314,13 @@ class DatabaseProvider extends ChangeNotifier {
     Debts Tracking System
   */
 
-  Future<void> fetchCustomersWithDebts() async {
+  Future<void> fetchCustomersByStoreId() async {
     _isLoading = true;
     notifyListeners();
     try {
-      if (_store != null) {
-        _customers =
-            await _debtsDatabase.fetchCustomersByStoreId(_store!.storeId);
-        notifyListeners();
-      }
+      _customers = await _debtsDatabase.fetchAllCustomersByStoreId(_store!.storeId);
     } catch (e) {
-      print("❌ Error fetching customers with debts: $e");
+      print("❌ Error fetching customers: $e");
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -352,7 +350,7 @@ class DatabaseProvider extends ChangeNotifier {
 
       if (newCustomer != null) {
 
-        fetchCustomersWithDebts();
+        fetchCustomersByStoreId();
         notifyListeners();
         print("✅ New customer added: ${newCustomer.name}");
         return true;

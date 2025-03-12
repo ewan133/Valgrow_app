@@ -6,7 +6,7 @@ class CustomerDetails {
   final String name;
   final String phone;
   final double totalDebt;
-  final String? imageUrl; // ✅ Added image field
+  final String imageUrl; // ✅ Added image field
   final DateTime? lastTransactionDate;
 
   CustomerDetails({
@@ -15,7 +15,7 @@ class CustomerDetails {
     required this.name,
     required this.phone,
     required this.totalDebt,
-    this.imageUrl, // ✅ Default is null if no image
+    required this.imageUrl, // ✅ Default is null if no image
     this.lastTransactionDate,
   });
 

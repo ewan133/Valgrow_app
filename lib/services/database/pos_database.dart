@@ -11,12 +11,16 @@ class POSDatabase {
     required double amountPaid,
     required String paymentMethod,
     String? customerId,
+    DateTime? due_date,
   }) async {
     try {
       final transactionRef = _db.collection('transactions').doc();
       final String transactionId = transactionRef.id;
-      double change = (amountPaid > totalAmount) ? (amountPaid - totalAmount) : 0.0;
-      String status = (amountPaid >= totalAmount) ? "paid" : (amountPaid > 0 ? "partial" : "unpaid");
+      double change =
+          (amountPaid > totalAmount) ? (amountPaid - totalAmount) : 0.0;
+      String status = (amountPaid >= totalAmount)
+          ? "paid"
+          : (amountPaid > 0.0 ? "partial" : "unpaid");
 
       // Create transaction
       await transactionRef.set({
@@ -40,9 +44,13 @@ class POSDatabase {
 
       // If payment is not complete, create a debt entry
       if (status != "paid" && customerId != null) {
-        await _createDebtEntry(transactionId, customerId, storeId, totalAmount, amountPaid);
+        await _createDebtEntry(transactionId, customerId, storeId, totalAmount,
+            amountPaid, due_date);
       }
-
+      print("cusotmer Id : $customerId");
+      print("total amount : $totalAmount");
+      print("recieved amount : $amountPaid");
+      print("change : $due_date");
       print("✅ Transaction processed successfully: $transactionId");
     } catch (e) {
       print("❌ Error processing transaction: $e");
@@ -50,7 +58,8 @@ class POSDatabase {
     }
   }
 
-  Future<void> _addTransactionItem(String transactionId, Map<String, dynamic> item) async {
+  Future<void> _addTransactionItem(
+      String transactionId, Map<String, dynamic> item) async {
     try {
       final transactionItemRef = _db.collection('transaction_items').doc();
 
@@ -62,7 +71,8 @@ class POSDatabase {
         "total_price": item['quantity'] * item['unit_price'],
         "storeId": item['storeId'],
         "discount": item['discount'] ?? 0.0,
-        "subtotal": (item['quantity'] * item['unit_price']) - (item['discount'] ?? 0.0),
+        "subtotal":
+            (item['quantity'] * item['unit_price']) - (item['discount'] ?? 0.0),
       });
 
       print("✅ Transaction item added: ${item['item_id']}");
@@ -97,11 +107,18 @@ class POSDatabase {
   }
 
   Future<void> _createDebtEntry(
-      String transactionId, String customerId, String storeId, double totalAmount, double amountPaid) async {
+      String transactionId,
+      String customerId,
+      String storeId,
+      double totalAmount,
+      double amountPaid,
+      DateTime? due_date) async {
     try {
       final debtRef = _db.collection('debts').doc();
       double balance = totalAmount - amountPaid;
-      String status = (balance == 0) ? "paid" : "partial";
+      String status = (amountPaid >= totalAmount)
+          ? "paid"
+          : (amountPaid > 0.0 ? "partial" : "unpaid");
 
       await debtRef.set({
         "storeId": storeId,
@@ -113,7 +130,8 @@ class POSDatabase {
         "status": status,
         "created_at": FieldValue.serverTimestamp(),
         "updated_at": FieldValue.serverTimestamp(),
-        "due_date": Timestamp.fromDate(DateTime.now().add(Duration(days: 30))),
+        "due_date": due_date ??
+            Timestamp.fromDate(DateTime.now().add(Duration(days: 7))),
       });
 
       print("✅ Debt recorded for customer: $customerId | Balance: $balance");

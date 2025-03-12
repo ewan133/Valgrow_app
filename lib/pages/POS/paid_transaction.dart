@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
+import 'package:valgrow_ui/pages/POS/sucess_page.dart';
 import 'package:valgrow_ui/services/database/database_provider.dart';
 
 class PaidTransaction extends StatefulWidget {
@@ -60,11 +62,11 @@ class _PaidTransactionState extends State<PaidTransaction> {
                   onChanged: (value) => _calculateChange(value, totalAmount),
                 ),
 
-                if (!_isAmountValid)
+                if (!_isAmountValid || _receivingAmountController.text.isEmpty)
                   const Padding(
                     padding: EdgeInsets.only(top: 5),
                     child: Text(
-                      "⚠ Amount must be at least the total",
+                      "⚠ Please enter a valid amount",
                       style: TextStyle(color: Colors.red, fontSize: 14),
                     ),
                   ),
@@ -93,17 +95,19 @@ class _PaidTransactionState extends State<PaidTransaction> {
                   height: 55,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          _isAmountValid ? const Color(0xFF14AE5C) : Colors.grey,
+                      backgroundColor: _isAmountValid
+                          ? const Color(0xFF14AE5C)
+                          : Colors.grey,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(100),
                       ),
                     ),
-                    onPressed: _isAmountValid
+                    onPressed: _isAmountValid &&
+                            _receivingAmountController.text.isNotEmpty
                         ? () {
                             _confirmPayment(totalAmount);
                           }
-                        : null, // Disable button if amount is invalid
+                        : null, // Disable button if amount is empty or invalid
                     child: const Text(
                       "Confirm Payment",
                       style: TextStyle(
@@ -238,9 +242,14 @@ class _PaidTransactionState extends State<PaidTransaction> {
     double receivedAmount = _parseCurrency(value);
 
     setState(() {
+      if (value.isEmpty) {
+        _isAmountValid = false; // Show error only for empty input
+      } else {
+        _isAmountValid = receivedAmount >= totalAmount; // Validate amount
+      }
+
       _receivedAmount = receivedAmount;
       _change = receivedAmount - totalAmount;
-      _isAmountValid = receivedAmount >= totalAmount;
     });
   }
 
@@ -249,35 +258,102 @@ class _PaidTransactionState extends State<PaidTransaction> {
     return double.tryParse(value.replaceAll(RegExp(r'[^0-9.]'), '')) ?? 0.0;
   }
 
-  // ✅ Function to confirm payment and call `processPOS()`
+  // ✅ Function to confirm payment before processing
   void _confirmPayment(double totalAmount) {
-    final databaseProvider =
-        Provider.of<DatabaseProvider>(context, listen: false);
-
     double receivedAmount = _parseCurrency(_receivingAmountController.text);
-    bool isDebt = receivedAmount < totalAmount; // ✅ If received amount < total, it's a debt
+    bool isDebt = receivedAmount < totalAmount;
 
-    print("✅ Processing Payment...");
-    databaseProvider.processPOS(
-      totalAmount: totalAmount,
-      amountPaid: receivedAmount,
-      paymentMethod: _selectedPaymentMethod.toLowerCase(),
-      customerId: null, 
-      isDebt: isDebt,
+    // ✅ Show Confirmation Dialog
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15), // ✅ Rounded corners
+          ),
+          title: const Text(
+            "Confirm Payment",
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          content: Text(
+            "Are you sure you want to proceed with this transaction?\n\n"
+            "Total Amount: ₱${totalAmount.toStringAsFixed(2)}\n"
+            "Received Amount: ₱${receivedAmount.toStringAsFixed(2)}\n"
+            "Change: ₱${(receivedAmount - totalAmount).clamp(0, double.infinity).toStringAsFixed(2)}\n"
+            "${isDebt ? "This will be recorded as debt." : "Transaction will be marked as paid."}",
+            style: const TextStyle(fontSize: 16),
+          ),
+          actions: [
+            // ❌ Cancel Button
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Close dialog without saving
+              },
+              child: const Text(
+                "Cancel",
+                style: TextStyle(color: Colors.red, fontSize: 16),
+              ),
+            ),
+
+            // ✅ Confirm Button
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context); // ✅ Close modal
+                _processPayment(
+                    totalAmount, receivedAmount, isDebt); // ✅ Process payment
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              ),
+              child: const Text(
+                "Confirm",
+                style: TextStyle(fontSize: 16, color: Colors.white),
+              ),
+            ),
+          ],
+        );
+      },
     );
+  }
 
-    // ✅ Reset UI
-    setState(() {
-      _receivingAmountController.clear();
-      _change = 0.00;
-      _selectedPaymentMethod = "Cash";
-    });
+// ✅ Function to process the payment after confirmation
+  void _processPayment(double totalAmount, double receivedAmount, bool isDebt) {
+    try {
+      final databaseProvider =
+          Provider.of<DatabaseProvider>(context, listen: false);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text("Payment ${isDebt ? 'on Debt' : 'Completed'} Successfully!"),
-        backgroundColor: Colors.green,
-      ),
-    );
+      print("✅ Processing Payment...");
+      databaseProvider.processPOS(
+        totalAmount: totalAmount,
+        amountPaid: receivedAmount,
+        paymentMethod: _selectedPaymentMethod.toLowerCase(),
+        customerId: null,
+        isDebt: isDebt,
+      );
+
+      // ✅ Reset UI
+      setState(() {
+        _receivingAmountController.clear();
+        _change = 0.00;
+        _selectedPaymentMethod = "Cash";
+      });
+
+      // ✅ Show Success Toast
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const SuccessPage()),
+      );
+    } catch (e) {
+      Fluttertoast.showToast(
+        msg: "Something went wrong.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.TOP,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+    }
   }
 }

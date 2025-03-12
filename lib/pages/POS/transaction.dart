@@ -110,7 +110,7 @@ class _TransactionPageState extends State<TransactionPage> {
           // Transaction Page Display
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+              padding: const EdgeInsets.only(left: 20, right: 20,),
               child: _isPaidTransaction
                   ? const PaidTransaction()
                   : const UnpaidTransaction(),

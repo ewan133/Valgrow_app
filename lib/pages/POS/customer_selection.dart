@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
@@ -7,6 +8,7 @@ import 'package:valgrow_ui/components/general_components/searchbar.dart';
 import 'package:valgrow_ui/models/customer_model.dart';
 import 'package:valgrow_ui/services/database/database_provider.dart';
 import 'package:valgrow_ui/services/storage/storage_service.dart';
+import 'package:collection/collection.dart';
 
 class CustomerSelectionModal extends StatefulWidget {
   final CustomerDetails? selectedCustomer;
@@ -28,7 +30,7 @@ class _CustomerSelectionModalState extends State<CustomerSelectionModal> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _searchController = TextEditingController();
-
+  String? _phoneError;
   List<CustomerDetails> _filteredCustomers = [];
   bool _isUploading = false; // ✅ Track upload status
 
@@ -169,16 +171,23 @@ class _CustomerSelectionModalState extends State<CustomerSelectionModal> {
                   const SizedBox(height: 10),
 
                   /// ✅ Phone Input Field
+                  /// ✅ Phone Input Field with Validation
                   TextField(
                     controller: _phoneController,
                     keyboardType: TextInputType.phone,
+                    maxLength: 11, // ✅ Limit input length to 11
                     decoration: InputDecoration(
                       labelText: "Phone Number",
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
+                      errorText: _phoneError, // ✅ Display validation error
                     ),
+                    onChanged: (value) {
+                      _validatePhoneNumber(value);
+                    },
                   ),
+
                   const SizedBox(height: 15),
 
                   /// ✅ Actions (Cancel & Save Buttons)
@@ -191,10 +200,24 @@ class _CustomerSelectionModalState extends State<CustomerSelectionModal> {
                       ),
                       ElevatedButton(
                         onPressed: _handleAddCustomer, // ✅ Calls add customer
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green, // ✅ Green Background
+                          foregroundColor: Colors.white, // ✅ White Text Color
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 12), // ✅ Better padding
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                                10), // ✅ Slightly rounded corners
+                          ),
+                        ),
                         child: _isUploading
                             ? const CircularProgressIndicator(
-                                color: Colors.white)
-                            : const Text("Save"),
+                                color: Colors.white) // ✅ White Spinner
+                            : const Text(
+                                "Save",
+                                style: TextStyle(
+                                    fontSize: 16, fontWeight: FontWeight.w600),
+                              ),
                       ),
                     ],
                   ),
@@ -206,59 +229,103 @@ class _CustomerSelectionModalState extends State<CustomerSelectionModal> {
       },
     );
   }
-
+/// ✅ Function to Validate Phone Number
+bool _validatePhoneNumber(String phone) {
+  setState(() {
+    if (phone.isEmpty) {
+      _phoneError = "Phone number is required";
+    } else if (!RegExp(r'^09\d{9}$').hasMatch(phone)) {
+      _phoneError = "Phone number must be 11 digits and start with 09";
+    } else {
+      _phoneError = null; // ✅ No errors
+    }
+  });
+  return _phoneError == null;
+}
   /// ✅ Handles adding a new customer with image upload
-  void _handleAddCustomer() async {
-    String name = _nameController.text.trim();
-    String phone = _phoneController.text.trim();
+void _handleAddCustomer() async {
+  String name = _nameController.text.trim();
+  String phone = _phoneController.text.trim();
 
-    if (name.isEmpty || phone.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please fill in all required fields")),
+  if (name.isEmpty || phone.isEmpty) {
+    Fluttertoast.showToast(
+      msg: "Please fill in all required fields.",
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      backgroundColor: Colors.red,
+      textColor: Colors.white,
+      fontSize: 16.0,
+    );
+    return;
+  }
+
+  if (!_validatePhoneNumber(phone)) return; // ✅ Stop if phone is invalid
+
+  setState(() => _isUploading = true);
+
+  // Default Image URL
+  String imageUrl =
+      "https://firebasestorage.googleapis.com/v0/b/valgrow-new.firebasestorage.app/o/uploaded_images%2Fdefault.jpg?alt=media";
+
+  try {
+    if (_selectedImage != null) {
+      String imageName = "customer-${DateTime.now().millisecondsSinceEpoch}";
+      String? uploadedUrl = await Provider.of<StorageService>(context, listen: false)
+          .uploadImage(_selectedImage!, imageName, context);
+      imageUrl = uploadedUrl ?? imageUrl;
+    }
+
+    bool success = await Provider.of<DatabaseProvider>(context, listen: false)
+        .addNewCustomer(name: name, phone: phone, imageUrl: imageUrl);
+
+    if (!success) {
+      Fluttertoast.showToast(
+        msg: "Customer already exists.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.orange,
+        textColor: Colors.white,
+        fontSize: 16.0,
       );
       return;
     }
 
-    setState(() => _isUploading = true);
+    _fetchCustomers();
+    final newCustomer = Provider.of<DatabaseProvider>(context, listen: false)
+        .customers
+        .firstWhereOrNull((c) => c.name == name);
 
-    // Default Image URL
-    String imageUrl =
-        "https://firebasestorage.googleapis.com/v0/b/valgrow-new.firebasestorage.app/o/uploaded_images%2Fdefault.jpg?alt=media";
+    if (newCustomer != null) {
+      widget.onItemSelected(newCustomer);
+    }
 
-    try {
-      // ✅ Upload image if selected
-      if (_selectedImage != null) {
-        String imageName = "customer-${DateTime.now().millisecondsSinceEpoch}";
-        String? uploadedUrl =
-            await Provider.of<StorageService>(context, listen: false)
-                .uploadImage(_selectedImage!, imageName, context);
-        imageUrl = uploadedUrl ?? imageUrl;
-      }
+    Fluttertoast.showToast(
+      msg: "Customer successfully added.",
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.TOP,
+      backgroundColor: Colors.green,
+      textColor: Colors.white,
+      fontSize: 16.0,
+    );
 
-      bool success = await Provider.of<DatabaseProvider>(context, listen: false)
-          .addNewCustomer(name: name, phone: phone, imageUrl: imageUrl);
-
-      if (success) {
-        print("🎉 Customer added successfully!");
-        _fetchCustomers(); // ✅ Refresh customer list
-
-        /// ✅ Automatically select the new customer
-        final newCustomer =
-            Provider.of<DatabaseProvider>(context, listen: false)
-                .customers
-                .firstWhere((c) => c.name == name);
-
-        widget.onItemSelected(newCustomer);
-        Navigator.pop(context); // ✅ Close the modal
-      } else {
-        print("⚠️ Customer already exists.");
-      }
-    } catch (e) {
-      print("❌ Error adding customer: $e");
-    } finally {
+    if (mounted) {
+      Navigator.pop(context);
+    }
+  } catch (e) {
+    Fluttertoast.showToast(
+      msg: "Error adding customer. Try again.",
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.TOP,
+      backgroundColor: Colors.red,
+      textColor: Colors.white,
+      fontSize: 16.0,
+    );
+  } finally {
+    if (mounted) {
       setState(() => _isUploading = false);
     }
   }
+}
 
   @override
   Widget build(BuildContext context) {
@@ -282,14 +349,16 @@ class _CustomerSelectionModalState extends State<CustomerSelectionModal> {
               ),
             ],
           ),
-          const SizedBox(height: 15),
+          const SizedBox(height: 5),
 
           /// ✅ Search Bar
           MySearchbar(
             controller: _searchController,
             onChanged: _filterCustomers, // ✅ Calls filtering function
           ),
-          const SizedBox(height: 10),
+          const SizedBox(
+            height: 10,
+          ),
 
           /// ✅ Customer List (Filtered with Consumer)
           Expanded(
@@ -311,35 +380,105 @@ class _CustomerSelectionModalState extends State<CustomerSelectionModal> {
                         itemBuilder: (context, index) {
                           final customer = filteredCustomers[index];
 
-                          return ListTile(
-                            title: Text(customer.name),
-                            subtitle: Text(customer.phone),
-                            trailing: customer == widget.selectedCustomer
-                                ? const Icon(Icons.check, color: Colors.green)
-                                : null,
-                            onTap: () {
-                              widget.onItemSelected(customer);
-                              Navigator.pop(context);
-                            },
+                          return Card(
+                            margin: const EdgeInsets.symmetric(
+                                vertical: 6, horizontal: 10),
+                            elevation: 3, // ✅ Adds subtle shadow effect
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(
+                                  12), // ✅ Soft rounded corners
+                            ),
+                            child: ListTile(
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 10),
+
+                              // ✅ Profile Picture with Border & Placeholder
+                              leading: Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                      color: Colors.black,
+                                      width: 2), // ✅ Border
+                                ),
+                                child: CircleAvatar(
+                                  radius: 26,
+                                  backgroundColor: Colors
+                                      .grey.shade300, // Default background
+                                  backgroundImage: customer.imageUrl.isNotEmpty
+                                      ? NetworkImage(
+                                          customer.imageUrl) // ✅ Load image
+                                      : null,
+                                  child: customer.imageUrl.isEmpty
+                                      ? const Icon(Icons.person,
+                                          color: Colors.white,
+                                          size: 30) // ✅ Placeholder icon
+                                      : null,
+                                ),
+                              ),
+
+                              // ✅ Name & Phone Number (Stylized)
+                              title: Text(
+                                customer.name,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                              subtitle: Text(
+                                customer.phone,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey,
+                                ),
+                              ),
+
+                              // ✅ Selection Indicator
+                              trailing: customer == widget.selectedCustomer
+                                  ? const Icon(Icons.check_circle,
+                                      color: Colors.green, size: 24)
+                                  : const Icon(Icons.chevron_right,
+                                      color: Colors.grey, size: 24),
+
+                              // ✅ Select Customer
+                              onTap: () {
+                                widget.onItemSelected(customer);
+                                Navigator.pop(context);
+                              },
+                            ),
                           );
                         },
                       )
                     : const Center(
-                        child: Text("No customers found."),
-                      ); // ✅ Empty state
+                        child: Text(
+                          "No customers found.",
+                          style: TextStyle(fontSize: 16, color: Colors.grey),
+                        ),
+                      );
+                // ✅ Empty state
               },
             ),
           ),
 
           /// ✅ Button to open the alert dialog
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () => _showCustomerDetailsDialog(context),
-              child: const Text("Add Customer Details"),
+          Padding(
+            padding: const EdgeInsets.only(right: 20, left: 20, top: 15),
+            child: SizedBox(
+              width: double.infinity,
+              height: 55,
+              child: ElevatedButton(
+                onPressed: () => _showCustomerDetailsDialog(context),
+                style: ElevatedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  backgroundColor: Colors.blue, // Set the button color to blue
+                ),
+                child: const Text(
+                  "Add Customer Details",
+                  style: TextStyle(fontSize: 16), // Set text size to 16
+                ),
+              ),
             ),
           ),
-          const SizedBox(height: 15),
         ],
       ),
     );
