@@ -18,25 +18,47 @@ class DebtsPersonalList extends StatefulWidget {
 }
 
 class _DebtsPersonalListState extends State<DebtsPersonalList> {
+  late CustomerDetails _customerDetails; // ✅ Mutable variable for updates
+
   @override
   void initState() {
     super.initState();
+    _customerDetails = widget.customerDetails;
 
-    // ✅ Fetch debts for this customer when the page loads
+    // ✅ Save selected customer in provider
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<DatabaseProvider>(context, listen: false)
-          .fetchDebtsForCustomer(widget.customerDetails.customerId);
+      final provider = Provider.of<DatabaseProvider>(context, listen: false);
+      provider.updateSelectedCustomer(_customerDetails);
+      provider.fetchDebtsForCustomer(_customerDetails.customerId);
     });
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final provider = Provider.of<DatabaseProvider>(context);
+    if (provider.selectedCustomer != null) {
+      _customerDetails = provider.selectedCustomer!;
+    }
+  }
+
   // ✅ Show Debt Payment Dialog with Specific Debt Details
-  void showDebtPaymentDialog(BuildContext context, DebtDetails debt) {
-    Navigator.push(
+  void showDebtPaymentDialog(BuildContext context, DebtDetails debt) async {
+    final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => DebtPaymentPage(debtDetails: debt, customerDetails: widget.customerDetails,),
+        builder: (context) => DebtPaymentPage(
+          debtDetails: debt,
+          customerDetails: _customerDetails,
+        ),
       ),
     );
+
+    // ✅ If a payment was successful, update debts & UI
+    if (result == true) {
+      final provider = Provider.of<DatabaseProvider>(context, listen: false);
+      provider.fetchDebtsForCustomer(_customerDetails.customerId);
+    }
   }
 
   @override
@@ -51,7 +73,7 @@ class _DebtsPersonalListState extends State<DebtsPersonalList> {
         padding: const EdgeInsets.only(top: 15.0, left: 15.0, right: 15.0),
         child: Column(
           children: [
-            // Customer Info Section
+            // ✅ Updated customer info section (listens for changes)
             Container(
               padding: const EdgeInsets.only(bottom: 15),
               width: double.infinity,
@@ -66,15 +88,15 @@ class _DebtsPersonalListState extends State<DebtsPersonalList> {
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.black),
                       image: DecorationImage(
-                        image: widget.customerDetails.imageUrl.isNotEmpty
-                            ? NetworkImage(widget.customerDetails.imageUrl)
+                        image: _customerDetails.imageUrl.isNotEmpty
+                            ? NetworkImage(_customerDetails.imageUrl)
                             : const AssetImage("assets/images/sample.jpg")
                                 as ImageProvider,
                         fit: BoxFit.cover,
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12), // Space between image and text
+                  const SizedBox(width: 12),
 
                   // Customer Name & Balance
                   Expanded(
@@ -83,7 +105,7 @@ class _DebtsPersonalListState extends State<DebtsPersonalList> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          widget.customerDetails.name,
+                          _customerDetails.name,
                           style: const TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.w600,
@@ -91,7 +113,7 @@ class _DebtsPersonalListState extends State<DebtsPersonalList> {
                           ),
                         ),
                         Text(
-                          widget.customerDetails.phone,
+                          _customerDetails.phone,
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w400,
@@ -112,7 +134,7 @@ class _DebtsPersonalListState extends State<DebtsPersonalList> {
                               ),
                             ),
                             Text(
-                              "₱${widget.customerDetails.totalDebt.toStringAsFixed(2)}",
+                              "₱${_customerDetails.totalDebt.toStringAsFixed(2)}",
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
@@ -137,13 +159,27 @@ class _DebtsPersonalListState extends State<DebtsPersonalList> {
                       : ListView.builder(
                           itemCount: customerDebts.length,
                           itemBuilder: (context, index) {
-                            final debt = customerDebts[index];
+                            // ✅ Sort debts: unpaid → partial → paid
+                            final sortedDebts =
+                                List<DebtDetails>.from(customerDebts)
+                                  ..sort((a, b) {
+                                    const order = {
+                                      "unpaid": 0,
+                                      "partial": 1,
+                                      "paid": 2
+                                    };
+                                    return order[a.status]
+                                            ?.compareTo(order[b.status] ?? 2) ??
+                                        0;
+                                  });
+
+                            final debt = sortedDebts[index];
 
                             return Padding(
-                              padding: const EdgeInsets.only(bottom: 13.0),
+                              padding: const EdgeInsets.only(bottom: 10.0, top:3),
                               child: GestureDetector(
-                                onTap: () => showDebtPaymentDialog(
-                                    context, debt), // ✅ Pass specific debt
+                                onTap: () =>
+                                    showDebtPaymentDialog(context, debt),
                                 child: MyPersonalDebtsCard(debtDetails: debt),
                               ),
                             );

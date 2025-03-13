@@ -28,22 +28,26 @@ class MyPersonalDebtsCard extends StatelessWidget {
         statusColor = Colors.red;
     }
 
+    bool isPaid = debtDetails.status == "paid";
+
     return Center(
       child: Container(
         width: double.infinity,
         height: 110,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: isPaid ? Colors.grey[300] : Colors.white, // ✅ Grey out when paid
           borderRadius: BorderRadius.circular(15),
-          border: Border.all(color: Colors.black),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.25),
-              offset: const Offset(0, 4),
-              blurRadius: 4,
-            ),
-          ],
+          border: Border.all(color: isPaid ? Colors.grey[500]! : Colors.black), // ✅ Softer border when paid
+          boxShadow: isPaid
+              ? [] // ✅ No shadow for "done" debts
+              : [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.25),
+                    offset: const Offset(0, 4),
+                    blurRadius: 4,
+                  ),
+                ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -55,10 +59,10 @@ class MyPersonalDebtsCard extends StatelessWidget {
               children: [
                 Text(
                   formattedDate, // ✅ Use actual created date
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black,
+                    color: isPaid ? Colors.grey[700] : Colors.black, // ✅ Grey out text
                   ),
                 ),
                 Text(
@@ -66,7 +70,7 @@ class MyPersonalDebtsCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: statusColor, // ✅ Color-coded status
+                    color: isPaid ? Colors.grey[600] : statusColor, // ✅ Grey when paid
                   ),
                 ),
               ],
@@ -83,21 +87,21 @@ class MyPersonalDebtsCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         "Due Date:",
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
-                          color: Color.fromRGBO(0, 0, 0, 0.6),
+                          color: isPaid ? Colors.grey[600] : Colors.black87, // ✅ Softer text
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         dueDate, // ✅ Use actual due date
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w400,
-                          color: Colors.black,
+                          color: isPaid ? Colors.grey[700] : Colors.black,
                         ),
                       ),
                     ],
@@ -110,21 +114,21 @@ class MyPersonalDebtsCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         "Balance:",
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
-                          color: Color.fromRGBO(0, 0, 0, 0.6),
+                          color: isPaid ? Colors.grey[600] : Colors.black87, // ✅ Grey out label
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         amount, // ✅ Use actual balance amount
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
-                          color: Colors.black,
+                          color: isPaid ? Colors.grey[700] : Colors.black, // ✅ Softer color for paid
                         ),
                       ),
                     ],

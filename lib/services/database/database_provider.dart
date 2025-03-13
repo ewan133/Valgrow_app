@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:valgrow_ui/models/batch_details.dart';
 import 'package:valgrow_ui/models/customer_model.dart';
 import 'package:valgrow_ui/models/debts_model.dart';
@@ -52,6 +53,15 @@ class DatabaseProvider extends ChangeNotifier {
   // List of debts for a specific customer
   List<DebtDetails> _customerDebts = [];
   List<DebtDetails> get customerDebts => _customerDebts;
+
+  CustomerDetails? _selectedCustomer;
+  List<DebtDetails> _selectedCustomerDebts = [];
+
+  CustomerDetails? get selectedCustomer => _selectedCustomer;
+  List<DebtDetails> get selectedCustomerDebts => _selectedCustomerDebts;
+
+  bool _isLoadingDebts = false;
+  bool get isLoadingDebts => _isLoadingDebts;
 
   Future<void> fetchUserProfile(String uid) async {
     try {
@@ -485,5 +495,73 @@ class DatabaseProvider extends ChangeNotifier {
       _isLoadingTransactionItems = false;
       notifyListeners();
     }
+  }
+
+  Future<bool> processDebtPayment({
+    required String debtId,
+    required double amountPaid,
+    required String paymentMethod,
+    required String storeId,
+    required String customerId,
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      bool success = await _debtsDatabase.processDebtPayment(
+        debtId: debtId,
+        amountPaid: amountPaid,
+        paymentMethod: paymentMethod,
+        storeId: storeId,
+        customerId: customerId,
+      );
+
+      if (success) {
+        // ✅ Refresh customer's debts & store details
+        await fetchDebtsForCustomer(customerId);
+        await fetchStoreProfile(storeId);
+      }
+
+      return success;
+    } catch (e) {
+      print("❌ Error processing debt payment: $e");
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // ✅ Public Method to Manually Set Customer
+  void updateSelectedCustomer(CustomerDetails customer) {
+    _selectedCustomer = customer;
+    notifyListeners();
+  }
+
+  /// ✅ Update Selected Customer After Payment
+  Future<void> updateSelectedCustomerAfterPayment(String customerId) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      // ✅ Fetch updated customer details
+      CustomerDetails? updatedCustomer =
+          await _debtsDatabase.fetchCustomerById(customerId);
+
+      if (updatedCustomer != null) {
+        _selectedCustomer = updatedCustomer;
+        notifyListeners();
+      }
+    } catch (e) {
+      print("❌ Error updating selected customer: $e");
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  void clearSelectedCustomer() {
+    _selectedCustomer = null;
+    _selectedCustomerDebts = [];
   }
 }

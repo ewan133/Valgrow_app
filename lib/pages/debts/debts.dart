@@ -74,13 +74,29 @@ class _DebtsPageState extends State<DebtsPage> {
                             padding: const EdgeInsets.only(
                                 bottom: 10.0, left: 10, right: 10),
                             child: GestureDetector(
-                              onTap: () {
-                                Navigator.push(
+                              onTap: () async {
+                                final provider = Provider.of<DatabaseProvider>(
+                                    context,
+                                    listen: false);
+                                provider.updateSelectedCustomer(customer!);
+                                final result = await Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                      builder: (context) =>
-                                          DebtsPersonalList(customerDetails: customer!,)),
+                                    builder: (context) => DebtsPersonalList(
+                                        customerDetails: customer!),
+                                  ),
                                 );
+
+                                // ✅ Only update debts if payment was made
+                                if (result == true && mounted) {
+                                  Future.delayed(Duration.zero, () {
+                                    if (mounted) {
+                                      Provider.of<DatabaseProvider>(context,
+                                              listen: false)
+                                          .fetchDebtsWithCustomerInfo();
+                                    }
+                                  });
+                                }
                               },
                               child: MyDebtsCard(
                                 customerDetails:

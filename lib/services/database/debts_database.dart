@@ -179,41 +179,153 @@ class DebtsDatabase {
     }
   }
 
-  Future<List<Map<String, dynamic>>> fetchTransactionItems(String transactionId) async {
-  try {
-    // ✅ Fetch all items for the given transaction
-    QuerySnapshot transactionItemsSnapshot = await _db
-        .collection('transaction_items')
-        .where('transaction_id', isEqualTo: transactionId)
-        .get();
+  Future<List<Map<String, dynamic>>> fetchTransactionItems(
+      String transactionId) async {
+    try {
+      // ✅ Fetch all items for the given transaction
+      QuerySnapshot transactionItemsSnapshot = await _db
+          .collection('transaction_items')
+          .where('transaction_id', isEqualTo: transactionId)
+          .get();
 
-    if (transactionItemsSnapshot.docs.isEmpty) {
-      print("⚠️ No items found for transaction ID: $transactionId");
+      if (transactionItemsSnapshot.docs.isEmpty) {
+        print("⚠️ No items found for transaction ID: $transactionId");
+        return [];
+      }
+
+      List<Map<String, dynamic>> transactionItems = [];
+
+      for (var doc in transactionItemsSnapshot.docs) {
+        Map<String, dynamic> transactionItemData =
+            doc.data() as Map<String, dynamic>;
+
+        // ✅ Fetch item details from the "items" collection
+        DocumentSnapshot itemDoc = await _db
+            .collection('items')
+            .doc(transactionItemData['item_id'])
+            .get();
+        Map<String, dynamic>? itemDetails =
+            itemDoc.exists ? itemDoc.data() as Map<String, dynamic> : null;
+
+        transactionItems.add({
+          "transactionItem": transactionItemData,
+          "itemDetails": itemDetails,
+        });
+      }
+
+      print(
+          "✅ Fetched ${transactionItems.length} items for transaction ID: $transactionId");
+
+      return transactionItems;
+    } catch (e) {
+      print("❌ Error retrieving items for transaction ID $transactionId: $e");
       return [];
     }
-
-    List<Map<String, dynamic>> transactionItems = [];
-
-    for (var doc in transactionItemsSnapshot.docs) {
-      Map<String, dynamic> transactionItemData = doc.data() as Map<String, dynamic>;
-
-      // ✅ Fetch item details from the "items" collection
-      DocumentSnapshot itemDoc = await _db.collection('items').doc(transactionItemData['item_id']).get();
-      Map<String, dynamic>? itemDetails = itemDoc.exists ? itemDoc.data() as Map<String, dynamic> : null;
-
-      transactionItems.add({
-        "transactionItem": transactionItemData,
-        "itemDetails": itemDetails,
-      });
-    }
-
-    print("✅ Fetched ${transactionItems.length} items for transaction ID: $transactionId");
-
-    return transactionItems;
-  } catch (e) {
-    print("❌ Error retrieving items for transaction ID $transactionId: $e");
-    return [];
   }
-}
 
+  Future<bool> processDebtPayment({
+    required String debtId,
+    required double amountPaid,
+    required String paymentMethod,
+    required String storeId,
+    required String customerId,
+  }) async {
+    final FirebaseFirestore _db = FirebaseFirestore.instance;
+    final WriteBatch batch = _db.batch();
+
+    try {
+      // ✅ Fetch the debt document
+      DocumentReference debtRef = _db.collection('debts').doc(debtId);
+      DocumentSnapshot debtSnapshot = await debtRef.get();
+
+      if (!debtSnapshot.exists) {
+        print("❌ Error: Debt record not found.");
+        return false;
+      }
+
+      Map<String, dynamic> debtData =
+          debtSnapshot.data() as Map<String, dynamic>;
+
+      double currentBalance = (debtData['balance'] ?? 0).toDouble();
+      double totalAmount = (debtData['total_amount'] ?? 0).toDouble();
+      double alreadyPaid = (debtData['amount_paid'] ?? 0).toDouble();
+      String transactionId = debtData['transactionId'] ?? "";
+
+      // ✅ Ensure the amountPaid is not greater than the balance
+      if (amountPaid > currentBalance) {
+        print("⚠️ Payment amount cannot exceed the remaining balance.");
+        return false;
+      }
+
+      // ✅ Calculate new values
+      double newBalance = currentBalance - amountPaid;
+      double newTotalPaid = alreadyPaid + amountPaid;
+      String newStatus = newBalance == 0 ? "paid" : "partial";
+
+      // ✅ Create a new debt payment entry
+      DocumentReference paymentRef = _db.collection('debt_payments').doc();
+      batch.set(paymentRef, {
+        'debt_id': debtId,
+        'amount_paid': amountPaid,
+        'payment_date': FieldValue.serverTimestamp(),
+        'payment_method': paymentMethod,
+        'storeId': storeId,
+        'transactionId': transactionId.isNotEmpty ? transactionId : null,
+      });
+
+      // ✅ Update the debt document
+      batch.update(debtRef, {
+        'amount_paid': newTotalPaid,
+        'balance': newBalance,
+        'status': newStatus,
+        'updated_at': FieldValue.serverTimestamp(),
+        'last_payment_date': FieldValue.serverTimestamp(),
+      });
+
+      // ✅ Update customer's total debt
+      DocumentReference customerRef =
+          _db.collection('customers').doc(customerId);
+      batch.update(customerRef, {
+        'total_debt': FieldValue.increment(-amountPaid), // Reduce total debt
+      });
+
+      // ✅ (Optional) Update transaction status if needed
+      if (newBalance == 0 && transactionId.isNotEmpty) {
+        DocumentReference transactionRef =
+            _db.collection('transactions').doc(transactionId);
+        batch.update(transactionRef, {
+          'status': 'paid',
+          'updated_at': FieldValue.serverTimestamp(),
+        });
+      }
+
+      // ✅ Commit all updates
+      await batch.commit();
+      print("✅ Debt payment processed successfully.");
+      return true;
+    } catch (e) {
+      print("❌ Error processing debt payment: $e");
+      return false;
+    }
+  }
+
+  // ✅ Fetch a single customer by ID (for updating after payment)
+  Future<CustomerDetails?> fetchCustomerById(String customerId) async {
+    try {
+      DocumentSnapshot doc =
+          await _db.collection('customers').doc(customerId).get();
+
+      if (!doc.exists) {
+        print("⚠️ Customer not found (ID: $customerId)");
+        return null;
+      }
+
+      return CustomerDetails.fromDocument(doc);
+    } catch (e) {
+      print("❌ Error fetching customer details: $e");
+      return null;
+    }
+  }
+
+  
 }
