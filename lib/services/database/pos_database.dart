@@ -120,6 +120,7 @@ class POSDatabase {
           ? "paid"
           : (amountPaid > 0.0 ? "partial" : "unpaid");
 
+      // ✅ Create the debt entry
       await debtRef.set({
         "storeId": storeId,
         "customerId": customerId,
@@ -135,8 +136,36 @@ class POSDatabase {
       });
 
       print("✅ Debt recorded for customer: $customerId | Balance: $balance");
+
+      // ✅ Update the customer's total_debt field
+      await _updateCustomerTotalDebt(customerId, balance);
     } catch (e) {
       print("❌ Error creating debt entry: $e");
+      throw e;
+    }
+  }
+
+  Future<void> _updateCustomerTotalDebt(
+      String customerId, double newDebt) async {
+    try {
+      final customerRef = _db.collection('customers').doc(customerId);
+      DocumentSnapshot customerDoc = await customerRef.get();
+
+      if (customerDoc.exists) {
+        double currentDebt = (customerDoc['total_debt'] ?? 0.0).toDouble();
+        double updatedDebt = currentDebt + newDebt;
+
+        await customerRef.update({
+          "total_debt": updatedDebt,
+        });
+
+        print(
+            "✅ Customer's total debt updated: $customerId | New Total Debt: $updatedDebt");
+      } else {
+        print("⚠️ Customer not found: $customerId");
+      }
+    } catch (e) {
+      print("❌ Error updating customer's total debt: $e");
       throw e;
     }
   }

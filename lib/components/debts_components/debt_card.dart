@@ -1,7 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:valgrow_ui/models/customer_model.dart';
 
 class MyDebtsCard extends StatelessWidget {
-  const MyDebtsCard({super.key});
+  final CustomerDetails? customerDetails;
+  final double totalBalance;
+  final DateTime? nearestDueDate;
+
+  const MyDebtsCard({
+    Key? key,
+    required this.customerDetails,
+    required this.totalBalance,
+    required this.nearestDueDate,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -26,15 +37,17 @@ class MyDebtsCard extends StatelessWidget {
           // Row Layout for Image and Text
           Row(
             children: [
-              // Profile Image
+              // Profile Image (Use customer image if available)
               Container(
                 width: 100,
                 height: 100,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   image: DecorationImage(
-                    image: AssetImage(
-                        "assets/images/sample.jpg"), // Change to actual image
+                    image: customerDetails?.imageUrl != null
+                        ? NetworkImage(customerDetails!.imageUrl)
+                        : const AssetImage("assets/images/sample.jpg")
+                            as ImageProvider,
                     fit: BoxFit.cover,
                   ),
                 ),
@@ -49,10 +62,10 @@ class MyDebtsCard extends StatelessWidget {
                   children: [
                     const SizedBox(height: 5), // Add space from top
 
-                    // Product Name
-                    const Text(
-                      "Sinandomeng Rice",
-                      style: TextStyle(
+                    // Customer Name
+                    Text(
+                      customerDetails?.name ?? "Unknown",
+                      style: const TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
@@ -61,9 +74,9 @@ class MyDebtsCard extends StatelessWidget {
                     ),
 
                     // Phone Number
-                    const Text(
-                      "+63 9264 234 4562",
-                      style: TextStyle(
+                    Text(
+                      customerDetails?.phone ?? "No Phone",
+                      style: const TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 12,
                         fontWeight: FontWeight.w400,
@@ -73,16 +86,15 @@ class MyDebtsCard extends StatelessWidget {
 
                     const SizedBox(height: 8), // Spacing
 
-                    // Price & Balance Row
+                    // Balance & Due Date
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: const [
+                      children: [
                         Column(
-                          crossAxisAlignment: CrossAxisAlignment
-                              .start, // Align text to the left
-                          children: const [
-                            Text(
-                              "Balance:",
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "Total Balance:",
                               style: TextStyle(
                                 fontFamily: 'Inter',
                                 fontSize: 14,
@@ -90,10 +102,10 @@ class MyDebtsCard extends StatelessWidget {
                                 color: Colors.black,
                               ),
                             ),
-                            SizedBox(height: 2), // Add spacing between texts
+                            const SizedBox(height: 2),
                             Text(
-                              "₱ 234.00",
-                              style: TextStyle(
+                              "₱ ${totalBalance.toStringAsFixed(2)}",
+                              style: const TextStyle(
                                 fontFamily: 'Inter',
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
@@ -103,11 +115,10 @@ class MyDebtsCard extends StatelessWidget {
                           ],
                         ),
                         Column(
-                          crossAxisAlignment: CrossAxisAlignment
-                              .start, // Align text to the left
-                          children: const [
-                            Text(
-                              "Due Date:",
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "Next Due Date:",
                               style: TextStyle(
                                 fontFamily: 'Inter',
                                 fontSize: 14,
@@ -115,10 +126,12 @@ class MyDebtsCard extends StatelessWidget {
                                 color: Colors.black,
                               ),
                             ),
-                            SizedBox(height: 2), // Add spacing between texts
+                            const SizedBox(height: 2),
                             Text(
-                              "Feburary 01, 2025",
-                              style: TextStyle(
+                              nearestDueDate != null
+                                  ? DateFormat.yMMMd().format(nearestDueDate!)
+                                  : "No Debts",
+                              style: const TextStyle(
                                 fontFamily: 'Inter',
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
@@ -136,9 +149,9 @@ class MyDebtsCard extends StatelessWidget {
           ),
 
           // "View" Positioned at Top-Right
-          Positioned(
-            top: -5, // Adjust this value to move it higher
-            right: 0, // Adjust this value to move it more right
+          const Positioned(
+            top: -5,
+            right: 0,
             child: Text(
               "View",
               style: TextStyle(

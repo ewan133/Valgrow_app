@@ -21,17 +21,27 @@ class _InventoryPageState extends State<InventoryPage> {
   String _selectedCategory = "All"; // Default filter category
 
   @override
+  void initState() {
+    super.initState();
+    // ✅ Fetch inventory items when the page loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<DatabaseProvider>(context, listen: false)
+          .fetchItemsByStoreId();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: MyAppbar(
         title: "Inventory",
         actionWidget: Consumer<DatabaseProvider>(
           builder: (context, inventoryProvider, child) {
-            // Extract unique categories dynamically from the provider's item list
-            List<String> categories = ["All", ...inventoryProvider.items
-                .map((item) => item.category)
-                .toSet()
-                .toList()];
+            // ✅ Extract unique categories dynamically
+            List<String> categories = [
+              "All",
+              ...inventoryProvider.items.map((item) => item.category).toSet()
+            ];
 
             return PopupMenuButton<String>(
               onSelected: (value) {
@@ -62,69 +72,75 @@ class _InventoryPageState extends State<InventoryPage> {
         text: "Add Product",
         onPressed: () => Navigator.pushNamed(context, '/additem'),
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-            child: MySearchbar(
-              controller: _searchController,
-              onChanged: (value) {
-                setState(() {
-                  _searchQuery = value.toLowerCase();
-                });
-              },
-            ),
-          ),
-          Expanded(
-            child: Consumer<DatabaseProvider>(
-              builder: (context, inventoryProvider, child) {
-                final items = inventoryProvider.items;
-                final isLoading = inventoryProvider.isLoading;
+      body: Consumer<DatabaseProvider>(
+        builder: (context, inventoryProvider, child) {
+          final isLoading = inventoryProvider.isLoading;
+          final items = inventoryProvider.items;
 
-                // Apply search and category filters
-                final filteredItems = items.where((item) {
-                  final matchesSearch = _searchQuery.isEmpty ||
-                      item.item_name.toLowerCase().contains(_searchQuery);
-                  final matchesCategory = _selectedCategory == "All" ||
-                      item.category == _selectedCategory;
+          if (isLoading) {
+            return const Center(child: CircularProgressIndicator()); // ✅ Show loading
+          }
 
-                  return matchesSearch && matchesCategory;
-                }).toList();
+          // ✅ Apply search and category filters
+          final filteredItems = items.where((item) {
+            final matchesSearch = _searchQuery.isEmpty ||
+                item.item_name.toLowerCase().contains(_searchQuery);
+            final matchesCategory =
+                _selectedCategory == "All" || item.category == _selectedCategory;
 
-                return isLoading
-                    ? const Center(child: CircularProgressIndicator())
-                    : filteredItems.isEmpty
-                        ? const Center(
-                            child: MyText(
-                                text: "No items found",
-                                fontSize: 14,
-                                color: Colors.black,
-                                fontWeight: FontWeight.w400))
-                        : ListView.builder(
-                            itemCount: filteredItems.length,
-                            itemBuilder: (context, index) {
-                              final item = filteredItems[index];
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 4),
-                                child: GestureDetector(
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              ItemDetailsPage(item: item),
-                                        ),
-                                      );
-                                    },
-                                    child: MainInventoryCard(item: item)),
-                              );
-                            },
+            return matchesSearch && matchesCategory;
+          }).toList();
+
+          return Column(
+            children: [
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                child: MySearchbar(
+                  controller: _searchController,
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value.toLowerCase();
+                    });
+                  },
+                ),
+              ),
+              Expanded(
+                child: filteredItems.isEmpty
+                    ? const Center(
+                        child: MyText(
+                          text: "No items found",
+                          fontSize: 14,
+                          color: Colors.black,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: filteredItems.length,
+                        itemBuilder: (context, index) {
+                          final item = filteredItems[index];
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
+                            child: GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        ItemDetailsPage(item: item),
+                                  ),
+                                );
+                              },
+                              child: MainInventoryCard(item: item),
+                            ),
                           );
-              },
-            ),
-          ),
-        ],
+                        },
+                      ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

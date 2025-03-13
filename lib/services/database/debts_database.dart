@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:valgrow_ui/models/customer_model.dart';
+import 'package:valgrow_ui/models/debts_model.dart';
 
 class DebtsDatabase {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -78,4 +79,141 @@ class DebtsDatabase {
       throw e;
     }
   }
+
+  /// ✅ Fetch all customers and their nearest debt due date
+  Future<List<Map<String, dynamic>>> fetchDebtsGroupedByCustomer(
+      String storeId) async {
+    try {
+      // ✅ Fetch all debts for the store
+      QuerySnapshot debtSnapshot = await _db
+          .collection('debts')
+          .where('storeId', isEqualTo: storeId)
+          .get();
+
+      if (debtSnapshot.docs.isEmpty) {
+        print("⚠️ No debts found for storeId: $storeId");
+        return [];
+      }
+
+      // ✅ Group debts by customerId
+      Map<String, dynamic> customerDebtsMap = {};
+
+      for (var doc in debtSnapshot.docs) {
+        DebtDetails debt = DebtDetails.fromDocument(doc);
+
+        if (!customerDebtsMap.containsKey(debt.customerId)) {
+          customerDebtsMap[debt.customerId] = {
+            "totalBalance": 0.0,
+            "nearestDueDate": debt.dueDate,
+            "debts": [],
+          };
+        }
+
+        // ✅ Correctly sum the total balance per customer
+        customerDebtsMap[debt.customerId]["totalBalance"] += debt.balance;
+
+        if (debt.dueDate
+            .isBefore(customerDebtsMap[debt.customerId]["nearestDueDate"])) {
+          customerDebtsMap[debt.customerId]["nearestDueDate"] = debt.dueDate;
+        }
+
+        customerDebtsMap[debt.customerId]["debts"].add(debt);
+      }
+
+      // ✅ Fetch customer details for each grouped entry
+      List<Map<String, dynamic>> groupedDebts = [];
+
+      for (String customerId in customerDebtsMap.keys) {
+        DocumentSnapshot customerDoc =
+            await _db.collection('customers').doc(customerId).get();
+
+        CustomerDetails? customer;
+        if (customerDoc.exists) {
+          customer = CustomerDetails.fromDocument(customerDoc);
+        }
+
+        groupedDebts.add({
+          "customer": customer,
+          "totalBalance": customerDebtsMap[customerId]["totalBalance"],
+          "nearestDueDate": customerDebtsMap[customerId]["nearestDueDate"],
+          "debts": customerDebtsMap[customerId]["debts"],
+        });
+      }
+
+      print("✅ Total grouped debts fetched: ${groupedDebts.length}");
+
+      return groupedDebts;
+    } catch (e) {
+      print(
+          "❌ Error retrieving debts grouped by customer for storeId $storeId: $e");
+      return [];
+    }
+  }
+
+  Future<List<DebtDetails>> fetchDebtsByCustomerId(String customerId) async {
+    try {
+      // ✅ Fetch all debts for the given customer
+      QuerySnapshot debtSnapshot = await _db
+          .collection('debts')
+          .where('customerId', isEqualTo: customerId)
+          .orderBy('due_date',
+              descending: false) // ✅ Sort by nearest due date first
+          .get();
+
+      if (debtSnapshot.docs.isEmpty) {
+        print("⚠️ No debts found for customerId: $customerId");
+        return [];
+      }
+
+      // ✅ Convert Firestore documents to a list of DebtDetails objects
+      List<DebtDetails> debts = debtSnapshot.docs.map((doc) {
+        return DebtDetails.fromDocument(doc);
+      }).toList();
+
+      print("✅ Fetched ${debts.length} debts for customerId: $customerId");
+
+      return debts;
+    } catch (e) {
+      print("❌ Error retrieving debts for customerId $customerId: $e");
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> fetchTransactionItems(String transactionId) async {
+  try {
+    // ✅ Fetch all items for the given transaction
+    QuerySnapshot transactionItemsSnapshot = await _db
+        .collection('transaction_items')
+        .where('transaction_id', isEqualTo: transactionId)
+        .get();
+
+    if (transactionItemsSnapshot.docs.isEmpty) {
+      print("⚠️ No items found for transaction ID: $transactionId");
+      return [];
+    }
+
+    List<Map<String, dynamic>> transactionItems = [];
+
+    for (var doc in transactionItemsSnapshot.docs) {
+      Map<String, dynamic> transactionItemData = doc.data() as Map<String, dynamic>;
+
+      // ✅ Fetch item details from the "items" collection
+      DocumentSnapshot itemDoc = await _db.collection('items').doc(transactionItemData['item_id']).get();
+      Map<String, dynamic>? itemDetails = itemDoc.exists ? itemDoc.data() as Map<String, dynamic> : null;
+
+      transactionItems.add({
+        "transactionItem": transactionItemData,
+        "itemDetails": itemDetails,
+      });
+    }
+
+    print("✅ Fetched ${transactionItems.length} items for transaction ID: $transactionId");
+
+    return transactionItems;
+  } catch (e) {
+    print("❌ Error retrieving items for transaction ID $transactionId: $e");
+    return [];
+  }
+}
+
 }

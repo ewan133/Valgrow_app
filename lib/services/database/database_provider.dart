@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:valgrow_ui/models/batch_details.dart';
 import 'package:valgrow_ui/models/customer_model.dart';
+import 'package:valgrow_ui/models/debts_model.dart';
 import 'package:valgrow_ui/models/item_details.dart';
 import 'package:valgrow_ui/models/store_profile.dart';
 import 'package:valgrow_ui/models/user_profile.dart';
@@ -39,6 +40,18 @@ class DatabaseProvider extends ChangeNotifier {
   // list of store customers
   List<CustomerDetails> _customers = [];
   List<CustomerDetails> get customers => _customers;
+
+  // List of debts with customer details
+  List<Map<String, dynamic>> _debtsWithCustomers = [];
+  List<Map<String, dynamic>> get debtsWithCustomers => _debtsWithCustomers;
+
+  // Nearest due date
+  DateTime? _nearestDueDate;
+  DateTime? get nearestDueDate => _nearestDueDate;
+
+  // List of debts for a specific customer
+  List<DebtDetails> _customerDebts = [];
+  List<DebtDetails> get customerDebts => _customerDebts;
 
   Future<void> fetchUserProfile(String uid) async {
     try {
@@ -115,6 +128,7 @@ class DatabaseProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Regenerate a new store code and update it
   Future<void> updateStoreCode() async {
     try {
       if (_store == null) return;
@@ -126,6 +140,7 @@ class DatabaseProvider extends ChangeNotifier {
       print("Error updating store name: $e");
     }
   }
+
   /*
     Inventory Management 
   */
@@ -374,6 +389,100 @@ class DatabaseProvider extends ChangeNotifier {
       return false;
     } finally {
       _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // ✅ Fetch customers and group their debts, finding the nearest due date
+  Future<void> fetchDebtsWithCustomerInfo() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      if (_store == null) {
+        print("❌ Error: Store is null, cannot fetch debts.");
+        return;
+      }
+
+      // ✅ Call method from DebtsDatabase to fetch customers with nearest due dates
+      List<Map<String, dynamic>> customersWithDueDates =
+          await _debtsDatabase.fetchDebtsGroupedByCustomer(_store!.storeId);
+
+      _debtsWithCustomers =
+          customersWithDueDates; // ✅ Store grouped customer debts
+      _nearestDueDate = _calculateNearestDueDate(
+          customersWithDueDates); // ✅ Calculate the overall nearest due date
+
+      print(
+          "✅ Fetched ${_debtsWithCustomers.length} customers with due dates.");
+      print("✅ Overall Nearest Due Date: $_nearestDueDate");
+    } catch (e) {
+      print("❌ Error fetching customers with debt details: $e");
+      _debtsWithCustomers = []; // ✅ Reset debts on error
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // ✅ Helper method to find the overall nearest due date across all customers' debts
+  DateTime? _calculateNearestDueDate(
+      List<Map<String, dynamic>> customersWithDueDates) {
+    DateTime? nearestDate;
+    for (var entry in customersWithDueDates) {
+      DateTime? customerDueDate = entry["nearestDueDate"];
+      if (customerDueDate != null &&
+          (nearestDate == null || customerDueDate.isBefore(nearestDate))) {
+        nearestDate = customerDueDate;
+      }
+    }
+    return nearestDate;
+  }
+
+  // ✅ Fetch debts for a specific customer by ID
+  Future<void> fetchDebtsForCustomer(String customerId) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      // ✅ Call the method from DebtsDatabase
+      List<DebtDetails> debts =
+          await _debtsDatabase.fetchDebtsByCustomerId(customerId);
+
+      _customerDebts = debts; // ✅ Store fetched debts
+      print("✅ Fetched ${debts.length} debts for customer ID: $customerId");
+    } catch (e) {
+      print("❌ Error fetching debts for customer ID $customerId: $e");
+      _customerDebts = []; // Reset list if error occurs
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+// ✅ Store transaction items
+  List<Map<String, dynamic>> _transactionItems = [];
+  List<Map<String, dynamic>> get transactionItems => _transactionItems;
+
+  // ✅ Loading status for transactions
+  bool _isLoadingTransactionItems = false;
+  bool get isLoadingTransactionItems => _isLoadingTransactionItems;
+
+  /// ✅ Fetch and store items in a specific transaction
+  Future<void> fetchTransactionItems(String transactionId) async {
+    _isLoadingTransactionItems = true;
+    notifyListeners();
+
+    try {
+      _transactionItems =
+          await _debtsDatabase.fetchTransactionItems(transactionId);
+      print(
+          "✅ Stored ${_transactionItems.length} transaction items in provider.");
+    } catch (e) {
+      print("❌ Error fetching transaction items: $e");
+      _transactionItems = []; // Reset on failure
+    } finally {
+      _isLoadingTransactionItems = false;
       notifyListeners();
     }
   }

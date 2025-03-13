@@ -1,10 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:valgrow_ui/models/debts_model.dart';
 
 class MyPersonalDebtsCard extends StatelessWidget {
-  const MyPersonalDebtsCard({super.key});
+  final DebtDetails debtDetails; // ✅ Required debt details
+
+  const MyPersonalDebtsCard({Key? key, required this.debtDetails})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    // Format the date
+    String formattedDate = DateFormat.yMMMMd().format(debtDetails.createdAt);
+    String dueDate = DateFormat.yMMMMd().format(debtDetails.dueDate);
+    String amount = "₱${debtDetails.balance.toStringAsFixed(2)}";
+
+    // Status Color Logic
+    Color statusColor;
+    switch (debtDetails.status) {
+      case "paid":
+        statusColor = Colors.green;
+        break;
+      case "partial":
+        statusColor = Colors.orange;
+        break;
+      default:
+        statusColor = Colors.red;
+    }
+
     return Center(
       child: Container(
         width: double.infinity,
@@ -26,25 +49,24 @@ class MyPersonalDebtsCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Date
+            // Date & Status Row
             Row(
-              mainAxisAlignment:
-                  MainAxisAlignment.spaceBetween, // Ensures spacing
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  "January 10, 2023",
-                  style: TextStyle(
+                Text(
+                  formattedDate, // ✅ Use actual created date
+                  style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w600,
                     color: Colors.black,
                   ),
                 ),
-                const Text(
-                  "Unpaid",
+                Text(
+                  debtDetails.status.toUpperCase(), // ✅ Display status
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black,
+                    color: statusColor, // ✅ Color-coded status
                   ),
                 ),
               ],
@@ -52,27 +74,27 @@ class MyPersonalDebtsCard extends StatelessWidget {
 
             const SizedBox(height: 5), // Spacing
 
-            // Row with 50:50 columns
+            // Due Date & Amount Row
             Row(
               children: [
-                // Left Column (Due)
+                // Left Column (Due Date)
                 Expanded(
-                  flex: 2, // Makes it take 50% of the row
+                  flex: 2,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
-                        "Due:",
+                    children: [
+                      const Text(
+                        "Due Date:",
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                           color: Color.fromRGBO(0, 0, 0, 0.6),
                         ),
                       ),
-                      SizedBox(height: 2),
+                      const SizedBox(height: 2),
                       Text(
-                        "February 12, 2024",
-                        style: TextStyle(
+                        dueDate, // ✅ Use actual due date
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w400,
                           color: Colors.black,
@@ -84,22 +106,22 @@ class MyPersonalDebtsCard extends StatelessWidget {
 
                 // Right Column (Amount)
                 Expanded(
-                  flex: 1, // Makes it take 50% of the row
+                  flex: 1,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text(
-                        "Amount:",
+                    children: [
+                      const Text(
+                        "Balance:",
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                           color: Color.fromRGBO(0, 0, 0, 0.6),
                         ),
                       ),
-                      SizedBox(height: 2),
+                      const SizedBox(height: 2),
                       Text(
-                        "₱ 100.00",
-                        style: TextStyle(
+                        amount, // ✅ Use actual balance amount
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
                           color: Colors.black,

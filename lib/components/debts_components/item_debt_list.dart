@@ -1,18 +1,43 @@
 import 'package:flutter/material.dart';
 
 class MyItemDebtList extends StatelessWidget {
-  const MyItemDebtList({super.key});
+  final String itemName;
+  final int quantity;
+  final double price;
+
+  const MyItemDebtList({
+    super.key,
+    required this.itemName,
+    required this.quantity,
+    required this.price,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text("Royal Cute x5",
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-        Text("₱60.00",
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-      ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // ✅ Item Name + Quantity
+          Text(
+            "$itemName x$quantity",
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+
+          // ✅ Total Price
+          Text(
+            "₱${price.toStringAsFixed(2)}",
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

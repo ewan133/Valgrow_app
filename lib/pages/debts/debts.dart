@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:valgrow_ui/components/debts_components/debt_card.dart';
 import 'package:valgrow_ui/components/general_components/appbar.dart';
 import 'package:valgrow_ui/components/general_components/searchbar.dart';
+import 'package:valgrow_ui/models/customer_model.dart';
+import 'package:valgrow_ui/pages/debts/debts_personal_list.dart';
+import 'package:valgrow_ui/services/database/database_provider.dart';
+import 'package:intl/intl.dart';
 
 class DebtsPage extends StatefulWidget {
   const DebtsPage({super.key});
@@ -12,36 +17,84 @@ class DebtsPage extends StatefulWidget {
 
 class _DebtsPageState extends State<DebtsPage> {
   final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Fetch debts when the page loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<DatabaseProvider>(context, listen: false)
+          .fetchDebtsWithCustomerInfo();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<DatabaseProvider>(context);
+    final customersWithDebts =
+        provider.debtsWithCustomers; // ✅ Grouped by customer
+    final isLoading = provider.isLoading;
+    final searchQuery = _searchController.text.toLowerCase();
+
+    // ✅ Filter customers based on search query (by customer name)
+    final filteredCustomers = customersWithDebts.where((entry) {
+      CustomerDetails? customer = entry["customer"];
+      return customer != null &&
+          customer.name.toLowerCase().contains(searchQuery);
+    }).toList();
+
     return Scaffold(
       appBar: MyAppbar(title: "Debts"),
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.only(
-                top: 10.0, bottom: 10, right: 15, left: 15),
+            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
             child: MySearchbar(
               controller: _searchController,
-              onChanged: (value) {
-                setState(() {});
-              },
+              onChanged: (value) => setState(() {}), // Refresh list on search
             ),
           ),
           Expanded(
-            child: ListView.builder(
-                itemCount: 5,
-                itemBuilder: (context, index) {
-                  return Padding(
-                    padding: const EdgeInsets.only(
-                        bottom: 10.0, left: 10, right: 10),
-                    child: GestureDetector(
-                        onTap: () =>
-                            {Navigator.pushNamed(context, '/personallist')},
-                        child: MyDebtsCard()),
-                  );
-                }),
-          )
+            child: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : filteredCustomers.isEmpty
+                    ? const Center(child: Text("No debts found."))
+                    : ListView.builder(
+                        itemCount: filteredCustomers.length,
+                        itemBuilder: (context, index) {
+                          final debtEntry = filteredCustomers[index];
+                          final CustomerDetails? customer =
+                              debtEntry["customer"] as CustomerDetails?;
+                          final double totalBalance =
+                              debtEntry["totalBalance"] ?? 0.0;
+                          final DateTime? nearestDueDate =
+                              debtEntry["nearestDueDate"];
+
+                          return Padding(
+                            padding: const EdgeInsets.only(
+                                bottom: 10.0, left: 10, right: 10),
+                            child: GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) =>
+                                          DebtsPersonalList(customerDetails: customer!,)),
+                                );
+                              },
+                              child: MyDebtsCard(
+                                customerDetails:
+                                    customer, // ✅ Pass customer info
+                                totalBalance:
+                                    totalBalance, // ✅ Pass total debt balance
+                                nearestDueDate:
+                                    nearestDueDate, // ✅ Pass nearest due date
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+          ),
         ],
       ),
     );
