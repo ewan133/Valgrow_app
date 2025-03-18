@@ -3,11 +3,13 @@ import 'package:flutter/rendering.dart';
 import 'package:valgrow_ui/models/batch_details.dart';
 import 'package:valgrow_ui/models/customer_model.dart';
 import 'package:valgrow_ui/models/debts_model.dart';
+import 'package:valgrow_ui/models/history_model.dart';
 import 'package:valgrow_ui/models/item_details.dart';
 import 'package:valgrow_ui/models/store_profile.dart';
 import 'package:valgrow_ui/models/user_profile.dart';
 import 'package:valgrow_ui/services/database/database_service.dart';
 import 'package:valgrow_ui/services/database/debts_database.dart';
+import 'package:valgrow_ui/services/database/history_database.dart';
 import 'package:valgrow_ui/services/database/inventory_database.dart';
 import 'package:valgrow_ui/services/database/pos_database.dart';
 
@@ -16,6 +18,8 @@ class DatabaseProvider extends ChangeNotifier {
   final InventoryDatabase _inventoryDatabase = InventoryDatabase();
   final POSDatabase _posDatabase = POSDatabase();
   final DebtsDatabase _debtsDatabase = DebtsDatabase();
+  final HistoryDatabase _historyDatabase = HistoryDatabase();
+
   // loading status
   bool _isLoading = false;
   bool get isLoading => _isLoading;
@@ -59,9 +63,14 @@ class DatabaseProvider extends ChangeNotifier {
 
   CustomerDetails? get selectedCustomer => _selectedCustomer;
   List<DebtDetails> get selectedCustomerDebts => _selectedCustomerDebts;
-
   bool _isLoadingDebts = false;
   bool get isLoadingDebts => _isLoadingDebts;
+
+  // history list
+  List<TransactionHistory> _transactionHistory = [];
+  List<TransactionHistory> get transactionHistory => _transactionHistory;
+  bool _isLoadingTransactions = false;
+  bool get isLoadingTransactions => _isLoadingTransactions;
 
   Future<void> fetchUserProfile(String uid) async {
     try {
@@ -564,4 +573,27 @@ class DatabaseProvider extends ChangeNotifier {
     _selectedCustomer = null;
     _selectedCustomerDebts = [];
   }
+
+  /*
+  
+   History System
+  
+   */
+
+  Future<void> fetchTransactionHistory(String storeId) async {
+    _isLoadingTransactions = true;
+    notifyListeners();
+    try {
+      _transactionHistory =
+          await _historyDatabase.getAllTransactionHistory(storeId);
+      print("✅ Fetched ${_transactionHistory.length} transactions.");
+    } catch (e) {
+      print("❌ Error fetching transactions: $e");
+      _transactionHistory = [];
+    } finally {
+      _isLoadingTransactions = false;
+      notifyListeners();
+    }
+  }
+  
 }
