@@ -50,6 +50,11 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
         provider.store?.name ?? "Our Store"; // Default if null
     final List<dynamic> transactionItems = provider.transactionItems;
 
+    Fluttertoast.showToast(
+      msg: "Sending notification...",
+      backgroundColor: Colors.white,
+    );
+
     // ✅ Ensure API key & sender ID are fetched
     if (_apiKey.isEmpty || _senderId.isEmpty) {
       Fluttertoast.showToast(
@@ -100,7 +105,7 @@ Your outstanding debt details at *$storeName*:
 📌 *Purchased Items:*
 $itemsList
 
-Please settle before the due date. Thank you!
+Please settle your balance before the due date. Thank you!
 - $storeName
 """;
 
@@ -227,13 +232,17 @@ Please settle before the due date. Thank you!
     return Scaffold(
       appBar: MyAppbar(
         title: "Debt Details",
-        actionWidget: TextButton(
-            onPressed: _sendDebtDetailsToCustomer,
-            child: MyText(
-                text: "Notify",
-                fontSize: 16,
-                color: Colors.black,
-                fontWeight: FontWeight.w500)),
+        actionWidget: widget.debtDetails.balance > 0
+            ? TextButton(
+                onPressed: _sendDebtDetailsToCustomer,
+                child: MyText(
+                  text: "Notify",
+                  fontSize: 16,
+                  color: Colors.black,
+                  fontWeight: FontWeight.w500,
+                ),
+              )
+            : null, // ✅ Hides the button if debt is fully paid
       ),
       body: Padding(
         padding: const EdgeInsets.only(left: 20, right: 20, top: 16),
