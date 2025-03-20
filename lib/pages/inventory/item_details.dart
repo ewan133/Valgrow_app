@@ -35,6 +35,68 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
     return "${widget.item.item_name}_Batch_${DateFormat('yyyyMMdd-HHmmss').format(DateTime.now())}";
   }
 
+  /// 🔹 Show Confirmation Dialog Before Adding Batch
+  void _showConfirmationDialog(
+      double purchasePrice, int quantity, DateTime? expirationDate) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Confirm Add Batch"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("Batch Name: ${generateBatchName()}"),
+            Text("Quantity: $quantity"),
+            Text("Purchase Price: ₱${purchasePrice.toStringAsFixed(2)}"),
+            Text(
+              expirationDate != null
+                  ? "Expiration: ${DateFormat('yyyy-MM-dd').format(expirationDate)}"
+                  : "No Expiration Date",
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context), // ❌ Cancel
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context); // ✅ Close dialog
+              _addBatch(purchasePrice, quantity, expirationDate);
+            },
+            child: const Text("Confirm"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 🔹 Add Batch to Database
+  Future<void> _addBatch(
+      double purchasePrice, int quantity, DateTime? expirationDate) async {
+    // ✅ Create new batch
+    ItemBatch newBatch = ItemBatch(
+      batchId: '',
+      batchName: generateBatchName(), // ✅ Automated batch name
+      itemId: widget.item.itemId,
+      quantity: quantity,
+      purchasePrice: purchasePrice, // ✅ Ensure purchasePrice is valid
+      expirationDate: expirationDate,
+      storeId: widget.item.storeId,
+      createdAt: DateTime.now(),
+    );
+
+    // ✅ Add to database
+    final databaseProvider = context.read<DatabaseProvider>();
+    await databaseProvider.addNewBatch(newBatch);
+    await databaseProvider.fetchBatchByItemId(widget.item.itemId);
+
+    print(
+        "✅ Added Batch: ${newBatch.batchName}, Quantity: $quantity, Expiration: $expirationDate");
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -67,26 +129,14 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
             context: context,
             builder: (context) {
               return AddBatchModal(
-                onAddBatch: (batchName, quantity, expirationDate) async {
-                  // ✅ Create new batch
-                  ItemBatch newBatch = ItemBatch(
-                    batchId: '',
-                    batchName: generateBatchName(), // ✅ Automated batch name
-                    itemId: widget.item.itemId,
-                    quantity: quantity,
-                    purchasePrice: batchName, // ✅ Fix: Ensure purchasePrice is valid
-                    expirationDate: expirationDate,
-                    storeId: widget.item.storeId,
-                    createdAt: DateTime.now(),
-                  );
-
-                  // ✅ Add to database
-                  final databaseProvider = context.read<DatabaseProvider>();
-                  await databaseProvider.addNewBatch(newBatch);
-                  await databaseProvider.fetchBatchByItemId(widget.item.itemId);
-
-                  print(
-                      "Added Batch: ${newBatch.batchName}, Quantity: $quantity, Expiration: $expirationDate");
+                onAddBatch: (purchasePrice, quantity, expirationDate) {
+                  // ✅ Ensure the function is executed AFTER closing AddBatchModal
+                  Future.delayed(Duration(milliseconds: 100), () {
+                    if (mounted) {
+                      _showConfirmationDialog(
+                          purchasePrice, quantity, expirationDate);
+                    }
+                  });
                 },
               );
             },
@@ -110,7 +160,7 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
                   builder: (context, provider, child) {
                     final item = provider.items.firstWhere(
                       (i) => i.itemId == widget.item.itemId,
-                      orElse: () => widget.item, // Use widget.item as a fallback
+                      orElse: () => widget.item,
                     );
 
                     return Column(
@@ -170,7 +220,7 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
 
             Consumer<DatabaseProvider>(
               builder: (context, provider, child) {
-                final batches = provider.batch; // Get batch list from provider
+                final batches = provider.batch;
 
                 if (provider.isLoading) {
                   return const Center(child: CircularProgressIndicator());
@@ -196,53 +246,46 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
                       child: ListTile(
                         title: Text("Batch Name: ${batch.batchName}"),
                         subtitle: Text(
-                          "Expiration: ${DateFormat('yyyy-MM-dd').format(batch.expirationDate)}",
+                          batch.expirationDate != null
+                              ? "Expiration: ${DateFormat('yyyy-MM-dd').format(batch.expirationDate!)}"
+                              : "NOEXP", // ✅ Show if expirationDate is null
                         ),
                         trailing: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Text(
-                              "Qty:",
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            Text(
-                              batch.quantity.toString(),
-                              style: const TextStyle(fontSize: 14),
-                            ),
+                            const Text("Qty:",
+                                style: TextStyle(
+                                    fontSize: 12, fontWeight: FontWeight.bold)),
+                            Text(batch.quantity.toString(),
+                                style: const TextStyle(fontSize: 14)),
                           ],
                         ),
-                        onTap: () {
-                          print("Tapped on batch ${batch.batchId}");
-                        },
                       ),
                     );
                   },
                 );
               },
-            )
+            ),
           ],
         ),
       ),
     );
   }
+}
 
-  /// 🔹 Widget to display each detail row neatly
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          Text(value, style: const TextStyle(fontSize: 16)),
-        ],
-      ),
-    );
-  }
+/// 🔹 Widget to display each detail row neatly
+Widget _buildDetailRow(String label, String value) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 5.0),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        Text(value, style: const TextStyle(fontSize: 16)),
+      ],
+    ),
+  );
 }

@@ -6,7 +6,6 @@ import 'package:valgrow_ui/components/general_components/searchbar.dart';
 import 'package:valgrow_ui/models/customer_model.dart';
 import 'package:valgrow_ui/pages/debts/debts_personal_list.dart';
 import 'package:valgrow_ui/services/database/database_provider.dart';
-import 'package:intl/intl.dart';
 
 class DebtsPage extends StatefulWidget {
   const DebtsPage({super.key});
@@ -83,7 +82,7 @@ class _DebtsPageState extends State<DebtsPage> {
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) => DebtsPersonalList(
-                                        customerDetails: customer!),
+                                        customerDetails: customer),
                                   ),
                                 );
 

@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class AddBatchModal extends StatefulWidget {
-
-  final Function (double, int, DateTime)  onAddBatch;
+  final Function(double, int, DateTime?) onAddBatch;
 
   const AddBatchModal({super.key, required this.onAddBatch});
 
@@ -32,9 +31,10 @@ class _AddBatchModalState extends State<AddBatchModal> {
             ),
             const SizedBox(height: 10),
 
-            // ✅ Batch Name Input
+            // ✅ Purchase Price Input
             TextField(
               controller: batchNameController,
+              keyboardType: TextInputType.number,
               decoration: const InputDecoration(
                 labelText: "Purchase Price",
                 border: OutlineInputBorder(),
@@ -46,15 +46,14 @@ class _AddBatchModalState extends State<AddBatchModal> {
             TextField(
               controller: quantityController,
               keyboardType: TextInputType.number,
-              decoration:  InputDecoration(
+              decoration: InputDecoration(
                 labelText: "Quantity",
                 border: OutlineInputBorder(borderSide: BorderSide(color: Colors.grey.shade400)),
-                
               ),
             ),
             const SizedBox(height: 10),
 
-            // ✅ Expiration Date Picker
+            // ✅ Expiration Date Picker (Optional)
             GestureDetector(
               onTap: () async {
                 DateTime? pickedDate = await showDatePicker(
@@ -80,7 +79,7 @@ class _AddBatchModalState extends State<AddBatchModal> {
                   children: [
                     Text(
                       selectedDate == null
-                          ? "Select Expiration Date"
+                          ? "No Expiration Date (Optional)" // ✅ Display when null
                           : DateFormat('yyyy-MM-dd').format(selectedDate!),
                       style: TextStyle(
                         fontSize: 16,
@@ -105,12 +104,11 @@ class _AddBatchModalState extends State<AddBatchModal> {
                 ElevatedButton(
                   onPressed: () {
                     if (batchNameController.text.isNotEmpty &&
-                        quantityController.text.isNotEmpty &&
-                        selectedDate != null) {
+                        quantityController.text.isNotEmpty) {
                       widget.onAddBatch(
                         double.parse(batchNameController.text),
                         int.parse(quantityController.text),
-                        selectedDate!,
+                        selectedDate, // ✅ Now allows null
                       );
                       Navigator.pop(context);
                     }

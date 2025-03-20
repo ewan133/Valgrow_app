@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 import 'package:valgrow_ui/components/general_components/button.dart';
 import 'package:valgrow_ui/components/general_components/dropdown.dart';
@@ -64,10 +66,50 @@ class _EditItemModalState extends State<EditItemModal> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    final pickedFile = await ImagePicker().pickImage(source: source);
-    if (pickedFile != null) {
-      setState(() => _image = File(pickedFile.path));
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? pickedFile = await picker.pickImage(source: source);
+
+      if (pickedFile != null) {
+        setState(() => _image = File(pickedFile.path));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Error picking image. Please try again.")),
+      );
+      print("❌ Error picking image: $e");
     }
+  }
+
+  Future<void> _chooseImageSource() async {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
+      ),
+      builder: (BuildContext context) {
+        return Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: Colors.black),
+              title: const Text("Take a Photo"),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library, color: Colors.black),
+              title: const Text("Choose from Gallery"),
+              onTap: () {
+                Navigator.pop(context);
+                _pickImage(ImageSource.gallery);
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _saveItem() async {
@@ -76,11 +118,15 @@ class _EditItemModalState extends State<EditItemModal> {
     if (_nameController.text.trim().isEmpty ||
         _regularPriceController.text.trim().isEmpty ||
         _unpaidPriceController.text.trim().isEmpty ||
-        _barcodeController.text.trim().isEmpty ||
         categoryValue.isEmpty ||
         unitValue.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please fill in all required fields")),
+      Fluttertoast.showToast(
+        msg: "Please fill in all required fields",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
       );
       return;
     }
@@ -121,6 +167,35 @@ class _EditItemModalState extends State<EditItemModal> {
     );
 
     Navigator.pop(context);
+  }
+
+  void scanBarcode(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text("Scan Barcode"),
+        content: SizedBox(
+          height: 100,
+          width: 300,
+          child: MobileScanner(
+            onDetect: (BarcodeCapture capture) {
+              final List<Barcode> barcodes = capture.barcodes;
+              if (barcodes.isEmpty) return;
+
+              final String scannedCode = barcodes.first.rawValue ?? '';
+              if (scannedCode.isEmpty) return;
+
+              // ✅ Update the barcode text field
+              if (dialogContext.mounted) {
+                Navigator.pop(dialogContext); // ✅ Close scanner after scanning
+                _barcodeController.text = scannedCode;
+              }
+            },
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -181,7 +256,7 @@ class _EditItemModalState extends State<EditItemModal> {
                             bottom: 5,
                             right: 5,
                             child: GestureDetector(
-                              onTap: () => _pickImage(ImageSource.gallery),
+                              onTap: () => _chooseImageSource(),
                               child: Container(
                                 decoration: BoxDecoration(
                                   color: Colors.black54,
@@ -246,14 +321,54 @@ class _EditItemModalState extends State<EditItemModal> {
                         selectedValue: unitValue,
                         onChanged: (value) =>
                             setState(() => unitValue = value!),
-                            showAddNew: false,
+                        showAddNew: false,
                       ),
                       const SizedBox(height: 8),
-                      MyTextfieldLabeled(
-                        color: Colors.grey.shade400,
-                        controller: _barcodeController,
-                        label: "Barcode:",
-                        hint: '',
+                      Row(
+                        children: [
+                          Expanded(
+                            child: MyTextfieldLabeled(
+                              color: Colors.grey.shade400,
+                              controller: _barcodeController,
+                              label: "Barcode:",
+                              hint: '',
+                            ),
+                          ),
+                          const SizedBox(
+                              width: 8), // Space between text field and button
+                          Padding(
+                            padding: const EdgeInsets.only(top: 22.0),
+                            child: SizedBox(
+                              height:
+                                  53, // Set the same height as the text field
+                              child: ElevatedButton.icon(
+                                onPressed: () => scanBarcode(
+                                    context), // Function to trigger barcode scan
+                                icon: const Icon(Icons.qr_code_scanner,
+                                    size: 30, color: Colors.black),
+                                label: const Text("Scan"),
+                                style: ElevatedButton.styleFrom(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(
+                                        8), // Circular border radius
+                                    side: BorderSide(
+                                      // Removed 'const' here
+                                      color:
+                                          Colors.grey.shade400, // Border color
+                                      width: 1, // Border width
+                                    ),
+                                  ),
+                                  backgroundColor:
+                                      Colors.white, // Adjust button color
+                                  foregroundColor:
+                                      Colors.black, // Text and icon color
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16), // Better spacing
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 20),
 

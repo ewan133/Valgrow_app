@@ -6,9 +6,9 @@ class ItemBatch {
   final String itemId; // Reference to /items/{item_id}
   final int quantity;
   final double purchasePrice;
-  final DateTime expirationDate;
   final String storeId;
   final DateTime createdAt;
+  final DateTime? expirationDate; // ✅ Optional Expiration Date
 
   ItemBatch({
     required this.batchId,
@@ -16,24 +16,23 @@ class ItemBatch {
     required this.itemId,
     required this.quantity,
     required this.purchasePrice,
-    required this.expirationDate,
+    this.expirationDate, // ✅ Made it optional
     required this.storeId,
     required this.createdAt,
   });
 
   /// ✅ Convert Firestore `DocumentSnapshot` → `ItemBatch`
   factory ItemBatch.fromDocument(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>?;
-    if (data == null) {
-      throw Exception("Document data is null");
-    }
+    final data = doc.data() as Map<String, dynamic>? ?? {};
     return ItemBatch(
       batchId: doc.id, // Firestore document ID
       batchName: data['batchName'] as String? ?? '',
       itemId: data['item_id'] as String? ?? '',
       quantity: (data['quantity'] as num?)?.toInt() ?? 0,
       purchasePrice: (data['purchase_price'] as num?)?.toDouble() ?? 0.0,
-      expirationDate: (data['expiration_date'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      expirationDate: data['expiration_date'] != null
+          ? (data['expiration_date'] as Timestamp).toDate()
+          : null, // ✅ Handle missing expiration date
       storeId: data['storeId'] as String? ?? '',
       createdAt: (data['created_at'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
@@ -46,7 +45,8 @@ class ItemBatch {
       'item_id': itemId,
       'quantity': quantity,
       'purchase_price': purchasePrice,
-      'expiration_date': Timestamp.fromDate(expirationDate),
+      if (expirationDate != null) // ✅ Only add if expiration date is set
+        'expiration_date': Timestamp.fromDate(expirationDate!),
       'storeId': storeId,
       'created_at': FieldValue.serverTimestamp(),
     };
@@ -60,7 +60,9 @@ class ItemBatch {
       itemId: map['item_id'] as String? ?? '',
       quantity: (map['quantity'] as num?)?.toInt() ?? 0,
       purchasePrice: (map['purchase_price'] as num?)?.toDouble() ?? 0.0,
-      expirationDate: (map['expiration_date'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      expirationDate: map['expiration_date'] != null
+          ? (map['expiration_date'] as Timestamp).toDate()
+          : null, // ✅ Handle missing expiration date
       storeId: map['storeId'] as String? ?? '',
       createdAt: (map['created_at'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );

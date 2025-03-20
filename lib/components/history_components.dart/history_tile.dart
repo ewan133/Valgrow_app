@@ -3,7 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:valgrow_ui/components/general_components/text.dart';
 
 class MyHistoryTile extends StatelessWidget {
-  final String transactionType; // Sales, Expense, etc.
+  final String transactionType; // Sales, Expense, Debts, Debt Payment, etc.
   final double amount; // Transaction amount
   final DateTime timestamp; // Transaction time
 
@@ -16,10 +16,16 @@ class MyHistoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Format amount and timestamp
-    String formattedAmount = amount >= 0
-        ? "+${amount.toStringAsFixed(2)}"
-        : "-${amount.abs().toStringAsFixed(2)}";
+    // ✅ Determine if transaction should be negative or positive
+    bool isDebt = transactionType == "Debts"; // Debts should be negative
+    bool isDebtPayment = transactionType == "Debt Payment"; // Debt Payment should be positive
+
+    double adjustedAmount = isDebt ? -amount : amount; // Only debts are negative
+
+    // ✅ Format amount and timestamp
+    String formattedAmount = adjustedAmount >= 0
+        ? "+${adjustedAmount.toStringAsFixed(2)}"
+        : "-${adjustedAmount.abs().toStringAsFixed(2)}";
 
     String formattedTime = DateFormat.jm().format(timestamp); // Example: 5:27 PM
 
@@ -48,14 +54,14 @@ class MyHistoryTile extends StatelessWidget {
                 MyText(
                   text: formattedAmount, // ✅ Dynamic amount
                   fontSize: 18,
-                  color: amount >= 0 ? Colors.black : Colors.black, // ✅ Green for income, Red for expense
+                  color: isDebt ? Colors.red : Colors.green, // 🔴 Red for debts, 🟢 Green for debt payment/sales
                   fontWeight: FontWeight.w600,
                 ),
               ],
             ),
           ),
           Padding(
-            padding: const EdgeInsets.only(left: 40, right: 40,),
+            padding: const EdgeInsets.only(left: 40, right: 40),
             child: MyText(
               text: formattedTime, // ✅ Dynamic time
               fontSize: 10,

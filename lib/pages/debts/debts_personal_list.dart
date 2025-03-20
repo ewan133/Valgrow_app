@@ -68,7 +68,10 @@ class _DebtsPersonalListState extends State<DebtsPersonalList> {
     final isLoading = provider.isLoading;
 
     return Scaffold(
-      appBar: const MyAppbar(title: "Debts"),
+      appBar:  MyAppbar(
+        title: "Debts",
+        actionWidget: TextButton(onPressed: () => {}, child: Text("edit")),
+      ),
       body: Padding(
         padding: const EdgeInsets.only(top: 15.0, left: 15.0, right: 15.0),
         child: Column(
@@ -176,7 +179,8 @@ class _DebtsPersonalListState extends State<DebtsPersonalList> {
                             final debt = sortedDebts[index];
 
                             return Padding(
-                              padding: const EdgeInsets.only(bottom: 10.0, top:3),
+                              padding:
+                                  const EdgeInsets.only(bottom: 10.0, top: 3),
                               child: GestureDetector(
                                 onTap: () =>
                                     showDebtPaymentDialog(context, debt),

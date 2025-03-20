@@ -43,6 +43,41 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
     return phone; // If it's already in correct format, return as is
   }
 
+  Future<void> _confirmAndSendDebtDetails() async {
+    bool? confirm = await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          title: const Text(
+            "Send Debt Notification",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          ),
+          content: const Text(
+            "Are you sure you want to send this debt notification to the customer?",
+            style: TextStyle(fontSize: 14),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false), // ❌ Cancel
+              child: const Text("Cancel", style: TextStyle(color: Colors.red)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true), // ✅ Confirm
+              child: const Text("Send", style: TextStyle(color: Colors.green)),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm == true) {
+      await _sendDebtDetailsToCustomer(); // ✅ Proceed if user confirms
+    }
+  }
+
   Future<void> _sendDebtDetailsToCustomer() async {
     // ✅ Fetch store name & transaction items from provider
     final provider = Provider.of<DatabaseProvider>(context, listen: false);
@@ -234,7 +269,7 @@ Please settle your balance before the due date. Thank you!
         title: "Debt Details",
         actionWidget: widget.debtDetails.balance > 0
             ? TextButton(
-                onPressed: _sendDebtDetailsToCustomer,
+                onPressed: _confirmAndSendDebtDetails,
                 child: MyText(
                   text: "Notify",
                   fontSize: 16,
