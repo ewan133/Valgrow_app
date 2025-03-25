@@ -3,12 +3,12 @@ import 'package:curved_labeled_navigation_bar/curved_navigation_bar_item.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:valgrow_ui/models/user_profile.dart';
-import 'package:valgrow_ui/pages/authpages/document_waiting.dart';
-import 'package:valgrow_ui/pages/authpages/verification.dart';
+// import 'package:valgrow_ui/pages/authpages/document_waiting.dart';
+// import 'package:valgrow_ui/pages/authpages/verification.dart';
 import 'package:valgrow_ui/pages/history/history.dart';
 import 'package:valgrow_ui/pages/home_and_nav/dashboard.dart';
 import 'package:valgrow_ui/pages/home_and_nav/profile.dart';
-import 'package:valgrow_ui/pages/home_and_nav/settings.dart';
+// import 'package:valgrow_ui/pages/home_and_nav/settings.dart';
 import 'package:valgrow_ui/pages/unknown_user/add_store_code.dart';
 import 'package:valgrow_ui/services/auth/auth_service.dart';
 import 'package:valgrow_ui/services/database/database_provider.dart';
@@ -76,6 +76,8 @@ class _HomePageState extends State<HomePage> {
           ),
         );
       }
+
+      
 
       // ✅ Handle navigation based on user verification status
       // if (user.status == 'Unverified' && user.document.isEmpty) {

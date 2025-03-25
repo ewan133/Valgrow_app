@@ -327,5 +327,37 @@ class DebtsDatabase {
     }
   }
 
-  
+  Future<void> addDebtPaymentNotification({
+    required String storeOwnerId,
+    required String storeId,
+    required String customerId,
+    required String customerName,
+    required double amountPaid,
+    required double remainingBalance,
+  }) async {
+    try {
+      // ✅ Ensure required data is available
+      if (storeOwnerId.isEmpty || storeId.isEmpty || customerId.isEmpty) {
+        print(
+            "❌ Error: Missing required fields for debt payment notification.");
+        return;
+      }
+
+      // ✅ Add notification to Firestore
+      await _db.collection('notifications').add({
+        "storeId": storeId,
+        "userId": storeOwnerId, // ✅ Notify the store owner
+        "title": "Debt Payment Received",
+        "message":
+            "$customerName made a payment of ₱$amountPaid. Remaining Balance: ₱$remainingBalance.",
+        "icon": "payments",
+        "isUnread": true,
+        "timestamp": FieldValue.serverTimestamp(),
+      });
+
+      print("✅ Debt payment notification added for owner: $storeOwnerId");
+    } catch (e) {
+      print("❌ Error adding debt payment notification: $e");
+    }
+  }
 }

@@ -1,13 +1,13 @@
 class StoreProfile {
   final String storeId;
   final String name;
-  final String owner;
+  final String ownerId;
   final String storeCode;
 
   StoreProfile({
     required this.storeId,
     required this.name,
-    required this.owner,
+    required this.ownerId,
     required this.storeCode,
   });
 
@@ -15,13 +15,13 @@ class StoreProfile {
   StoreProfile copyWith({
     String? storeId,
     String? name,
-    String? owner,
+    String? ownerId,
     String? storeCode,
   }) {
     return StoreProfile(
       storeId: storeId ?? this.storeId,
       name: name ?? this.name,
-      owner: owner ?? this.owner,
+      ownerId: ownerId ?? this.ownerId,
       storeCode: storeCode ?? this.storeCode, // Fixed missing field
     );
   }
@@ -31,7 +31,7 @@ class StoreProfile {
     return StoreProfile(
       storeId: map['storeId'] ?? '',
       name: map['name'] ?? '',
-      owner: map['owner'] ?? '',
+      ownerId: map['ownerId'] ?? '',
       storeCode: map['storeCode'] ?? '',
     );
   }
@@ -41,7 +41,7 @@ class StoreProfile {
     return {
       'storeId': storeId,
       'name': name,
-      'owner': owner,
+      'ownerId': ownerId,
       'storeCode': storeCode,
     };
   }

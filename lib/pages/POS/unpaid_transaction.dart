@@ -121,6 +121,7 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
         customerId: _selectedCustomer!.customerId,
         isDebt: true,
         due_date: _selectedDueDate,
+        customerName: _selectedCustomer!.name,
       );
 
       // ✅ Reset UI

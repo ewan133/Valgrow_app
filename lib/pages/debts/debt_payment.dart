@@ -491,6 +491,8 @@ Please settle your balance before the due date. Thank you!
                               paymentMethod: _selectedPaymentMethod,
                               storeId: widget.debtDetails.storeId,
                               customerId: widget.customerDetails.customerId,
+                              customerName: widget.customerDetails.name,
+                              remainingBalance: widget.debtDetails.balance - payingAmount,
                             );
 
                             if (success) {

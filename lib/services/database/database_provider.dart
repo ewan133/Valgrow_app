@@ -87,6 +87,9 @@ class DatabaseProvider extends ChangeNotifier {
         print(
             "Fetched User Data: ${userData.toMap()}"); // ✅ Prints readable JSON
         _user = userData;
+
+        // ✅ Save or update FCM token after fetching user profile
+        await _db.saveUserFcmToken(uid);
         notifyListeners();
       } else {
         print("User data is null");
@@ -324,6 +327,7 @@ class DatabaseProvider extends ChangeNotifier {
     String? customerId,
     required bool isDebt,
     DateTime? due_date,
+    String? customerName,
   }) async {
     _isLoading = true;
     notifyListeners();
@@ -349,6 +353,9 @@ class DatabaseProvider extends ChangeNotifier {
                   "discount": 0.0, // Modify this if needed
                 })
             .toList(),
+        customerName: customerName!,
+        storeOwnerId: store!.storeId,
+
       );
 
       // ✅ Clear basket after transaction
@@ -513,13 +520,14 @@ class DatabaseProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> processDebtPayment({
-    required String debtId,
-    required double amountPaid,
-    required String paymentMethod,
-    required String storeId,
-    required String customerId,
-  }) async {
+  Future<bool> processDebtPayment(
+      {required String debtId,
+      required double amountPaid,
+      required String paymentMethod,
+      required String storeId,
+      required String customerId,
+      required String customerName,
+      required double remainingBalance}) async {
     _isLoading = true;
     notifyListeners();
 
@@ -531,6 +539,14 @@ class DatabaseProvider extends ChangeNotifier {
         storeId: storeId,
         customerId: customerId,
       );
+
+      await _debtsDatabase.addDebtPaymentNotification(
+          storeOwnerId: store!.ownerId,
+          storeId: storeId,
+          customerId: customerId,
+          customerName: customerName,
+          amountPaid: amountPaid,
+          remainingBalance: remainingBalance);
 
       if (success) {
         // ✅ Refresh customer's debts & store details
@@ -664,7 +680,6 @@ class DatabaseProvider extends ChangeNotifier {
     }
   }
 
-
   /// ✅ **Remove an employee from a store (Unassign `storeId`)**
   Future<void> removeEmployee(String userId) async {
     try {
@@ -680,38 +695,51 @@ class DatabaseProvider extends ChangeNotifier {
     }
   }
 
+  /// ✅ Affiliate employee to a store and send a notification to the owner
   Future<void> affiliateEmployeeToStore(String storeCode) async {
-  if (_user == null) return; // ✅ Ensure user is logged in
+    if (_user == null) return; // ✅ Ensure user is logged in
 
-  try {
-    // ✅ Fetch store details using the store code
-    StoreProfile? store = await _managementDatabase.getStoreByCode(storeCode);
+    try {
+      // ✅ Fetch store details using the store code
+      StoreProfile? store = await _managementDatabase.getStoreByCode(storeCode);
 
-    if (store == null) {
-      throw Exception("Invalid store code.");
+      if (store == null) {
+        throw Exception("❌ Invalid store code.");
+      }
+
+      print("✅ Store found: ${store.storeId} (Owner: ${store.ownerId})");
+
+      // ✅ Assign employee to the fetched store
+      await _managementDatabase.affiliateEmployeeAsEmployee(
+        userId: _user!.uid,
+        storeId: store.storeId,
+        ownerId: store.ownerId, // ✅ FIXED: Get the actual store owner's ID
+        employeeName: _user!.name,
+      );
+
+      // ✅ Update locally to reflect changes
+      _user = _user!.copyWith(storeId: store.storeId, role: "Employee");
+
+      // ✅ Fetch updated store profile AFTER updating _user
+      await fetchStoreProfile(store.storeId);
+
+      // ✅ Send a notification to the store owner
+      await _managementDatabase.addEmployeeNotification(
+        store.ownerId,
+        store.storeId,
+        _user!.name,
+      );
+
+      notifyListeners();
+
+      print("✅ Successfully affiliated with store ${store.storeId}");
+    } catch (e) {
+      print("❌ Error affiliating to store: $e");
+      throw e; // Re-throw error for UI to handle
     }
-
-    // ✅ Assign employee to the fetched store
-    await _managementDatabase.affiliateEmployeeAsEmployee(
-      userId: _user!.uid,
-      storeId: store.storeId,
-    );
-
-    // ✅ Update locally to reflect changes
-    _user = _user!.copyWith(storeId: store.storeId, role: "Employee");
-
-    // ✅ Fetch updated store profile
-    await fetchStoreProfile(store.storeId);
-
-    notifyListeners();
-
-    print("✅ Successfully affiliated with store ${store.storeId}");
-  } catch (e) {
-    print("❌ Error affiliating to store: $e");
-    throw e; // Re-throw error for UI to handle
   }
-}
 
-
-  
+  /*
+  Notifications Shitsss
+  */
 }

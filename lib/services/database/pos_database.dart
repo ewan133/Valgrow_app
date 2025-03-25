@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
 
 class POSDatabase {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -11,6 +12,8 @@ class POSDatabase {
     required double amountPaid,
     required String paymentMethod,
     String? customerId,
+    required String customerName,
+    required String storeOwnerId,
     DateTime? due_date,
   }) async {
     try {
@@ -46,6 +49,14 @@ class POSDatabase {
       if (status != "paid" && customerId != null) {
         await _createDebtEntry(transactionId, customerId, storeId, totalAmount,
             amountPaid, due_date);
+        await addDebtNotification(
+            storeOwnerId: storeOwnerId,
+            storeId: storeId,
+            customerId: customerId,
+            customerName: customerName,
+            balance: totalAmount - amountPaid,
+            dueDate: due_date);
+        print("✅ New debt notification are added!");
       }
       print("cusotmer Id : $customerId");
       print("total amount : $totalAmount");
@@ -169,4 +180,63 @@ class POSDatabase {
       throw e;
     }
   }
+
+  Future<void> addDebtNotification({
+    required String storeOwnerId,
+    required String storeId,
+    required String customerId,
+    required String customerName,
+    required double balance,
+    DateTime? dueDate,
+  }) async {
+    try {
+      // ✅ Check for missing fields
+      if (storeOwnerId.isEmpty) {
+        print("❌ Error: storeOwnerId is empty.");
+        return;
+      }
+      if (storeId.isEmpty) {
+        print("❌ Error: storeId is empty.");
+        return;
+      }
+      if (customerId.isEmpty) {
+        print("❌ Error: customerId is empty.");
+        return;
+      }
+      if (customerName.isEmpty) {
+        print("❌ Error: customerName is empty.");
+        return;
+      }
+      if (balance.isNaN || balance < 0) {
+        print("❌ Error: balance is invalid ($balance).");
+        return;
+      }
+      if (dueDate == null) {
+        print("❌ Error: dueDate is null. Using default value.");
+        dueDate =
+            DateTime.now().add(Duration(days: 7)); // Default 7-day due date
+      }
+
+      // ✅ Format date as "January 10, 2025"
+      String formattedDueDate = DateFormat("MMMM d, y").format(dueDate);
+
+      // ✅ Add notification to Firestore
+      await _db.collection('notifications').add({
+        "storeId": storeId,
+        "userId": storeOwnerId, // ✅ Notify the store owner
+        "title": "New Debt Added",
+        "message":
+            "$customerName has a new debt of ₱$balance. Due on: $formattedDueDate",
+        "icon": "warning",
+        "isUnread": true,
+        "timestamp": FieldValue.serverTimestamp(),
+      });
+
+      print("✅ Debt notification added for store owner: $storeOwnerId");
+    } catch (e) {
+      print("❌ Error adding debt notification: $e");
+    }
+  }
+
+  
 }

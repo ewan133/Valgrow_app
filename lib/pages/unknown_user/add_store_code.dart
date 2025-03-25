@@ -53,7 +53,7 @@ class _AddStoreCodePageState extends State<AddStoreCodePage> {
       );
     } catch (e) {
       setState(() {
-        _errorMessage = "❌ Invalid store code. Please try again.";
+        _errorMessage = "Invalid store code. Please try again.";
       });
 
       // ❌ Show error toast

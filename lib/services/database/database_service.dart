@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:valgrow_ui/models/store_profile.dart';
 import 'package:valgrow_ui/models/user_profile.dart';
 
@@ -40,7 +41,8 @@ class DatabaseService {
           'debts': true,
           'expenses': true,
           'status': 'Unverified',
-          'document': ''
+          'document': '',
+          'token': '',
         });
 
         print('User profile created: $name ($userEmail)');
@@ -99,7 +101,7 @@ class DatabaseService {
           'reports': false,
           'debts': true,
           'expenses': false,
-          
+          'token': '',
         });
 
         print('User profile created: $name ($userEmail)');
@@ -244,5 +246,51 @@ class DatabaseService {
       print("❌ Error updating store code: $e");
     }
   }
-  
+
+  // Get owner token
+  Future<String?> getStoreOwnerFcmToken(String ownerId) async {
+    DocumentSnapshot userDoc =
+        await FirebaseFirestore.instance.collection('users').doc(ownerId).get();
+    return userDoc.exists ? userDoc["token"] : null;
+  }
+
+  /// ✅ **Retrieve and store/update FCM token on login**
+  Future<void> saveUserFcmToken(String userId) async {
+    try {
+      // ✅ Get the latest FCM token
+      String? newFcmToken = await FirebaseMessaging.instance.getToken();
+
+      if (newFcmToken == null) {
+        print("❌ Failed to get FCM token.");
+        return;
+      }
+
+      // ✅ Get the current stored token from Firestore
+      DocumentSnapshot userDoc =
+          await _db.collection('users').doc(userId).get();
+
+      if (!userDoc.exists) {
+        print("❌ User not found in Firestore.");
+        return;
+      }
+
+      // ✅ Debug: Print Firestore Data
+      print("Firestore User Data: ${userDoc.data()}");
+
+      String? savedFcmToken = userDoc["token"]; // Use the correct field
+
+      // ✅ Only update if the token has changed or is missing
+      if (savedFcmToken == null || savedFcmToken != newFcmToken) {
+        await _db
+            .collection('users')
+            .doc(userId)
+            .update({"token": newFcmToken});
+        print("✅ Updated FCM token: $newFcmToken");
+      } else {
+        print("✅ FCM token is up-to-date, no update needed.");
+      }
+    } catch (e) {
+      print("❌ Error updating FCM token: $e");
+    }
+  }
 }
