@@ -12,6 +12,8 @@ import 'package:valgrow_ui/pages/history/history.dart';
 import 'package:valgrow_ui/pages/home_and_nav/home.dart';
 import 'package:valgrow_ui/pages/inventory/inventory.dart';
 import 'package:valgrow_ui/pages/authpages/login.dart';
+import 'package:valgrow_ui/pages/management/mangement.dart';
+import 'package:valgrow_ui/pages/notifications/notification.dart';
 import 'package:valgrow_ui/pages/reports/reports_main.dart';
 import 'package:valgrow_ui/pages/authpages/signup.dart';
 import 'package:valgrow_ui/services/auth/wrapper.dart';
@@ -54,6 +56,8 @@ class MyApp extends StatelessWidget {
           '/expense_info': (context) => const ExpenseInfoPage(),
           '/reports': (context) => const ReportsMainPage(),
           '/debts': (context) => const DebtsPage(),
+          '/management': (context) => const ManagementPage(),
+          '/notifications': (context) => const NotificationPage(),
         });
   }
 }

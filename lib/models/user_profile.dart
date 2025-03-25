@@ -11,6 +11,7 @@ class UserProfile {
   final bool reports;
   final bool pos;
   final bool ims;
+  final bool expenses;
 
   UserProfile({
     required this.uid,
@@ -25,6 +26,7 @@ class UserProfile {
     required this.reports,
     required this.pos,
     required this.ims,
+    required this.expenses
   });
 
   /// ✅ **copyWith Method for Updating UserProfile**
@@ -41,6 +43,7 @@ class UserProfile {
     bool? reports,
     bool? pos,
     bool? ims,
+    bool? expenses,
   }) {
     return UserProfile(
       uid: uid ?? this.uid,
@@ -55,6 +58,7 @@ class UserProfile {
       reports: reports ?? this.reports,
       pos: pos ?? this.pos,
       ims: ims ?? this.ims,
+      expenses: expenses ?? this.expenses,
     );
   }
 
@@ -75,6 +79,7 @@ class UserProfile {
       reports: map['reports'] ?? false,
       pos: map['pos'] ?? false,
       ims: map['ims'] ?? false,
+      expenses: map['expenses'] ?? false,
     );
   }
 
@@ -93,6 +98,7 @@ class UserProfile {
       'reports': reports,
       'pos': pos,
       'ims': ims,
+      'expenses': expenses,
     };
   }
 }

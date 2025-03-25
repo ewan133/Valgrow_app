@@ -10,6 +10,7 @@ import 'package:valgrow_ui/services/database/database_service.dart';
 import 'package:valgrow_ui/services/database/debts_database.dart';
 import 'package:valgrow_ui/services/database/history_database.dart';
 import 'package:valgrow_ui/services/database/inventory_database.dart';
+import 'package:valgrow_ui/services/database/management_database.dart';
 import 'package:valgrow_ui/services/database/pos_database.dart';
 
 class DatabaseProvider extends ChangeNotifier {
@@ -18,6 +19,7 @@ class DatabaseProvider extends ChangeNotifier {
   final POSDatabase _posDatabase = POSDatabase();
   final DebtsDatabase _debtsDatabase = DebtsDatabase();
   final HistoryDatabase _historyDatabase = HistoryDatabase();
+  final ManagementDatabase _managementDatabase = ManagementDatabase();
 
   // loading status
   bool _isLoading = false;
@@ -70,6 +72,12 @@ class DatabaseProvider extends ChangeNotifier {
   List<TransactionHistory> get transactionHistory => _transactionHistory;
   bool _isLoadingTransactions = false;
   bool get isLoadingTransactions => _isLoadingTransactions;
+
+  // ✅ List of Employees for management (Excluding Store Owner)
+  List<UserProfile> _employees = [];
+  List<UserProfile> get employees => _employees;
+  bool _isLoadingEmployees = false;
+  bool get isLoadingEmployees => _isLoadingEmployees;
 
   Future<void> fetchUserProfile(String uid) async {
     try {
@@ -577,7 +585,7 @@ class DatabaseProvider extends ChangeNotifier {
   
    History System
   
-   */
+  */
 
   Future<void> fetchTransactionHistory(String storeId) async {
     _isLoadingTransactions = true;
@@ -594,5 +602,116 @@ class DatabaseProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  /*
+  
+  Management System 
+
+  */
+
+  /// ✅ **Fetch all employees affiliated with the store (excluding owner)**
+  Future<void> fetchEmployees() async {
+    if (_store == null) return; // ✅ Ensure store is loaded
+
+    _isLoadingEmployees = true;
+    notifyListeners();
+
+    try {
+      _employees =
+          await _managementDatabase.getEmployeesByStoreId(_store!.storeId);
+      print(
+          "✅ Fetched ${_employees.length} employees for store ${_store!.storeId}");
+    } catch (e) {
+      print("❌ Error fetching employees: $e");
+      _employees = []; // Reset on failure
+    } finally {
+      _isLoadingEmployees = false;
+      notifyListeners();
+    }
+  }
+
+  /// ✅ **Update a single permission (e.g., POS, Inventory, Debts, Reports)**
+  Future<void> updateEmployeePermission({
+    required String userId,
+    required String permissionField, // "pos", "ims", "debts", "reports"
+    required bool newValue,
+  }) async {
+    try {
+      await _managementDatabase.updateEmployeePermission(
+        userId: userId,
+        permissionField: permissionField,
+        newValue: newValue,
+      );
+
+      // ✅ Update locally after Firestore update
+      int index = _employees.indexWhere((emp) => emp.uid == userId);
+      if (index != -1) {
+        _employees[index] = _employees[index].copyWith(
+          pos: permissionField == "pos" ? newValue : _employees[index].pos,
+          ims: permissionField == "ims" ? newValue : _employees[index].ims,
+          debts:
+              permissionField == "debts" ? newValue : _employees[index].debts,
+          reports: permissionField == "reports"
+              ? newValue
+              : _employees[index].reports,
+        );
+      }
+
+      notifyListeners();
+      print("✅ Updated $permissionField for user $userId → $newValue");
+    } catch (e) {
+      print("❌ Error updating $permissionField for user $userId: $e");
+    }
+  }
+
+
+  /// ✅ **Remove an employee from a store (Unassign `storeId`)**
+  Future<void> removeEmployee(String userId) async {
+    try {
+      await _managementDatabase.removeEmployeeFromStore(userId);
+
+      // ✅ Remove from local list
+      _employees.removeWhere((emp) => emp.uid == userId);
+      notifyListeners();
+
+      print("✅ Employee removed: $userId");
+    } catch (e) {
+      print("❌ Error removing employee $userId: $e");
+    }
+  }
+
+  Future<void> affiliateEmployeeToStore(String storeCode) async {
+  if (_user == null) return; // ✅ Ensure user is logged in
+
+  try {
+    // ✅ Fetch store details using the store code
+    StoreProfile? store = await _managementDatabase.getStoreByCode(storeCode);
+
+    if (store == null) {
+      throw Exception("Invalid store code.");
+    }
+
+    // ✅ Assign employee to the fetched store
+    await _managementDatabase.affiliateEmployeeAsEmployee(
+      userId: _user!.uid,
+      storeId: store.storeId,
+    );
+
+    // ✅ Update locally to reflect changes
+    _user = _user!.copyWith(storeId: store.storeId, role: "Employee");
+
+    // ✅ Fetch updated store profile
+    await fetchStoreProfile(store.storeId);
+
+    notifyListeners();
+
+    print("✅ Successfully affiliated with store ${store.storeId}");
+  } catch (e) {
+    print("❌ Error affiliating to store: $e");
+    throw e; // Re-throw error for UI to handle
+  }
+}
+
+
   
 }

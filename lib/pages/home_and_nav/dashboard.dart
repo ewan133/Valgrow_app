@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:valgrow_ui/components/general_components/button_home.dart';
 import 'package:valgrow_ui/components/general_components/logo.dart';
 import 'package:valgrow_ui/components/general_components/text.dart';
 import 'package:valgrow_ui/components/general_components/text_button.dart';
+import 'package:valgrow_ui/services/database/database_provider.dart';
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
@@ -14,6 +16,7 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage> {
   @override
   Widget build(BuildContext context) {
+    final user = context.watch<DatabaseProvider>().user; // ✅ Fetch user data
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -33,7 +36,9 @@ class _DashboardPageState extends State<DashboardPage> {
         ),
         actions: [
           IconButton(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.pushNamed(context, "/notifications");
+            },
             icon: Icon(
               Icons.notifications_on_outlined,
               color: Colors.black,
@@ -156,44 +161,71 @@ class _DashboardPageState extends State<DashboardPage> {
                       crossAxisSpacing: 10,
                       children: [
                         MyHomeButton(
-                          text: "Inventory",
-                          onPressed: () {
-                            Navigator.pushNamed(context, '/inventory');
-                          },
-                          icon: Icon(Icons.inventory_2, size: 32),
-                        ),
-                        MyHomeButton(
                           text: "POS",
-                          onPressed: () {
-                            Navigator.pushNamed(context, '/POS');
-                          },
-                          icon: Icon(Icons.point_of_sale, size: 32),
-                        ),
-                        MyHomeButton(
-                          text: "Expenses",
-                          onPressed: () {
-                            Navigator.pushNamed(context, '/expenses');
-                          },
-                          icon: Icon(Icons.wallet, size: 32),
-                        ),
-                        MyHomeButton(
-                          text: "Reports",
-                          onPressed: () {
-                            Navigator.pushNamed(context, '/reports');
-                          },
-                          icon: Icon(Icons.summarize, size: 32),
+                          onPressed: user?.pos == true
+                              ? () => Navigator.pushNamed(context, '/POS')
+                              : null,
+                          icon: Icon(Icons.point_of_sale,
+                              size: 32,
+                              color: user?.pos == true
+                                  ? Colors.black
+                                  : Colors.grey),
                         ),
                         MyHomeButton(
                           text: "Debts",
-                          onPressed: () {
-                            Navigator.pushNamed(context, '/debts');
-                          },
-                          icon: Icon(Icons.note, size: 32),
+                          onPressed: user?.debts == true
+                              ? () => Navigator.pushNamed(context, '/debts')
+                              : null,
+                          icon: Icon(Icons.note,
+                              size: 32,
+                              color: user?.debts == true
+                                  ? Colors.black
+                                  : Colors.grey),
                         ),
                         MyHomeButton(
+                          text: "Inventory",
+                          onPressed: user?.ims == true
+                              ? () => Navigator.pushNamed(context, '/inventory')
+                              : null, // ❌ Disabled if user has no permission
+                          icon: Icon(Icons.inventory_2,
+                              size: 32,
+                              color: user?.ims == true
+                                  ? Colors.black
+                                  : Colors.grey),
+                        ),
+                         MyHomeButton(
+                          text: "Reports",
+                          onPressed: user?.reports == true
+                              ? () => Navigator.pushNamed(context, '/reports')
+                              : null,
+                          icon: Icon(Icons.summarize,
+                              size: 32,
+                              color: user?.reports == true
+                                  ? Colors.black
+                                  : Colors.grey),
+                        ),
+                        MyHomeButton(
+                          text: "Expenses",
+                          onPressed: user?.expenses == true
+                              ? () => Navigator.pushNamed(context, '/expenses')
+                              : null, // ❌ Disabled if user has no permission
+                          icon: Icon(Icons.wallet,
+                              size: 32,
+                              color: user?.expenses == true
+                                  ? Colors.black
+                                  : Colors.grey),
+                        ),             
+                        MyHomeButton(
                           text: "Management",
-                          onPressed: () {},
-                          icon: Icon(Icons.people, size: 32),
+                          onPressed: user?.role == "Employee"
+                              ? null // ✅ Disable button for employees
+                              : () =>
+                                  Navigator.pushNamed(context, '/management'),
+                          icon: Icon(Icons.people,
+                              size: 32,
+                              color: user?.role == "Employee"
+                                  ? Colors.grey
+                                  : Colors.black),
                         ),
                       ],
                     ),

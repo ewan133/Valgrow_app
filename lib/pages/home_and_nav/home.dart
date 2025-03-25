@@ -9,6 +9,7 @@ import 'package:valgrow_ui/pages/history/history.dart';
 import 'package:valgrow_ui/pages/home_and_nav/dashboard.dart';
 import 'package:valgrow_ui/pages/home_and_nav/profile.dart';
 import 'package:valgrow_ui/pages/home_and_nav/settings.dart';
+import 'package:valgrow_ui/pages/unknown_user/add_store_code.dart';
 import 'package:valgrow_ui/services/auth/auth_service.dart';
 import 'package:valgrow_ui/services/database/database_provider.dart';
 
@@ -60,10 +61,21 @@ class _HomePageState extends State<HomePage> {
       // Fetch user data using Provider
       final databaseProvider = context.read<DatabaseProvider>();
       await databaseProvider.fetchUserProfile(uid);
+
+
       final user = databaseProvider.user;
       await databaseProvider.fetchStoreProfile(user!.storeId);
       await databaseProvider.fetchItemsByStoreId();
       await databaseProvider.fetchCustomersByStoreId();
+
+      if (user.storeId == null || user.storeId.isEmpty) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => AddStoreCodePage(),
+          ),
+        );
+      }
 
       // ✅ Handle navigation based on user verification status
       // if (user.status == 'Unverified' && user.document.isEmpty) {

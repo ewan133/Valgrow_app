@@ -135,25 +135,58 @@ class _ProfilePageState extends State<ProfilePage> {
     await databaseProvider.updateStoreName(storeName);
   }
 
-  // reset password method
   Future<void> resetPassWithEmail() async {
-    setState(() {
-      _isLoading = true;
-    });
+    bool confirm = await _showConfirmationDialog(
+      title: "Reset Password",
+      content: "Are you sure you want to reset your password?",
+    );
+    if (!confirm) return;
+
+    setState(() => _isLoading = true);
     try {
       await _auth.sendPasswordResetEmail(user!.email);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password reset email sent!')),
+      Fluttertoast.showToast(
+        msg: "Password reset email sent!",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.CENTER,
+        backgroundColor: Colors.green,
+        textColor: Colors.white,
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
+      Fluttertoast.showToast(
+        msg: "Error: ${e.toString()}",
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.CENTER,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
       );
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _logout() async {
+    bool confirm = await _showConfirmationDialog(
+      title: "Logout",
+      content: "Are you sure you want to logout?",
+    );
+    if (!confirm) return;
+    await _auth.signout();
+  }
+
+  Future<bool> _showConfirmationDialog({required String title, required String content}) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(title),
+            content: Text(content),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancel")),
+              TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Confirm")),
+            ],
+          ),
+        ) ??
+        false;
   }
 
   @override
@@ -369,7 +402,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                           color: Colors.redAccent,
                                           borderRadius: 25,
                                           onTap: () async {
-                                            await _auth.signout();
+                                            _logout();
                                           },
                                         ),
                                       ),

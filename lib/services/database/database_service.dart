@@ -38,6 +38,7 @@ class DatabaseService {
           'ims': true,
           'reports': true,
           'debts': true,
+          'expenses': true,
           'status': 'Unverified',
           'document': ''
         });
@@ -91,12 +92,14 @@ class DatabaseService {
           'name': name,
           'phone': phone,
           'email': userEmail,
-          'role': 'employee',
+          'role': 'Employee',
           'storeId': storeId, // Assign storeId
           'pos': true,
           'ims': false,
           'reports': false,
           'debts': true,
+          'expenses': false,
+          
         });
 
         print('User profile created: $name ($userEmail)');
@@ -111,6 +114,7 @@ class DatabaseService {
           'ims': false,
           'reports': false,
           'debts': true,
+          'expenses': false,
         });
 
         print('Employee affiliated successfully to store ID: $storeId');
