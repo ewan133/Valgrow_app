@@ -101,22 +101,28 @@ class DebtsDatabase {
       for (var doc in debtSnapshot.docs) {
         DebtDetails debt = DebtDetails.fromDocument(doc);
 
-        if (!customerDebtsMap.containsKey(debt.customerId)) {
-          customerDebtsMap[debt.customerId] = {
-            "totalBalance": 0.0,
-            "nearestDueDate": debt.dueDate,
-            "debts": [],
-          };
-        }
+        // ✅ Initialize the customer entry if it does not exist
+        customerDebtsMap.putIfAbsent(
+            debt.customerId,
+            () => {
+                  "totalBalance": 0.0,
+                  "nearestDueDate": null, // ✅ Ensure this is always present
+                  "debts": [],
+                });
 
-        // ✅ Correctly sum the total balance per customer
+        // ✅ Accumulate total balance
         customerDebtsMap[debt.customerId]["totalBalance"] += debt.balance;
 
-        if (debt.dueDate
-            .isBefore(customerDebtsMap[debt.customerId]["nearestDueDate"])) {
-          customerDebtsMap[debt.customerId]["nearestDueDate"] = debt.dueDate;
+        // ✅ Ensure only unpaid/partial debts are considered for nearest due date
+        if (debt.status != "paid") {
+          if (customerDebtsMap[debt.customerId]["nearestDueDate"] == null ||
+              debt.dueDate.isBefore(
+                  customerDebtsMap[debt.customerId]["nearestDueDate"])) {
+            customerDebtsMap[debt.customerId]["nearestDueDate"] = debt.dueDate;
+          }
         }
 
+        // ✅ Add debt to the list
         customerDebtsMap[debt.customerId]["debts"].add(debt);
       }
 
@@ -141,7 +147,6 @@ class DebtsDatabase {
       }
 
       print("✅ Total grouped debts fetched: ${groupedDebts.length}");
-
       return groupedDebts;
     } catch (e) {
       print(

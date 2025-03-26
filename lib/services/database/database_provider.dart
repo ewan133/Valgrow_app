@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:valgrow_ui/models/batch_details.dart';
 import 'package:valgrow_ui/models/customer_model.dart';
 import 'package:valgrow_ui/models/debts_model.dart';
 import 'package:valgrow_ui/models/history_model.dart';
 import 'package:valgrow_ui/models/item_details.dart';
+import 'package:valgrow_ui/models/notifications_details.dart';
 import 'package:valgrow_ui/models/store_profile.dart';
 import 'package:valgrow_ui/models/user_profile.dart';
 import 'package:valgrow_ui/services/database/database_service.dart';
@@ -11,6 +13,7 @@ import 'package:valgrow_ui/services/database/debts_database.dart';
 import 'package:valgrow_ui/services/database/history_database.dart';
 import 'package:valgrow_ui/services/database/inventory_database.dart';
 import 'package:valgrow_ui/services/database/management_database.dart';
+import 'package:valgrow_ui/services/database/notifications_database.dart';
 import 'package:valgrow_ui/services/database/pos_database.dart';
 
 class DatabaseProvider extends ChangeNotifier {
@@ -20,6 +23,7 @@ class DatabaseProvider extends ChangeNotifier {
   final DebtsDatabase _debtsDatabase = DebtsDatabase();
   final HistoryDatabase _historyDatabase = HistoryDatabase();
   final ManagementDatabase _managementDatabase = ManagementDatabase();
+  final NotificationsDatabase _notificationsDatabase = NotificationsDatabase();
 
   // loading status
   bool _isLoading = false;
@@ -78,6 +82,12 @@ class DatabaseProvider extends ChangeNotifier {
   List<UserProfile> get employees => _employees;
   bool _isLoadingEmployees = false;
   bool get isLoadingEmployees => _isLoadingEmployees;
+
+  // ✅ List of Notifications
+  List<NotificationDetails> _notifications = [];
+  List<NotificationDetails> get notifications => _notifications;
+  bool _isLoadingNotifications = false;
+  bool get isLoadingNotifications => _isLoadingNotifications;
 
   Future<void> fetchUserProfile(String uid) async {
     try {
@@ -249,6 +259,74 @@ class DatabaseProvider extends ChangeNotifier {
     }
   }
 
+  // ✅ Reduce stock & update UI
+  Future<void> reduceStock({
+    required String itemId,
+    required int quantity,
+    required String reason,
+  }) async {
+    try {
+      // ✅ Fetch current item to check stock
+      ItemDetails? item = _items.firstWhere(
+        (i) => i.itemId == itemId,
+        orElse: () => ItemDetails(
+            itemId: "",
+            item_name: "",
+            category: "",
+            unit: "",
+            barcode: "",
+            item_image: "",
+            storeId: "",
+            regular_price: 0.0,
+            unpaid_price: 0.0,
+            total_stock: 0,
+            last_updated: DateTime.now()),
+      );
+
+      if (item.itemId.isEmpty) {
+        _showToast("Item not found!", isError: true);
+        return;
+      }
+
+      // ✅ Ensure stock is available for reduction
+      if (quantity > item.total_stock) {
+        _showToast("Cannot reduce more than available stock!", isError: true);
+        return;
+      }
+
+      if (item.total_stock == 0) {
+        _showToast("Stock is already 0, cannot reduce!", isError: true);
+        return;
+      }
+
+      // ✅ Reduce stock in database
+      await _inventoryDatabase.reduceStock(
+        itemId: itemId,
+        quantity: quantity,
+        reason: reason,
+        storeId: _store!.storeId,
+      );
+
+      // ✅ Refresh the item list to reflect stock changes
+      await fetchItemsByStoreId();
+    } catch (e) {
+      print("❌ Error reducing stock: $e");
+      _showToast("Error reducing stock", isError: true);
+    }
+  }
+
+// ✅ Show Flutter Toast Notification
+  void _showToast(String message, {bool isError = false}) {
+    Fluttertoast.showToast(
+      msg: message,
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      backgroundColor: isError ? Colors.red : Colors.green,
+      textColor: Colors.white,
+      fontSize: 16.0,
+    );
+  }
+
   /*
     Point of Sale System
   */
@@ -355,7 +433,6 @@ class DatabaseProvider extends ChangeNotifier {
             .toList(),
         customerName: customerName!,
         storeOwnerId: store!.storeId,
-
       );
 
       // ✅ Clear basket after transaction
@@ -458,17 +535,41 @@ class DatabaseProvider extends ChangeNotifier {
     }
   }
 
-  // ✅ Helper method to find the overall nearest due date across all customers' debts
   DateTime? _calculateNearestDueDate(
       List<Map<String, dynamic>> customersWithDueDates) {
     DateTime? nearestDate;
+
+    print("🔍 Processing debts to find the nearest due date...");
+
     for (var entry in customersWithDueDates) {
-      DateTime? customerDueDate = entry["nearestDueDate"];
-      if (customerDueDate != null &&
-          (nearestDate == null || customerDueDate.isBefore(nearestDate))) {
-        nearestDate = customerDueDate;
+      if (entry.containsKey("debts") && entry["debts"] is List) {
+        List debts = entry["debts"];
+        print("📌 Checking debts for customer: ${entry["customer"]}");
+
+        for (var debt in debts) {
+          if (debt is DebtDetails) {
+            print("📝 Debt found: ${debt.dueDate}, Status: ${debt.status}");
+
+            if ((debt.status == "unpaid" || debt.status == "partial") &&
+                debt.dueDate != null) {
+              DateTime dueDate = debt.dueDate!;
+
+              // ✅ Update nearestDate only if it's the earliest unpaid/partial debt
+              if (nearestDate == null || dueDate.isBefore(nearestDate)) {
+                nearestDate = dueDate;
+                print("✅ New nearest due date found: $nearestDate");
+              }
+            }
+          } else {
+            print("⚠️ Invalid debt format detected: $debt");
+          }
+        }
+      } else {
+        print("⚠️ No valid debts found for this customer.");
       }
     }
+
+    print("🎯 Final nearest due date (excluding paid debts): $nearestDate");
     return nearestDate;
   }
 
@@ -742,4 +843,26 @@ class DatabaseProvider extends ChangeNotifier {
   /*
   Notifications Shitsss
   */
+
+  /// ✅ Fetch notifications for the current user
+  Future<void> fetchUserNotifications() async {
+    if (_user == null) return; // ✅ Ensure user is logged in
+
+    _isLoadingNotifications = true;
+    notifyListeners();
+
+    try {
+      _notifications =
+          await _notificationsDatabase.getUserNotifications(_user!.uid);
+      print("✅ Updated notifications in provider: ${_notifications.length}");
+    } catch (e) {
+      print("❌ Error fetching notifications: $e");
+      _notifications = []; // Reset on failure
+    } finally {
+      _isLoadingNotifications = false;
+      notifyListeners();
+    }
+  }
+
+  
 }

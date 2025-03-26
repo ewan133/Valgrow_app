@@ -42,6 +42,17 @@ class _DebtsPageState extends State<DebtsPage> {
           customer.name.toLowerCase().contains(searchQuery);
     }).toList();
 
+    // ✅ Sort by nearest due date (earliest first)
+    filteredCustomers.sort((a, b) {
+      DateTime? dueDateA = a["nearestDueDate"];
+      DateTime? dueDateB = b["nearestDueDate"];
+
+      if (dueDateA == null && dueDateB == null) return 0; // Keep order
+      if (dueDateA == null) return 1; // Move nulls to the end
+      if (dueDateB == null) return -1; // Move nulls to the end
+      return dueDateA.compareTo(dueDateB); // Sort ascending (earliest first)
+    });
+
     return Scaffold(
       appBar: MyAppbar(title: "Debts"),
       body: Column(

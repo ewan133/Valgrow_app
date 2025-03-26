@@ -127,11 +127,47 @@ class InventoryDatabase {
 
       print("✅ Batch added successfully for item: ${batch.itemId}");
 
+      // ✅ Insert record into inventory_log
+      await _insertInventoryLog(
+        itemId: batch.itemId,
+        quantity: batch.quantity,
+        reason: "New Stock Added", // ✅ Default reason for batch insert
+        storeId: batch.storeId,
+        type: "Addition", // ✅ Specify this as an addition
+      );
+
       // ✅ Update total_stock of the item considering total batches - total sales
       await _updateItemStock(batch.itemId);
     } catch (e) {
       print("❌ Error adding batch: $e");
       throw e;
+    }
+  }
+
+  /// 🔹 **Insert a record into inventory_log**
+  Future<void> _insertInventoryLog({
+    required String itemId,
+    required int quantity,
+    required String reason,
+    required String storeId,
+    required String type, // ✅ Either "Addition" or "Reduction"
+  }) async {
+    try {
+      final logRef = _db.collection('inventory_log').doc(); // New log entry
+
+      await logRef.set({
+        "item_id": itemId,
+        "quantity": quantity,
+        "reason": reason,
+        "storeId": storeId,
+        "type": type,
+        "created_at": FieldValue.serverTimestamp(),
+      });
+
+      print(
+          "✅ Inventory log added: Item ID - $itemId | Type - $type | Qty - $quantity");
+    } catch (e) {
+      print("❌ Error inserting into inventory_log: $e");
     }
   }
 
@@ -203,6 +239,64 @@ class InventoryDatabase {
       print("✅ Item updated successfully: ${item.itemId}");
     } catch (e) {
       print("❌ Error updating item: $e");
+      throw e;
+    }
+  }
+
+  /// ✅ Reduce stock & log it in inventory logs
+  Future<void> reduceStock({
+    required String itemId,
+    required int quantity,
+    required String reason,
+    required String storeId,
+  }) async {
+    final DocumentReference itemRef = _db.collection('items').doc(itemId);
+    final DocumentReference logRef = _db.collection('inventory_log').doc();
+    final WriteBatch batch = _db.batch();
+
+    try {
+      // 🔹 Fetch current stock
+      DocumentSnapshot itemSnapshot = await itemRef.get();
+
+      if (!itemSnapshot.exists) {
+        print("❌ Error: Item not found");
+        return;
+      }
+
+      Map<String, dynamic> itemData =
+          itemSnapshot.data() as Map<String, dynamic>;
+      int currentStock = (itemData['total_stock'] ?? 0).toInt();
+
+      if (quantity > currentStock) {
+        print("⚠️ Cannot reduce more than available stock!");
+        return;
+      }
+
+      // 🔹 Calculate new stock level
+      int newStock = currentStock - quantity;
+
+      // 🔹 Prepare inventory log
+      batch.set(logRef, {
+        "item_id": itemId,
+        "quantity": quantity,
+        "reason": reason,
+        "storeId": storeId,
+        "type": "Stock Reduction",
+        "created_at": FieldValue.serverTimestamp(),
+      });
+
+      // 🔹 Update stock in Firestore
+      batch.update(itemRef, {
+        "total_stock": newStock,
+        "last_updated": FieldValue.serverTimestamp(),
+      });
+
+      await batch.commit();
+
+      print(
+          "✅ Stock reduced & log created: $quantity units removed from Item $itemId.");
+    } catch (e) {
+      print("❌ Error reducing stock: $e");
       throw e;
     }
   }

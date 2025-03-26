@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:valgrow_ui/components/general_components/FBA.dart';
+import 'package:valgrow_ui/components/general_components/FBA_multi.dart';
 import 'package:valgrow_ui/components/general_components/appbar.dart';
 import 'package:valgrow_ui/components/general_components/text.dart';
-import 'package:valgrow_ui/components/inventory_components/add_batch_modal.dart';
 import 'package:valgrow_ui/models/batch_details.dart';
 import 'package:valgrow_ui/models/item_details.dart';
+import 'package:valgrow_ui/pages/inventory/add_batch_modal.dart';
 import 'package:valgrow_ui/pages/inventory/edit_item.dart';
+import 'package:valgrow_ui/pages/inventory/reduce_stocks.dart';
 import 'package:valgrow_ui/services/database/database_provider.dart';
 
 class ItemDetailsPage extends StatefulWidget {
@@ -122,29 +123,57 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
           ),
         ),
       ),
-      floatingActionButton: MyFloatingActionButton(
-        text: "Add Batch",
-        onPressed: () {
-          showDialog(
-            context: context,
-            builder: (context) {
-              return AddBatchModal(
-                onAddBatch: (purchasePrice, quantity, expirationDate) {
-                  // ✅ Ensure the function is executed AFTER closing AddBatchModal
-                  Future.delayed(Duration(milliseconds: 100), () {
-                    if (mounted) {
-                      _showConfirmationDialog(
-                          purchasePrice, quantity, expirationDate);
-                    }
-                  });
+      floatingActionButton: MyFloatingActionButtonMulti(
+        text: "Manage Stocks",
+        choices: [
+          {
+            "label": "Add Stocks (by batch)",
+            "icon": Icons.layers, // ✅ Choice Icon
+            "action": () {
+              showDialog(
+                context: context,
+                builder: (context) {
+                  return AddBatchModal(
+                    onAddBatch: (purchasePrice, quantity, expirationDate) {
+                      // ✅ Ensure the function is executed AFTER closing AddBatchModal
+                      Future.delayed(Duration(milliseconds: 100), () {
+                        if (mounted) {
+                          _showConfirmationDialog(
+                              purchasePrice, quantity, expirationDate);
+                        }
+                      });
+                    },
+                  );
                 },
               );
             },
-          );
-        },
+          },
+          {
+            "label": "Update Stock",
+            "icon": Icons.add_shopping_cart, // ✅ Choice Icon
+            "action": () {
+              showDialog(
+                context: context,
+                builder: (context) => ReduceStocksModal(
+                  currentStock:
+                      widget.item.total_stock, // ✅ Pass current stock count
+                  onSave: (int quantity, String reason) {
+                    // ✅ Call reduceStock method from provider
+                    Provider.of<DatabaseProvider>(context, listen: false)
+                        .reduceStock(
+                      itemId: widget.item.itemId, // ✅ Use item's ID
+                      quantity: quantity,
+                      reason: reason,
+                    );
+                  },
+                ),
+              );
+            },
+          }
+        ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.symmetric(vertical: 13.0, horizontal: 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -155,7 +184,8 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
               ),
               elevation: 3,
               child: Padding(
-                padding: const EdgeInsets.all(10.0),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 10.0, horizontal: 5),
                 child: Consumer<DatabaseProvider>(
                   builder: (context, provider, child) {
                     final item = provider.items.firstWhere(
@@ -166,22 +196,45 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // image code
                         Center(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(10),
-                            child: item.item_image.isNotEmpty
-                                ? Image.network(
-                                    item.item_image,
-                                    height: 200,
-                                    fit: BoxFit.cover,
-                                  )
-                                : Image.asset(
-                                    'assets/placeholder.png',
-                                    height: 200,
-                                    fit: BoxFit.cover,
-                                  ),
+                          child: Container(
+                            width: 200, // ✅ Fixed width
+                            height: 200, // ✅ Fixed height
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(
+                                  15), // ✅ Rounded Corners
+                              border: Border.all(
+                                  color: Colors.grey.shade300,
+                                  width: 2), // ✅ Border
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black12,
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 4),
+                                )
+                              ],
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(
+                                  15), // ✅ Match Border Radius
+                              child: item.item_image.isNotEmpty
+                                  ? Image.network(
+                                      item.item_image,
+                                      width: double.infinity,
+                                      height: double.infinity,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : Image.asset(
+                                      'assets/placeholder.png',
+                                      width: double.infinity,
+                                      height: double.infinity,
+                                      fit: BoxFit.cover,
+                                    ),
+                            ),
                           ),
                         ),
+
                         const SizedBox(height: 10),
                         _buildDetailRow("Name:", item.item_name),
                         _buildDetailRow("Category:", item.category),
@@ -276,16 +329,45 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
 /// 🔹 Widget to display each detail row neatly
 Widget _buildDetailRow(String label, String value) {
   return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 5.0),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-        Text(value, style: const TextStyle(fontSize: 16)),
-      ],
+    padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
+    child: Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50, // ✅ Light contrast background
+        borderRadius: BorderRadius.circular(8), // ✅ Rounded for smooth UI
+      ),
+      child: Row(
+        crossAxisAlignment:
+            CrossAxisAlignment.start, // ✅ Aligns multiline text properly
+        children: [
+          // 🔹 Label (Bold & Emphasized)
+          Expanded(
+            flex: 3,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700, // ✅ Bolder for emphasis
+                color: Colors.black87, // ✅ Slightly darker for contrast
+              ),
+            ),
+          ),
+
+          // 🔹 Value (Lighter for distinction)
+          Expanded(
+            flex: 5,
+            child: Text(
+              value,
+              textAlign: TextAlign.right, // ✅ Aligns right for a clean layout
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500, // ✅ Medium weight for balance
+                color: Colors.black54, // ✅ Lighter for contrast
+              ),
+            ),
+          ),
+        ],
+      ),
     ),
   );
 }
