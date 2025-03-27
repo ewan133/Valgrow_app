@@ -1,11 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:valgrow_ui/models/store_profile.dart';
 import 'package:valgrow_ui/models/user_profile.dart';
-import 'package:valgrow_ui/services/notifs/notification_service.dart';
 
 class ManagementDatabase {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
-  final NotificationService _notif = NotificationService();
 
   /// ✅ **Fetch all employees affiliated with a store (excluding the owner)**
   Future<List<UserProfile>> getEmployeesByStoreId(String storeId) async {

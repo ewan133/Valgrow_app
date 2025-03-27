@@ -61,12 +61,14 @@ class _HomePageState extends State<HomePage> {
       // Fetch user data using Provider
       final databaseProvider = context.read<DatabaseProvider>();
       await databaseProvider.fetchUserProfile(uid);
-
+      
 
       final user = databaseProvider.user;
       await databaseProvider.fetchStoreProfile(user!.storeId);
       await databaseProvider.fetchItemsByStoreId();
       await databaseProvider.fetchCustomersByStoreId();
+      await databaseProvider.checkOverdueDebtsForNotifications();
+      await databaseProvider.fetchUserNotifications();
 
       if (user.storeId == null || user.storeId.isEmpty) {
         Navigator.pushReplacement(

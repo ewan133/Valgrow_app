@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
+import 'package:valgrow_ui/pages/POS/receipt.dart';
 import 'package:valgrow_ui/pages/POS/sucess_page.dart';
 import 'package:valgrow_ui/services/database/database_provider.dart';
 
@@ -319,36 +320,74 @@ class _PaidTransactionState extends State<PaidTransaction> {
   }
 
 // ✅ Function to process the payment after confirmation
-  void _processPayment(double totalAmount, double receivedAmount, bool isDebt) {
+  void _processPayment(
+      double totalAmount, double receivedAmount, bool isDebt) async {
     try {
       final databaseProvider =
           Provider.of<DatabaseProvider>(context, listen: false);
 
       print("✅ Processing Payment...");
-      databaseProvider.processPOS(
+
+      // Calculate Due Date for Debt Transactions (Default: 7 Days from Now)
+      DateTime? dueDate =
+          isDebt ? DateTime.now().add(const Duration(days: 7)) : null;
+
+      // Ensure at least one payment method is selected
+      if (_selectedPaymentMethod.isEmpty) {
+        Fluttertoast.showToast(
+          msg: "Please select a payment method.",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.TOP,
+          backgroundColor: Colors.orange,
+          textColor: Colors.white,
+          fontSize: 16.0,
+        );
+        return;
+      }
+
+      // Ensure user is not paying more than they owe
+      if (!isDebt && receivedAmount < totalAmount) {
+        Fluttertoast.showToast(
+          msg: "Insufficient payment amount.",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.TOP,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+          fontSize: 16.0,
+        );
+        return;
+      }
+
+      String? transactionId = await databaseProvider.processPOS(
         totalAmount: totalAmount,
         amountPaid: receivedAmount,
         paymentMethod: _selectedPaymentMethod.toLowerCase(),
-        customerId: null,
+        customerId: null, // If there's a customer, pass their ID here
         isDebt: isDebt,
+        due_date: dueDate,
       );
 
-      // ✅ Reset UI
+      // ✅ Reset UI after successful transaction
       setState(() {
         _receivingAmountController.clear();
         _change = 0.00;
         _selectedPaymentMethod = "Cash";
       });
 
-      // ✅ Show Success Toast
+      // ✅ Navigate to Success Page
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const SuccessPage()),
+        MaterialPageRoute(
+          builder: (context) => ReceiptPage(
+            transactionId: transactionId!, // Pass actual transaction ID
+          ),
+        ),
       );
+      
     } catch (e) {
       Fluttertoast.showToast(
-        msg: "Something went wrong.",
-        toastLength: Toast.LENGTH_SHORT,
+        msg: "❌ Something went wrong: $e",
+        toastLength: Toast.LENGTH_LONG,
         gravity: ToastGravity.TOP,
         backgroundColor: Colors.red,
         textColor: Colors.white,

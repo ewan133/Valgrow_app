@@ -115,28 +115,28 @@ class InventoryDatabase {
 
   Future<void> addBatch(ItemBatch batch) async {
     try {
-      // Reference to Firestore batch collection
+      // 🔹 Reference Firestore batch collection
       final batchRef = _db.collection('item_batch').doc();
 
-      // Convert batch to a Map and remove the 'batchId' field before adding
+      // 🔹 Convert batch to a Map and remove the 'batchId' field before adding
       Map<String, dynamic> batchMap = batch.toMap();
       batchMap.remove('batchId');
 
-      // Add the batch to Firestore
+      // 🔹 Add batch to Firestore
       await batchRef.set(batchMap);
 
       print("✅ Batch added successfully for item: ${batch.itemId}");
 
-      // ✅ Insert record into inventory_log
+      // ✅ Insert into inventory_log
       await _insertInventoryLog(
         itemId: batch.itemId,
         quantity: batch.quantity,
-        reason: "New Stock Added", // ✅ Default reason for batch insert
+        reason: "New Stock Added", // ✅ Log stock addition
         storeId: batch.storeId,
-        type: "Addition", // ✅ Specify this as an addition
+        type: "Addition",
       );
 
-      // ✅ Update total_stock of the item considering total batches - total sales
+      // ✅ **Fix: Update stock immediately after adding batch**
       await _updateItemStock(batch.itemId);
     } catch (e) {
       print("❌ Error adding batch: $e");
@@ -173,36 +173,45 @@ class InventoryDatabase {
 
   Future<void> _updateItemStock(String itemId) async {
     try {
-      // Reference to the item document
       final itemRef = _db.collection('items').doc(itemId);
 
-      // Fetch total quantity from batches
-      QuerySnapshot batchQuery = await _db
-          .collection('item_batch')
+      // 🔹 Fetch total quantity added from inventory_log
+      QuerySnapshot additionLogs = await _db
+          .collection('inventory_log')
           .where('item_id', isEqualTo: itemId)
+          .where('type', isEqualTo: "Addition")
           .get();
 
-      int totalBatchQuantity = batchQuery.docs.fold(0, (sum, doc) {
-        return sum +
-            (doc['quantity'] as num? ?? 0).toInt(); // Ensure conversion to int
+      int totalAddedStock = additionLogs.docs.fold(0, (sum, doc) {
+        return sum + (doc['quantity'] as num? ?? 0).toInt();
       });
 
-      // Fetch total quantity sold from transaction_items
-      QuerySnapshot transactionQuery = await _db
+      // 🔹 Fetch total quantity reduced from inventory_log
+      QuerySnapshot reductionLogs = await _db
+          .collection('inventory_log')
+          .where('item_id', isEqualTo: itemId)
+          .where('type', isEqualTo: "Reduction")
+          .get();
+
+      int totalReducedStock = reductionLogs.docs.fold(0, (sum, doc) {
+        return sum + (doc['quantity'] as num? ?? 0).toInt();
+      });
+
+      // 🔹 Fetch total quantity sold from transaction_items
+      QuerySnapshot salesLogs = await _db
           .collection('transaction_items')
           .where('item_id', isEqualTo: itemId)
           .get();
 
-      int totalSoldQuantity = transactionQuery.docs.fold(0, (sum, doc) {
-        return sum +
-            (doc['quantity'] as num? ?? 0).toInt(); // Ensure conversion to int
+      int totalSoldStock = salesLogs.docs.fold(0, (sum, doc) {
+        return sum + (doc['quantity'] as num? ?? 0).toInt();
       });
 
-      // Calculate precise stock
-      int newStock = totalBatchQuantity - totalSoldQuantity;
-      if (newStock < 0) newStock = 0; // Ensure stock doesn't go negative
+      // 🔹 Calculate new stock correctly
+      int newStock = totalAddedStock - (totalReducedStock + totalSoldStock);
+      if (newStock < 0) newStock = 0; // Ensure stock never goes negative
 
-      // Update the total_stock in Firestore
+      // 🔹 Update Firestore
       await itemRef.update({
         'total_stock': newStock,
         'last_updated': FieldValue.serverTimestamp(),
@@ -257,7 +266,6 @@ class InventoryDatabase {
     try {
       // 🔹 Fetch current stock
       DocumentSnapshot itemSnapshot = await itemRef.get();
-
       if (!itemSnapshot.exists) {
         print("❌ Error: Item not found");
         return;
@@ -274,14 +282,15 @@ class InventoryDatabase {
 
       // 🔹 Calculate new stock level
       int newStock = currentStock - quantity;
+      if (newStock < 0) newStock = 0; // Prevent negative stock
 
-      // 🔹 Prepare inventory log
+      // 🔹 Log stock reduction
       batch.set(logRef, {
         "item_id": itemId,
         "quantity": quantity,
         "reason": reason,
         "storeId": storeId,
-        "type": "Stock Reduction",
+        "type": "Reduction",
         "created_at": FieldValue.serverTimestamp(),
       });
 
@@ -291,10 +300,14 @@ class InventoryDatabase {
         "last_updated": FieldValue.serverTimestamp(),
       });
 
-      await batch.commit();
+      await batch
+          .commit(); // ✅ **Fix: Batch commit ensures both updates happen together**
 
       print(
           "✅ Stock reduced & log created: $quantity units removed from Item $itemId.");
+
+      // ✅ **Fix: Recalculate stock after reducing to ensure accuracy**
+      await _updateItemStock(itemId);
     } catch (e) {
       print("❌ Error reducing stock: $e");
       throw e;

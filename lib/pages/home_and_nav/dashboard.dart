@@ -35,15 +35,47 @@ class _DashboardPageState extends State<DashboardPage> {
           ],
         ),
         actions: [
-          IconButton(
-            onPressed: () {
-              Navigator.pushNamed(context, "/notifications");
-            },
-            icon: Icon(
-              Icons.notifications_on_outlined,
-              color: Colors.black,
-              size: 40,
-            ),
+          Stack(
+            children: [
+              IconButton(
+                onPressed: () {
+                  Navigator.pushNamed(context, "/notifications");
+                },
+                icon: const Icon(
+                  Icons.notifications_on_outlined,
+                  color: Colors.black,
+                  size: 40,
+                ),
+              ),
+
+              // 🔥 Notification Badge
+              Positioned(
+                right: 6,
+                top: 6,
+                child: Consumer<DatabaseProvider>(
+                  builder: (context, provider, child) {
+                    int unreadCount = provider.unreadNotificationsCount;
+                    return unreadCount > 0
+                        ? Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: const BoxDecoration(
+                              color: Colors.red,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Text(
+                              unreadCount.toString(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          )
+                        : const SizedBox(); // ✅ Hide badge if count is 0
+                  },
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -193,7 +225,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                   ? Colors.black
                                   : Colors.grey),
                         ),
-                         MyHomeButton(
+                        MyHomeButton(
                           text: "Reports",
                           onPressed: user?.reports == true
                               ? () => Navigator.pushNamed(context, '/reports')
@@ -214,7 +246,7 @@ class _DashboardPageState extends State<DashboardPage> {
                               color: user?.expenses == true
                                   ? Colors.black
                                   : Colors.grey),
-                        ),             
+                        ),
                         MyHomeButton(
                           text: "Management",
                           onPressed: user?.role == "Employee"

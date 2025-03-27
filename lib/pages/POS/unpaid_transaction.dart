@@ -3,7 +3,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'package:valgrow_ui/models/customer_model.dart';
 import 'package:valgrow_ui/pages/POS/customer_selection.dart';
-import 'package:valgrow_ui/pages/POS/sucess_page.dart';
+import 'package:valgrow_ui/pages/POS/receipt.dart';
 import 'package:valgrow_ui/services/database/database_provider.dart';
 
 class UnpaidTransaction extends StatefulWidget {
@@ -108,13 +108,13 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
   }
 
   /// ✅ Function to Process Payment (Moved from `_confirmPayment()`)
-  void _processPayment() {
+  void _processPayment() async {
     try {
       final databaseProvider =
           Provider.of<DatabaseProvider>(context, listen: false);
 
       print("✅ Processing Payment...");
-      databaseProvider.processPOS(
+      String? transactionId = await databaseProvider.processPOS(
         totalAmount: totalAmount,
         amountPaid: _receivedAmount.toDouble() ?? 0.00,
         paymentMethod: "debt",
@@ -132,10 +132,14 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
         _selectedDueDate = null;
       });
 
-      // ✅ Show Success Toast
+      // ✅ Navigate to Success Page
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const SuccessPage()),
+        MaterialPageRoute(
+          builder: (context) => ReceiptPage(
+            transactionId: transactionId!, // Pass actual transaction ID
+          ),
+        ),
       );
     } catch (e) {
       Fluttertoast.showToast(

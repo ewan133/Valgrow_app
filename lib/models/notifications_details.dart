@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
-
 class NotificationDetails {
   final String notificationId;
   final String title;
@@ -51,6 +50,28 @@ class NotificationDetails {
       'userId': userId,
       'timestamp': Timestamp.fromDate(timestamp),
     };
+  }
+
+  /// ✅ **copyWith Method** - Allows modifying individual properties
+  NotificationDetails copyWith({
+    String? title,
+    String? message,
+    String? icon,
+    bool? isUnread,
+    String? storeId,
+    String? userId,
+    DateTime? timestamp,
+  }) {
+    return NotificationDetails(
+      notificationId: notificationId,
+      title: title ?? this.title,
+      message: message ?? this.message,
+      icon: icon ?? this.icon,
+      isUnread: isUnread ?? this.isUnread,
+      storeId: storeId ?? this.storeId,
+      userId: userId ?? this.userId,
+      timestamp: timestamp ?? this.timestamp,
+    );
   }
 
   /// 🔥 **Convert Timestamp to 'Time Ago' Format**

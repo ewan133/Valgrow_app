@@ -9,6 +9,7 @@ import 'package:valgrow_ui/components/general_components/appbar.dart';
 import 'package:valgrow_ui/components/general_components/text.dart';
 import 'package:valgrow_ui/models/customer_model.dart';
 import 'package:valgrow_ui/models/debts_model.dart';
+import 'package:valgrow_ui/pages/POS/receipt.dart';
 import 'package:valgrow_ui/pages/debts/debts_sucess.dart';
 import 'package:valgrow_ui/services/database/database_provider.dart';
 import 'package:valgrow_ui/services/remote_cofig.dart';
@@ -435,90 +436,90 @@ Please settle your balance before the due date. Thank you!
                                     _customerMoneyController.text) ??
                                 0.0;
 
+                            // ✅ Validate payment amount
                             if (payingAmount <= 0 ||
                                 payingAmount > widget.debtDetails.balance) {
                               Fluttertoast.showToast(
                                 msg: "Invalid payment amount!",
                                 toastLength: Toast.LENGTH_SHORT,
-                                gravity: ToastGravity
-                                    .BOTTOM, // You can change this to CENTER or TOP
+                                gravity: ToastGravity.BOTTOM,
                                 backgroundColor: Colors.red,
                                 textColor: Colors.white,
                                 fontSize: 16.0,
                               );
-                              setState(() =>
-                                  _isProcessing = false); // ✅ Stop processing
+                              setState(() => _isProcessing = false);
                               return;
                             }
 
+                            // ✅ Ensure received amount is not less than paying amount
                             if (receivedAmount < payingAmount) {
                               Fluttertoast.showToast(
                                 msg:
                                     "Received amount cannot be less than paying amount!",
                                 toastLength: Toast.LENGTH_SHORT,
-                                gravity: ToastGravity
-                                    .BOTTOM, // You can change this to CENTER or TOP
+                                gravity: ToastGravity.BOTTOM,
                                 backgroundColor: Colors.red,
                                 textColor: Colors.white,
                                 fontSize: 16.0,
                               );
-                              setState(() =>
-                                  _isProcessing = false); // ✅ Stop processing
+                              setState(() => _isProcessing = false);
                               return;
                             }
 
+                            // ✅ Ensure payment method is selected
                             if (_selectedPaymentMethod.isEmpty) {
                               Fluttertoast.showToast(
                                 msg: "Please select a payment method!",
                                 toastLength: Toast.LENGTH_SHORT,
-                                gravity: ToastGravity
-                                    .BOTTOM, // You can change this to CENTER or TOP
+                                gravity: ToastGravity.BOTTOM,
                                 backgroundColor: Colors.red,
                                 textColor: Colors.white,
                                 fontSize: 16.0,
                               );
-                              setState(() =>
-                                  _isProcessing = false); // ✅ Stop processing
+                              setState(() => _isProcessing = false);
                               return;
                             }
 
-                            bool success = await Provider.of<DatabaseProvider>(
-                                    context,
-                                    listen: false)
-                                .processDebtPayment(
+                            // ✅ Process debt payment and get the transaction ID
+                            String? transactionId =
+                                await Provider.of<DatabaseProvider>(
+                              context,
+                              listen: false,
+                            ).processDebtPayment(
                               debtId: widget.debtDetails.debtId,
                               amountPaid: payingAmount,
                               paymentMethod: _selectedPaymentMethod,
                               storeId: widget.debtDetails.storeId,
                               customerId: widget.customerDetails.customerId,
                               customerName: widget.customerDetails.name,
-                              remainingBalance: widget.debtDetails.balance - payingAmount,
+                              remainingBalance:
+                                  widget.debtDetails.balance - payingAmount,
                             );
 
-                            if (success) {
+                            if (transactionId != null) {
                               final provider = Provider.of<DatabaseProvider>(
                                   context,
                                   listen: false);
 
-                              // ✅ Update the selected customer with refreshed data
+                              // ✅ Refresh customer and store data
                               await provider.updateSelectedCustomerAfterPayment(
                                   widget.customerDetails.customerId);
                               await provider.fetchDebtsWithCustomerInfo();
 
-                              // ✅ Navigate to success page
+                              // ✅ Navigate to receipt page after successful payment
                               Navigator.pop(context, provider.selectedCustomer);
                               Navigator.pushReplacement(
                                 context,
                                 MaterialPageRoute(
-                                    builder: (context) =>
-                                        const DebtSuccessPage()),
+                                  builder: (context) =>
+                                      ReceiptPage(transactionId: transactionId),
+                                ),
                               );
                             } else {
                               Fluttertoast.showToast(
                                 msg: "Payment Failed!",
                                 toastLength: Toast.LENGTH_SHORT,
-                                gravity: ToastGravity
-                                    .BOTTOM, // You can change this to CENTER or TOP
+                                gravity: ToastGravity.BOTTOM,
                                 backgroundColor: Colors.red,
                                 textColor: Colors.white,
                                 fontSize: 16.0,

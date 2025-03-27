@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 class POSDatabase {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  Future<void> processTransaction({
+  Future<String?> processTransaction({
     required String storeId,
     required String userId,
     required List<Map<String, dynamic>> items,
@@ -17,19 +17,42 @@ class POSDatabase {
     DateTime? due_date,
   }) async {
     try {
+      // 🔍 Validate required fields before proceeding
+      if (storeId.isEmpty || userId.isEmpty || paymentMethod.isEmpty) {
+        throw Exception("❌ ERROR: Required fields are missing!");
+      }
+
       final transactionRef = _db.collection('transactions').doc();
       final String transactionId = transactionRef.id;
       double change =
-          (amountPaid > totalAmount) ? (amountPaid - totalAmount) : 0.0;
+          (amountPaid >= totalAmount) ? (amountPaid - totalAmount) : 0.0;
+
+      // Determine transaction status
       String status = (amountPaid >= totalAmount)
           ? "paid"
           : (amountPaid > 0.0 ? "partial" : "unpaid");
 
-      // Create transaction
+      print("🔹 Processing Transaction...");
+      print("Transaction ID: $transactionId");
+      print("Store ID: $storeId");
+      print("User ID: $userId");
+      print("Total Amount: $totalAmount");
+      print("Amount Paid: $amountPaid");
+      print("Change: $change");
+      print("Payment Method: $paymentMethod");
+      print("Transaction Status: $status");
+      print("Customer ID: ${customerId ?? '⚠️ No Customer (Guest)'}");
+      print("Customer Name: $customerName");
+
+      if (items.isEmpty) {
+        throw Exception("❌ ERROR: No items found in the transaction!");
+      }
+
+      // 🔹 Create Transaction in Firestore
       await transactionRef.set({
         "storeId": storeId,
         "userId": userId,
-        "customerId": customerId,
+        "customerId": customerId ?? "guest",
         "total_amount": totalAmount,
         "amount_paid": amountPaid,
         "change": change,
@@ -39,33 +62,41 @@ class POSDatabase {
         "updated_at": FieldValue.serverTimestamp(),
       });
 
-      // Add transaction items & update stock
+      // 🔹 Add transaction items & update stock
       for (var item in items) {
+        if (item['item_id'] == null || item['quantity'] == null) {
+          print("⚠️ Skipping invalid item: $item");
+          continue;
+        }
+        print(
+            "📦 Processing Item: ${item['item_id']} - Quantity: ${item['quantity']}");
         await _addTransactionItem(transactionId, item);
         await _updateItemStock(item['item_id'], item['quantity']);
       }
 
-      // If payment is not complete, create a debt entry
+      // 🔹 Handle Debt Entry if the transaction is not fully paid
       if (status != "paid" && customerId != null) {
+        print("📝 Creating Debt Entry for Customer: $customerId");
         await _createDebtEntry(transactionId, customerId, storeId, totalAmount,
             amountPaid, due_date);
         await addDebtNotification(
-            storeOwnerId: storeOwnerId,
-            storeId: storeId,
-            customerId: customerId,
-            customerName: customerName,
-            balance: totalAmount - amountPaid,
-            dueDate: due_date);
-        print("✅ New debt notification are added!");
+          storeOwnerId: storeOwnerId,
+          storeId: storeId,
+          customerId: customerId,
+          customerName: customerName,
+          balance: totalAmount - amountPaid,
+          dueDate: due_date,
+        );
+        print("✅ New Debt Notification Added!");
       }
-      print("cusotmer Id : $customerId");
-      print("total amount : $totalAmount");
-      print("recieved amount : $amountPaid");
-      print("change : $due_date");
-      print("✅ Transaction processed successfully: $transactionId");
+
+      print("✅ Transaction Processed Successfully: $transactionId");
+
+      // ✅ Return the Transaction ID
+      return transactionId;
     } catch (e) {
-      print("❌ Error processing transaction: $e");
-      throw e;
+      print("❌ ERROR processing transaction: $e");
+      return null; // Return null in case of an error
     }
   }
 
@@ -108,11 +139,40 @@ class POSDatabase {
         });
 
         print("✅ Stock updated for item: $itemId | New stock: $newStock");
+
+        // 🔥 Insert a notification if stock goes to 0
+        if (newStock == 0) {
+          await _insertLowStockNotification(
+              itemId, itemDoc['item_name'], itemDoc['storeId']);
+        }
       } else {
         print("⚠️ Item not found: $itemId");
       }
     } catch (e) {
       print("❌ Error updating stock: $e");
+      throw e;
+    }
+  }
+
+  /// 🔥 **Insert Notification for Out of Stock Item**
+  Future<void> _insertLowStockNotification(
+      String itemId, String itemName, String storeId) async {
+    try {
+      final notificationRef = _db.collection('notifications').doc();
+
+      await notificationRef.set({
+        "title": "Stock Alert",
+        "message": "The item '$itemName' is out of stock!",
+        "icon": "warning", // Icon name (use mapping in UI)
+        "isUnread": true,
+        "storeId": storeId,
+        "userId": storeId, // Notify store owner
+        "timestamp": FieldValue.serverTimestamp(),
+      });
+
+      print("🚨 Low stock notification sent for: $itemName ($itemId)");
+    } catch (e) {
+      print("❌ Error inserting low stock notification: $e");
       throw e;
     }
   }
@@ -238,5 +298,176 @@ class POSDatabase {
     }
   }
 
-  
+  Future<Map<String, dynamic>?> getTransactionDetails(
+      String transactionId) async {
+    try {
+      print("🔍 Fetching details for Transaction ID: $transactionId");
+
+      // 🔹 Fetch the transaction details
+      DocumentSnapshot transactionDoc =
+          await _db.collection('transactions').doc(transactionId).get();
+
+      if (!transactionDoc.exists) {
+        print("❌ Transaction not found: $transactionId");
+        return null;
+      }
+
+      Map<String, dynamic> transactionData =
+          transactionDoc.data() as Map<String, dynamic>;
+
+      // 🔹 Fetch all items in the transaction
+      List<Map<String, dynamic>> items = [];
+
+      QuerySnapshot itemsQuery = await _db
+          .collection('transaction_items')
+          .where('transaction_id', isEqualTo: transactionId)
+          .get();
+
+      for (var itemDoc in itemsQuery.docs) {
+        Map<String, dynamic> itemData = itemDoc.data() as Map<String, dynamic>;
+
+        // ✅ Fetch item details from the "items" collection
+        DocumentSnapshot itemDetailsDoc =
+            await _db.collection('items').doc(itemData['item_id']).get();
+
+        if (itemDetailsDoc.exists) {
+          Map<String, dynamic> itemDetails =
+              itemDetailsDoc.data() as Map<String, dynamic>;
+          itemData['item_name'] = itemDetails['item_name']; // ✅ Add item name
+        } else {
+          itemData['item_name'] = "Unknown Item"; // ✅ Default if not found
+        }
+
+        items.add(itemData);
+      }
+
+      // 🔹 Fetch customer details if customerId exists and is not a guest
+      Map<String, dynamic>? customerData;
+      if (transactionData['customerId'] != null &&
+          transactionData['customerId'] != "guest") {
+        DocumentSnapshot customerDoc = await _db
+            .collection('customers')
+            .doc(transactionData['customerId'])
+            .get();
+
+        if (customerDoc.exists) {
+          customerData = customerDoc.data() as Map<String, dynamic>;
+        }
+      }
+
+      // 🔹 Fetch debt details if the transaction is unpaid or partial
+      Map<String, dynamic>? debtData;
+      if (transactionData['status'] == "unpaid" ||
+          transactionData['status'] == "partial") {
+        QuerySnapshot debtQuery = await _db
+            .collection('debts')
+            .where('transactionId', isEqualTo: transactionId)
+            .get();
+
+        if (debtQuery.docs.isNotEmpty) {
+          debtData = debtQuery.docs.first.data() as Map<String, dynamic>;
+        }
+      }
+
+      // 🔹 Fetch debt payments associated with this transaction
+      List<Map<String, dynamic>> debtPayments = [];
+      QuerySnapshot debtPaymentQuery = await _db
+          .collection('debt_payments')
+          .where('transactionId', isEqualTo: transactionId)
+          .get();
+
+      if (debtPaymentQuery.docs.isNotEmpty) {
+        for (var paymentDoc in debtPaymentQuery.docs) {
+          Map<String, dynamic> paymentData =
+              paymentDoc.data() as Map<String, dynamic>;
+
+          // ✅ Fetch corresponding original transaction if available
+          if (paymentData['transactionId'] != null) {
+            DocumentSnapshot originalTransactionDoc = await _db
+                .collection('transactions')
+                .doc(paymentData['transactionId'])
+                .get();
+
+            if (originalTransactionDoc.exists) {
+              paymentData['original_transaction'] =
+                  originalTransactionDoc.data() as Map<String, dynamic>;
+            }
+          }
+
+          debtPayments.add(paymentData);
+        }
+      }
+
+      // 🔹 If this is a debt payment, fetch original transaction details
+      if (transactionData['status'] == 'paid' && debtPayments.isNotEmpty) {
+        QuerySnapshot linkedDebtQuery = await _db
+            .collection('debts')
+            .where('transactionId', isEqualTo: transactionId)
+            .get();
+
+        if (linkedDebtQuery.docs.isNotEmpty) {
+          Map<String, dynamic> linkedDebt =
+              linkedDebtQuery.docs.first.data() as Map<String, dynamic>;
+
+          DocumentSnapshot originalTransactionDoc = await _db
+              .collection('transactions')
+              .doc(linkedDebt['transactionId'])
+              .get();
+
+          if (originalTransactionDoc.exists) {
+            Map<String, dynamic> originalTransactionData =
+                originalTransactionDoc.data() as Map<String, dynamic>;
+
+            // ✅ Fetch original transaction items
+            QuerySnapshot originalItemsQuery = await _db
+                .collection('transaction_items')
+                .where('transaction_id', isEqualTo: linkedDebt['transactionId'])
+                .get();
+
+            List<Map<String, dynamic>> originalItems = [];
+
+            for (var originalItemDoc in originalItemsQuery.docs) {
+              Map<String, dynamic> originalItemData =
+                  originalItemDoc.data() as Map<String, dynamic>;
+
+              // ✅ Fetch item names for original transaction
+              DocumentSnapshot itemDetailsDoc = await _db
+                  .collection('items')
+                  .doc(originalItemData['item_id'])
+                  .get();
+
+              if (itemDetailsDoc.exists) {
+                Map<String, dynamic> itemDetails =
+                    itemDetailsDoc.data() as Map<String, dynamic>;
+                originalItemData['item_name'] = itemDetails['item_name'];
+              } else {
+                originalItemData['item_name'] = "Unknown Item";
+              }
+
+              originalItems.add(originalItemData);
+            }
+
+            // ✅ Merge original transaction details
+            transactionData['original_transaction'] = originalTransactionData;
+            transactionData['original_items'] = originalItems;
+          }
+        }
+      }
+
+      // 🔹 Combine all the fetched data into a single map
+      Map<String, dynamic> transactionDetails = {
+        "transaction": transactionData,
+        "items": items, // ✅ Includes item names
+        "customer": customerData,
+        "debt": debtData,
+        "debt_payments": debtPayments.isNotEmpty ? debtPayments : null,
+      };
+
+      print("✅ Transaction details retrieved successfully!");
+      return transactionDetails;
+    } catch (e) {
+      print("❌ Error fetching transaction details: $e");
+      return null;
+    }
+  }
 }

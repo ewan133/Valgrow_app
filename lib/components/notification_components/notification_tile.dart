@@ -6,12 +6,14 @@ class NotificationTile extends StatelessWidget {
   final String time;
   final IconData icon;
   final bool isUnread;
+  final VoidCallback onTap; // ✅ Callback for showing details
 
   const NotificationTile({
     super.key,
     required this.title,
     required this.message,
     required this.time,
+    required this.onTap, // ✅ Receive callback function
     this.icon = Icons.notifications,
     this.isUnread = false,
   });
@@ -19,75 +21,86 @@ class NotificationTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4), // ✅ Padding on both sides
-      child: Container(
-        decoration: BoxDecoration(
-          color: isUnread ? Colors.blue.shade50 : Colors.white, // Highlight unread notifications
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isUnread ? Colors.blueAccent : Colors.grey.shade300,
-            width: isUnread ? 1.5 : 1,
+          onTap: onTap, // ✅ Call onTap when tapped
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // ✅ Notification Icon with Background
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: isUnread ? Colors.blue.shade100 : Colors.grey.shade300,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 28,
+                    color: isUnread ? Colors.blueAccent : Colors.grey.shade700,
+                  ),
+                ),
+                const SizedBox(width: 12),
+
+                // ✅ Notification Content
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      RichText(
+                        text: TextSpan(
+                          style: TextStyle(
+                            fontSize: 14.5,
+                            color: Colors.black,
+                            fontWeight: isUnread ? FontWeight.bold : FontWeight.w500,
+                          ),
+                          children: [
+                            TextSpan(text: title),
+                            const TextSpan(text: "\n"),
+                            TextSpan(
+                              text: message,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[700],
+                                fontWeight: FontWeight.normal,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        time,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // ✅ Unread Indicator (Blue Dot)
+                if (isUnread)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8),
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: const BoxDecoration(
+                        color: Colors.blue,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.all(14),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // ✅ Notification Icon
-            CircleAvatar(
-              radius: 28,
-              backgroundColor: isUnread ? Colors.blueAccent : Colors.grey[300],
-              child: Icon(
-                icon,
-                size: 26,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(width: 12),
-
-            // ✅ Notification Content
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: isUnread ? Colors.black : Colors.grey[800],
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    message,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[700],
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-
-            // ✅ Timestamp
-            Text(
-              time,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Colors.grey,
-              ),
-            ),
-          ],
         ),
       ),
     );

@@ -228,7 +228,7 @@ class DebtsDatabase {
     }
   }
 
-  Future<bool> processDebtPayment({
+  Future<String?> processDebtPayment({
     required String debtId,
     required double amountPaid,
     required String paymentMethod,
@@ -245,7 +245,7 @@ class DebtsDatabase {
 
       if (!debtSnapshot.exists) {
         print("❌ Error: Debt record not found.");
-        return false;
+        return null;
       }
 
       Map<String, dynamic> debtData =
@@ -254,12 +254,13 @@ class DebtsDatabase {
       double currentBalance = (debtData['balance'] ?? 0).toDouble();
       double totalAmount = (debtData['total_amount'] ?? 0).toDouble();
       double alreadyPaid = (debtData['amount_paid'] ?? 0).toDouble();
-      String transactionId = debtData['transactionId'] ?? "";
+      String transactionId =
+          debtData['transactionId'] ?? ""; // ✅ Original Transaction ID
 
       // ✅ Ensure the amountPaid is not greater than the balance
       if (amountPaid > currentBalance) {
         print("⚠️ Payment amount cannot exceed the remaining balance.");
-        return false;
+        return null;
       }
 
       // ✅ Calculate new values
@@ -267,7 +268,7 @@ class DebtsDatabase {
       double newTotalPaid = alreadyPaid + amountPaid;
       String newStatus = newBalance == 0 ? "paid" : "partial";
 
-      // ✅ Create a new debt payment entry
+      // ✅ Create a **debt payment entry** linked to the original transaction
       DocumentReference paymentRef = _db.collection('debt_payments').doc();
       batch.set(paymentRef, {
         'debt_id': debtId,
@@ -275,7 +276,8 @@ class DebtsDatabase {
         'payment_date': FieldValue.serverTimestamp(),
         'payment_method': paymentMethod,
         'storeId': storeId,
-        'transactionId': transactionId.isNotEmpty ? transactionId : null,
+        'transactionId':
+            transactionId, // ✅ Link to the **original** transaction
       });
 
       // ✅ Update the debt document
@@ -294,11 +296,11 @@ class DebtsDatabase {
         'total_debt': FieldValue.increment(-amountPaid), // Reduce total debt
       });
 
-      // ✅ (Optional) Update transaction status if needed
+      // ✅ (Optional) Update original transaction status if debt is fully paid
       if (newBalance == 0 && transactionId.isNotEmpty) {
-        DocumentReference transactionRef =
+        DocumentReference originalTransactionRef =
             _db.collection('transactions').doc(transactionId);
-        batch.update(transactionRef, {
+        batch.update(originalTransactionRef, {
           'status': 'paid',
           'updated_at': FieldValue.serverTimestamp(),
         });
@@ -306,11 +308,13 @@ class DebtsDatabase {
 
       // ✅ Commit all updates
       await batch.commit();
-      print("✅ Debt payment processed successfully.");
-      return true;
+
+      print(
+          "✅ Debt payment processed successfully. Transaction ID: $transactionId");
+      return transactionId; // ✅ Return the **original** debt transaction ID
     } catch (e) {
       print("❌ Error processing debt payment: $e");
-      return false;
+      return null;
     }
   }
 

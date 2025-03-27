@@ -15,6 +15,7 @@ import 'package:valgrow_ui/services/database/inventory_database.dart';
 import 'package:valgrow_ui/services/database/management_database.dart';
 import 'package:valgrow_ui/services/database/notifications_database.dart';
 import 'package:valgrow_ui/services/database/pos_database.dart';
+import 'package:valgrow_ui/services/database/reports_database.dart';
 
 class DatabaseProvider extends ChangeNotifier {
   final DatabaseService _db = DatabaseService();
@@ -24,6 +25,7 @@ class DatabaseProvider extends ChangeNotifier {
   final HistoryDatabase _historyDatabase = HistoryDatabase();
   final ManagementDatabase _managementDatabase = ManagementDatabase();
   final NotificationsDatabase _notificationsDatabase = NotificationsDatabase();
+  final ReportsDatabase _reportsDatabase = ReportsDatabase();
 
   // loading status
   bool _isLoading = false;
@@ -88,6 +90,22 @@ class DatabaseProvider extends ChangeNotifier {
   List<NotificationDetails> get notifications => _notifications;
   bool _isLoadingNotifications = false;
   bool get isLoadingNotifications => _isLoadingNotifications;
+
+  // Over due debts checking
+  bool _isCheckingOverdueDebts = false;
+  bool get isCheckingOverdueDebts => _isCheckingOverdueDebts;
+
+  // ✅ List of sales report
+  List<Map<String, dynamic>> _salesReport = [];
+  bool _isLoadingSalesReport = false;
+  List<Map<String, dynamic>> get salesReport => _salesReport;
+  bool get isLoadingSalesReport => _isLoadingSalesReport;
+
+  // ✅ List for receipt generation after transactions
+  Map<String, dynamic>? _transactionDetails;
+  bool _isLoadingTransaction = false;
+  Map<String, dynamic>? get transactionDetails => _transactionDetails;
+  bool get isLoadingTransaction => _isLoadingTransaction;
 
   Future<void> fetchUserProfile(String uid) async {
     try {
@@ -398,7 +416,7 @@ class DatabaseProvider extends ChangeNotifier {
   }
 
   // Process a transaction (Paid or Unpaid)
-  Future<void> processPOS({
+  Future<String?> processPOS({
     required double totalAmount,
     required double amountPaid,
     required String paymentMethod,
@@ -411,39 +429,90 @@ class DatabaseProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      await _posDatabase.processTransaction(
+      if (_store == null || _user == null) {
+        throw Exception("❌ Store or User is null. Cannot process transaction.");
+      }
+
+      print("🔹 Processing POS Transaction...");
+      print("Store ID: ${_store!.storeId}");
+      print("User ID: ${_user!.uid}");
+      print("Total Amount: $totalAmount");
+      print("Amount Paid: $amountPaid");
+      print("Payment Method: $paymentMethod");
+      print("Is Debt: $isDebt");
+      print("Customer ID: ${customerId ?? "Guest"}");
+      print("Due Date: ${due_date ?? "N/A"}");
+
+      // ✅ Process transaction and get the Transaction ID
+      String? transactionId = await _posDatabase.processTransaction(
         storeId: _store!.storeId,
         userId: _user!.uid,
         customerId: customerId,
         totalAmount: totalAmount,
         amountPaid: amountPaid,
         paymentMethod: paymentMethod,
-        due_date: due_date ?? null,
+        due_date: due_date,
         items: _basket
             .map((item) => {
                   "item_id": item.itemId,
-                  "quantity": item.total_stock, // ✅ Using stock as POS quantity
+                  "quantity": item.total_stock, // ✅ Stock used as quantity
                   "unit_price": isDebt
                       ? item.unpaid_price ?? 0.0 // ✅ Use unpaid price for debts
                       : item.regular_price ??
                           0.0, // ✅ Use regular price for paid transactions
                   "storeId": item.storeId,
-                  "discount": 0.0, // Modify this if needed
+                  "discount": 0.0, // ✅ Modify discount logic if needed
                 })
             .toList(),
-        customerName: customerName!,
-        storeOwnerId: store!.storeId,
+        customerName: customerName ?? "Guest",
+        storeOwnerId: _store!.storeId,
       );
 
-      // ✅ Clear basket after transaction
+      // ✅ If transaction fails, return null
+      if (transactionId == null) {
+        print("❌ Transaction failed.");
+        return null;
+      }
+
+      print("✅ Transaction completed successfully: $transactionId");
+
+      // ✅ Clear basket only if transaction is successful
       fetchItemsByStoreId();
       clearBasket();
+
+      return transactionId; // ✅ Return the transaction ID
     } catch (e) {
       print("❌ Error processing POS transaction: $e");
+      return null; // Return null on failure
     } finally {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  /// ✅ Fetch Transaction Details (Works for Paid, Unpaid, and Debt Payments)
+  Future<void> fetchTransactionDetails(String transactionId) async {
+    _isLoadingTransaction = true;
+    notifyListeners();
+
+    try {
+      print("📥 Fetching transaction details for: $transactionId");
+      _transactionDetails =
+          await _posDatabase.getTransactionDetails(transactionId);
+      print("✅ Transaction details fetched!");
+    } catch (e) {
+      print("❌ Error fetching transaction details: $e");
+      _transactionDetails = null;
+    } finally {
+      _isLoadingTransaction = false;
+      notifyListeners();
+    }
+  }
+
+  /// ✅ Clear Transaction Details (For receipt closing)
+  void clearTransactionDetails() {
+    _transactionDetails = null;
+    notifyListeners();
   }
 
   /*
@@ -621,19 +690,21 @@ class DatabaseProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> processDebtPayment(
-      {required String debtId,
-      required double amountPaid,
-      required String paymentMethod,
-      required String storeId,
-      required String customerId,
-      required String customerName,
-      required double remainingBalance}) async {
+  Future<String?> processDebtPayment({
+    required String debtId,
+    required double amountPaid,
+    required String paymentMethod,
+    required String storeId,
+    required String customerId,
+    required String customerName,
+    required double remainingBalance,
+  }) async {
     _isLoading = true;
     notifyListeners();
 
     try {
-      bool success = await _debtsDatabase.processDebtPayment(
+      // ✅ Process the debt payment and get the new transaction ID
+      String? newTransactionId = await _debtsDatabase.processDebtPayment(
         debtId: debtId,
         amountPaid: amountPaid,
         paymentMethod: paymentMethod,
@@ -641,24 +712,31 @@ class DatabaseProvider extends ChangeNotifier {
         customerId: customerId,
       );
 
-      await _debtsDatabase.addDebtPaymentNotification(
+      if (newTransactionId != null) {
+        print("✅ Debt payment successful. Transaction ID: $newTransactionId");
+
+        // ✅ Add a notification for the payment
+        await _debtsDatabase.addDebtPaymentNotification(
           storeOwnerId: store!.ownerId,
           storeId: storeId,
           customerId: customerId,
           customerName: customerName,
           amountPaid: amountPaid,
-          remainingBalance: remainingBalance);
+          remainingBalance: remainingBalance,
+        );
 
-      if (success) {
-        // ✅ Refresh customer's debts & store details
+        // ✅ Refresh customer's debts & store details after payment
         await fetchDebtsForCustomer(customerId);
         await fetchStoreProfile(storeId);
-      }
 
-      return success;
+        return newTransactionId; // ✅ Return the new transaction ID
+      } else {
+        print("❌ Error: Debt payment failed.");
+        return null;
+      }
     } catch (e) {
       print("❌ Error processing debt payment: $e");
-      return false;
+      return null;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -844,6 +922,11 @@ class DatabaseProvider extends ChangeNotifier {
   Notifications Shitsss
   */
 
+  /// ✅ **Get Count of Unread Notifications**
+  int get unreadNotificationsCount {
+    return _notifications.where((notif) => notif.isUnread).length;
+  }
+
   /// ✅ Fetch notifications for the current user
   Future<void> fetchUserNotifications() async {
     if (_user == null) return; // ✅ Ensure user is logged in
@@ -853,7 +936,7 @@ class DatabaseProvider extends ChangeNotifier {
 
     try {
       _notifications =
-          await _notificationsDatabase.getUserNotifications(_user!.uid);
+          await _notificationsDatabase.getStoreNotifications(store!.storeId);
       print("✅ Updated notifications in provider: ${_notifications.length}");
     } catch (e) {
       print("❌ Error fetching notifications: $e");
@@ -864,5 +947,99 @@ class DatabaseProvider extends ChangeNotifier {
     }
   }
 
+  /// ✅ **Mark a Single Notification as Read**
+  Future<void> markNotificationAsRead(String notificationId) async {
+    try {
+      await _notificationsDatabase.markNotificationAsRead(notificationId);
+
+      // ✅ Find & update notification in the local list
+      int index =
+          _notifications.indexWhere((n) => n.notificationId == notificationId);
+      if (index != -1) {
+        _notifications[index] = NotificationDetails(
+          notificationId: _notifications[index].notificationId,
+          title: _notifications[index].title,
+          message: _notifications[index].message,
+          icon: _notifications[index].icon,
+          isUnread: false, // ✅ Mark as read
+          storeId: _notifications[index].storeId,
+          userId: _notifications[index].userId,
+          timestamp: _notifications[index].timestamp,
+        );
+
+        notifyListeners(); // ✅ Force UI refresh
+      }
+
+      print("✅ Notification marked as read: $notificationId");
+    } catch (e) {
+      print("❌ Error marking notification as read: $e");
+    }
+  }
+
+  /// ✅ **Mark All Notifications as Read**
+  Future<void> markAllNotificationsAsRead() async {
+    try {
+      await _notificationsDatabase.markAllNotificationsAsRead(_user!.uid);
+
+      // ✅ Update the local list to reflect the changes
+      _notifications =
+          _notifications.map((n) => n.copyWith(isUnread: false)).toList();
+      notifyListeners();
+
+      print("✅ All notifications marked as read for user: $_user!.uid");
+    } catch (e) {
+      print("❌ Error marking all notifications as read: $e");
+    }
+  }
+
+  /// ✅ **Check and insert overdue debt notifications**
+  Future<void> checkOverdueDebtsForNotifications() async {
+    if (_store == null) {
+      print("⚠️ No store data available, skipping overdue debt check.");
+      return;
+    }
+
+    _isCheckingOverdueDebts = true;
+    notifyListeners();
+
+    try {
+      await _notificationsDatabase
+          .checkAndInsertOverdueDebtNotifications(_store!.storeId);
+    } catch (e) {
+      print("❌ Error checking overdue debts: $e");
+    } finally {
+      _isCheckingOverdueDebts = false;
+      notifyListeners();
+    }
+  }
+
+  /*
   
+    Reports and analytics
+
+  */
+
+  /// ✅ Fetch Sales Report from Database
+  Future<void> fetchSalesReport({
+    required String storeId,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    _isLoadingSalesReport = true;
+    notifyListeners();
+
+    try {
+      _salesReport = await _reportsDatabase.getSalesReport(
+        storeId: storeId,
+        startDate: startDate,
+        endDate: endDate,
+      );
+      print("✅ Sales report fetched: ${_salesReport.length} records");
+    } catch (e) {
+      print("❌ Error fetching sales report: $e");
+    } finally {
+      _isLoadingSalesReport = false;
+      notifyListeners();
+    }
+  }
 }
