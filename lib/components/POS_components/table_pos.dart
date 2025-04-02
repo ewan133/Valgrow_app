@@ -30,111 +30,114 @@ class MyTable extends StatelessWidget {
   }
 
   /// ✅ Show confirmation dialog before completing transaction
- void _showTransactionConfirmation(
-    BuildContext context, DatabaseProvider databaseProvider) {
-  final basket = databaseProvider.basket;
-  final totalItems = basket.fold(0, (sum, item) => sum + item.total_stock);
-  final totalPrice = basket.fold(
-      0.0, (sum, item) => sum + (item.regular_price * item.total_stock));
+  void _showTransactionConfirmation(
+      BuildContext context, DatabaseProvider databaseProvider) {
+    final basket = databaseProvider.basket;
+    final totalItems = basket.fold(0, (sum, item) => sum + item.total_stock);
+    final totalPrice = basket.fold(
+        0.0, (sum, item) => sum + (item.regular_price * item.total_stock));
 
-  if (basket.isEmpty) {
-    Fluttertoast.showToast(
-      msg: "No items in the basket!",
-      toastLength: Toast.LENGTH_SHORT,
-      gravity: ToastGravity.TOP,
-      backgroundColor: Colors.red,
-      textColor: Colors.white,
-      fontSize: 16.0,
+    if (basket.isEmpty) {
+      Fluttertoast.showToast(
+        msg: "No items in the basket!",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.TOP,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Confirm Items",
+              style: TextStyle(fontWeight: FontWeight.bold)),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // ✅ Item Summary
+                SizedBox(
+                  height: 250,
+                  child: ListView.builder(
+                    itemCount: basket.length,
+                    itemBuilder: (context, index) {
+                      final item = basket[index];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 0.0),
+                        child: ListTile(
+                          dense: true,
+                          contentPadding:
+                              const EdgeInsets.symmetric(horizontal: 8.0),
+                          title: Text(
+                            item.item_name,
+                            style: const TextStyle(
+                                fontSize: 12, fontWeight: FontWeight.w500),
+                          ),
+                          subtitle: Text(
+                            "₱${item.regular_price} x ${item.total_stock}",
+                            style: const TextStyle(
+                                fontSize: 12, color: Colors.grey),
+                          ),
+                          trailing: Text(
+                            "₱${(item.regular_price * item.total_stock).toStringAsFixed(2)}",
+                            style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+
+                const Divider(),
+                // ✅ Total Summary
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text("Total Items:",
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text("$totalItems"),
+                  ],
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text("Total Price:",
+                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text("₱${totalPrice.toStringAsFixed(2)}"),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel", style: TextStyle(color: Colors.red)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, "/transaction");
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+              child:
+                  const Text("Confirm", style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
     );
-    return;
   }
 
-  showDialog(
-    context: context,
-    barrierDismissible: false,
-    builder: (context) {
-      return AlertDialog(
-        title: const Text("Confirm Items",
-            style: TextStyle(fontWeight: FontWeight.bold)),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // ✅ Item Summary
-              SizedBox(
-                height: 250,
-                child: ListView.builder(
-                  itemCount: basket.length,
-                  itemBuilder: (context, index) {
-                    final item = basket[index];
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 0.0),
-                      child: ListTile(
-                        dense: true,
-                        contentPadding:
-                            const EdgeInsets.symmetric(horizontal: 8.0),
-                        title: Text(
-                          item.item_name,
-                          style: const TextStyle(
-                              fontSize: 12, fontWeight: FontWeight.w500),
-                        ),
-                        subtitle: Text(
-                          "₱${item.regular_price} x ${item.total_stock}",
-                          style: const TextStyle(fontSize: 12, color: Colors.grey),
-                        ),
-                        trailing: Text(
-                          "₱${(item.regular_price * item.total_stock).toStringAsFixed(2)}",
-                          style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-
-              const Divider(),
-              // ✅ Total Summary
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text("Total Items:",
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                  Text("$totalItems"),
-                ],
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text("Total Price:",
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                  Text("₱${totalPrice.toStringAsFixed(2)}"),
-                ],
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel", style: TextStyle(color: Colors.red)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, "/transaction");
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-            child: const Text("Confirm", style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      );
-    },
-  );
-}
   @override
   Widget build(BuildContext context) {
     return Consumer<DatabaseProvider>(
@@ -215,7 +218,7 @@ class MyTable extends StatelessWidget {
                     var product = basket[index];
                     final int currentStock = product["total_stock"] as int;
                     final int maxStock = databaseProvider.items
-                        .firstWhere((i) => i.barcode == product["barcode"])
+                        .firstWhere((i) => i.itemId == product["itemId"])
                         .total_stock;
 
                     return DataRow(
@@ -243,36 +246,50 @@ class MyTable extends StatelessWidget {
                               mainAxisSize: MainAxisSize.min,
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
+                                // 🔻 Remove Quantity
                                 IconButton(
                                   icon: const Icon(Icons.remove,
                                       size: 18, color: Colors.red),
                                   onPressed: currentStock > 1
                                       ? () {
                                           databaseProvider.removeFromBasket(
-                                              product["barcode"].toString());
+                                              product["itemId"].toString());
                                         }
-                                      : null, // Disable button if quantity is 1
+                                      : null,
                                 ),
+
+                                // 🔢 Current Quantity
                                 Padding(
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 6.0),
-                                  child: Text("$currentStock",
-                                      style: const TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.bold)),
+                                  child: Text(
+                                    "$currentStock",
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                                 ),
+
+                                // 🔼 Add Quantity
                                 IconButton(
                                   icon: const Icon(Icons.add,
                                       size: 18, color: Colors.green),
                                   onPressed: currentStock < maxStock
                                       ? () {
-                                          final item = databaseProvider.items
-                                              .firstWhere((i) =>
-                                                  i.barcode ==
-                                                  product["barcode"]);
-                                          databaseProvider.addToBasket(item);
+                                          try {
+                                            final item = databaseProvider.items
+                                                .firstWhere(
+                                              (i) =>
+                                                  i.itemId == product["itemId"],
+                                            );
+                                            databaseProvider.addToBasket(item);
+                                          } catch (e) {
+                                            print(
+                                                "❌ Item with ID ${product["item_id"]} not found.");
+                                          }
                                         }
-                                      : null, // Disable if quantity reaches max stock
+                                      : null,
                                 ),
                               ],
                             ),
@@ -294,7 +311,9 @@ class MyTable extends StatelessWidget {
                               icon: const Icon(Icons.delete, color: Colors.red),
                               onPressed: () {
                                 databaseProvider.complteRemoveFromBasket(
-                                    product["barcode"].toString());
+                                  product["itemId"]
+                                      .toString(), // ✅ Use itemId instead of barcode
+                                );
                               },
                             ),
                           ),

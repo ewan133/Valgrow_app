@@ -18,7 +18,7 @@ class MyHistoryTile extends StatelessWidget {
   Widget build(BuildContext context) {
     // ✅ Determine if transaction should be negative or positive
     bool isDebt = transactionType == "Debts"; // Debts should be negative
-    bool isDebtPayment = transactionType == "Debt Payment"; // Debt Payment should be positive
+   // bool isDebtPayment = transactionType == "Debt Payment"; // Debt Payment should be positive
 
     double adjustedAmount = isDebt ? -amount : amount; // Only debts are negative
 

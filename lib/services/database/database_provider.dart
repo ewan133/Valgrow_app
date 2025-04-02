@@ -357,61 +357,39 @@ class DatabaseProvider extends ChangeNotifier {
 
   // Add item to basket (track quantity separately)
   void addToBasket(ItemDetails newItem) {
-    int index = _basket.indexWhere((i) => i.barcode == newItem.barcode);
+    int index = _basket.indexWhere((i) => i.itemId == newItem.itemId);
 
     if (index != -1) {
-      // ✅ If item already exists, increase "total_stock" (as quantity in POS)
-      _basket[index] = ItemDetails(
-        itemId: _basket[index].itemId,
-        item_name: _basket[index].item_name,
-        regular_price: _basket[index].regular_price,
-        unpaid_price: _basket[index].unpaid_price,
-        category: _basket[index].category,
-        unit: _basket[index].unit,
-        barcode: _basket[index].barcode,
-        item_image: _basket[index].item_image,
-        storeId: _basket[index].storeId,
-        total_stock: _basket[index].total_stock + 1, // ✅ Increase quantity
-        last_updated: _basket[index].last_updated,
+      _basket[index] = _basket[index].copyWith(
+        total_stock: _basket[index].total_stock + 1,
       );
     } else {
-      // ✅ Add new item with total_stock as POS quantity (1)
-      _basket.add(newItem);
-    }
-
-    notifyListeners(); // ✅ Update UI
-  }
-
-  // Remove item or decrease quantity
-  void removeFromBasket(String barcode) {
-    int index = _basket.indexWhere((i) => i.barcode == barcode);
-
-    if (index != -1) {
-      if (_basket[index].total_stock > 1) {
-        _basket[index] = ItemDetails(
-          itemId: _basket[index].itemId,
-          item_name: _basket[index].item_name,
-          regular_price: _basket[index].regular_price,
-          unpaid_price: _basket[index].unpaid_price,
-          category: _basket[index].category,
-          unit: _basket[index].unit,
-          barcode: _basket[index].barcode,
-          item_image: _basket[index].item_image,
-          storeId: _basket[index].storeId,
-          total_stock: _basket[index].total_stock - 1, // ✅ Decrease quantity
-          last_updated: _basket[index].last_updated,
-        );
-      } else {
-        _basket.removeAt(index); // ✅ Remove if quantity = 1
-      }
+      _basket.add(newItem.copyWith(total_stock: 1));
     }
 
     notifyListeners();
   }
 
+  // Remove item or decrease quantity
+  void removeFromBasket(String itemId) {
+    int index = _basket.indexWhere((i) => i.itemId == itemId);
+
+    if (index != -1) {
+      if (_basket[index].total_stock > 1) {
+        _basket[index] = _basket[index].copyWith(
+          total_stock: _basket[index].total_stock - 1,
+        );
+      } else {
+        _basket.removeAt(index);
+      }
+
+      notifyListeners();
+    }
+  }
+
   // Completely remove an item from the basket
-  void complteRemoveFromBasket(String barcode) {
-    _basket.removeWhere((item) => item.barcode == barcode);
+  void complteRemoveFromBasket(String itemId) {
+    _basket.removeWhere((item) => item.itemId == itemId);
     notifyListeners();
   }
 
@@ -663,7 +641,7 @@ class DatabaseProvider extends ChangeNotifier {
     }
   }
 
-// ✅ Store transaction items
+ // ✅ Store transaction items
   List<Map<String, dynamic>> _transactionItems = [];
   List<Map<String, dynamic>> get transactionItems => _transactionItems;
 
