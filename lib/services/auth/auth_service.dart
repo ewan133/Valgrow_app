@@ -1,10 +1,13 @@
 import 'dart:developer';
+import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:valgrow_ui/services/auth/wrapper.dart';
+import 'package:valgrow_ui/services/database/management_database.dart';
 
 class AuthService {
   final _auth = FirebaseAuth.instance;
+  final _db = ManagementDatabase();
 
   // log the error in debug console
   exceptionHandler(String code, BuildContext context) {
@@ -103,7 +106,35 @@ class AuthService {
     return _auth.currentUser!.uid;
   }
 
+  Future<void> createUserAsAdmin({
+    required String email,
+    required String password,
+    required String name,
+    required String phone,
+    required String storeCode,
+    required BuildContext context,
+  }) async {
+    try {
+      final callable =
+          FirebaseFunctions.instance.httpsCallable('createUserAsAdmin');
+      final result = await callable.call({
+        'email': email,
+        'password': password,
+      });
 
-  
+      final data = result.data;
+      String newUserId = data['uid'];
 
+      _db.createEmployeeProfile(email, name, phone, storeCode, newUserId);
+      
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("✅ Created user: ${data['email']}")),
+      );
+    } on FirebaseFunctionsException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("❌ Failed to create user: ${e.message}")),
+      );
+    }
+  }
 }

@@ -1,72 +1,111 @@
 import 'package:flutter/material.dart';
-import 'package:valgrow_ui/components/general_components/FBA.dart';
+import 'package:provider/provider.dart';
 import 'package:valgrow_ui/components/general_components/appbar.dart';
 import 'package:valgrow_ui/components/expenses_components/expenses_info_list.dart';
 import 'package:valgrow_ui/components/general_components/text.dart';
+import 'package:valgrow_ui/services/database/database_provider.dart';
 
-class ExpenseInfoPage extends StatefulWidget {
-  const ExpenseInfoPage({super.key});
+class ExpenseInfoPage extends StatelessWidget {
+  final String monthKey; // e.g., "2025-01"
 
-  @override
-  State<ExpenseInfoPage> createState() => _ExpenseInfoPageState();
-}
+  const ExpenseInfoPage({super.key, required this.monthKey});
 
-class _ExpenseInfoPageState extends State<ExpenseInfoPage> {
+  String _formatMonth(String key) {
+    final parts = key.split("-");
+    final year = parts[0];
+    final month = int.parse(parts[1]);
+
+    const monthNames = [
+      '',
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December'
+    ];
+
+    return "${monthNames[month]} $year";
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: MyAppbar(title: "Expense Info"),
-      floatingActionButton: MyFloatingActionButton(text: "Record Expense"),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 15),
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Container(
-                  height: 80,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                      color: Color.fromRGBO(20, 174, 92, 0.2),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                          color: Color(0xFF14AE5C),
+      body: Consumer<DatabaseProvider>(
+        builder: (context, provider, _) {
+          final expenses = provider.expenses.where((expense) {
+            final key =
+                "${expense.date.year}-${expense.date.month.toString().padLeft(2, '0')}";
+            return key == monthKey;
+          }).toList();
+
+          final total = expenses.fold<double>(
+              0.0, (sum, item) => sum + item.amount);
+
+          return SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 15),
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: const Color.fromRGBO(20, 174, 92, 0.2),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: const Color(0xFF14AE5C),
                           width: 1,
-                          style: BorderStyle.solid)),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      MyText(
-                          text: "January 2025",
-                          fontSize: 24,
-                          color: Colors.black,
-                          fontWeight: FontWeight.w600),
-                      MyText(
-                          text: "Grand Total : ₱10,000.00",
-                          fontSize: 16,
-                          color: Colors.black,
-                          fontWeight: FontWeight.w500),
-                    ],
+                        ),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          MyText(
+                            text: _formatMonth(monthKey),
+                            fontSize: 24,
+                            color: Colors.black,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          MyText(
+                            text: "Grand Total: ₱${total.toStringAsFixed(2)}",
+                            fontSize: 16,
+                            color: Colors.black,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
+
+                  /// Dynamic Expense List
+                  if (expenses.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 50),
+                      child: Text(
+                        "No expenses found for this month.",
+                        style: TextStyle(fontSize: 16),
+                      ),
+                    )
+                  else
+                    ...expenses.map((expense) => Padding(
+                          padding: const EdgeInsets.only(bottom: 15.0),
+                          child: MyExpensesInfoList(expense: expense),
+                        )),
+                ],
               ),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 15.0),
-                child: MyExpensesInfoList(),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 15.0),
-                child: MyExpensesInfoList(),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 15.0),
-                child: MyExpensesInfoList(),
-              ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }

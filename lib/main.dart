@@ -6,12 +6,12 @@ import 'package:valgrow_ui/pages/POS/transaction.dart';
 import 'package:valgrow_ui/pages/authpages/change_password.dart';
 import 'package:valgrow_ui/pages/debts/debts.dart';
 import 'package:valgrow_ui/pages/inventory/addItem.dart';
-import 'package:valgrow_ui/pages/expenses/expense_info.dart';
 import 'package:valgrow_ui/pages/expenses/expenses.dart';
 import 'package:valgrow_ui/pages/history/history.dart';
 import 'package:valgrow_ui/pages/home_and_nav/home.dart';
 import 'package:valgrow_ui/pages/inventory/inventory.dart';
 import 'package:valgrow_ui/pages/authpages/login.dart';
+import 'package:valgrow_ui/pages/management/add_employee.dart';
 import 'package:valgrow_ui/pages/management/mangement.dart';
 import 'package:valgrow_ui/pages/notifications/notification.dart';
 import 'package:valgrow_ui/pages/reports/reports_main.dart';
@@ -53,11 +53,11 @@ class MyApp extends StatelessWidget {
           '/transaction': (context) => const TransactionPage(),
           '/history': (context) => const HistoryPage(),
           '/expenses': (context) => const ExpensesPage(),
-          '/expense_info': (context) => const ExpenseInfoPage(),
           '/reports': (context) => const ReportsMainPage(),
           '/debts': (context) => const DebtsPage(),
           '/management': (context) => const ManagementPage(),
           '/notifications': (context) => const NotificationPage(),
+          '/add_employee': (context) => const AddEmployeePage(),
         });
   }
 }

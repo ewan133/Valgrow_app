@@ -28,7 +28,9 @@ class _ManagementPageState extends State<ManagementPage> {
       appBar: MyAppbar(
         title: "Management",
         actionWidget: TextButton(
-            onPressed: () => {},
+            onPressed: () => {
+              Navigator.pushNamed(context, '/add_employee')
+            },
             child: Text(
               "Add",
               style: TextStyle(color: Colors.black),

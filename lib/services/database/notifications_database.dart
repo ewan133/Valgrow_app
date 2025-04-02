@@ -42,27 +42,29 @@ class NotificationsDatabase {
     }
   }
 
-  /// ✅ Mark all notifications as read for a user
   Future<void> markAllNotificationsAsRead(String userId) async {
     try {
-      // Get all unread notifications
-      QuerySnapshot querySnapshot = await _db
+      final snapshot = await _db
           .collection('notifications')
           .where('userId', isEqualTo: userId)
           .where('isUnread', isEqualTo: true)
           .get();
 
-      WriteBatch batch = _db.batch(); // ✅ Use batch for efficiency
+      if (snapshot.docs.isEmpty) {
+        print("ℹ️ No unread notifications found for user $userId");
+        return;
+      }
 
-      for (var doc in querySnapshot.docs) {
+      WriteBatch batch = _db.batch();
+
+      for (var doc in snapshot.docs) {
         batch.update(doc.reference, {'isUnread': false});
       }
 
-      await batch.commit(); // ✅ Apply all updates at once
-
-      print("✅ All notifications for user $userId marked as read");
+      await batch.commit();
+      print("✅ All notifications marked as read for user $userId");
     } catch (e) {
-      print("❌ Error marking all notifications as read: $e");
+      print("❌ Failed to mark notifications as read: $e");
     }
   }
 

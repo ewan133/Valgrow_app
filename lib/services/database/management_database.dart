@@ -157,5 +157,63 @@ class ManagementDatabase {
     }
   }
 
+// create profile for employees in management
+  Future<void> createEmployeeProfile(
+      String userEmail, String name, String phone, String storeCode, String userId) async {
+    try {
+      
+
+
+      await _db.runTransaction((transaction) async {
+        // Find store by storeCode
+        QuerySnapshot storeQuery = await _db
+            .collection('stores')
+            .where('storeCode', isEqualTo: storeCode)
+            .limit(1)
+            .get();
+
+        if (storeQuery.docs.isEmpty) {
+          throw Exception('Invalid store code: No matching store found.');
+        }
+
+        String storeId = storeQuery.docs.first.id;
+
+        // Create user profile for employee
+        DocumentReference userRef = _db.collection('users').doc(userId);
+        transaction.set(userRef, {
+          'name': name,
+          'phone': phone,
+          'email': userEmail,
+          'role': 'Employee',
+          'storeId': storeId, // Assign storeId
+          'pos': true,
+          'ims': false,
+          'reports': false,
+          'debts': true,
+          'expenses': false,
+          'token': '',
+        });
+
+        print('User profile created: $name ($userEmail)');
+
+        // Create store affiliation
+        DocumentReference affiliationRef =
+            _db.collection('storeAffiliations').doc();
+        transaction.set(affiliationRef, {
+          'employeeId': userId, // Use Firebase UID instead of email
+          'storeId': storeId,
+          'pos': true,
+          'ims': false,
+          'reports': false,
+          'debts': true,
+          'expenses': false,
+        });
+
+        print('Employee affiliated successfully to store ID: $storeId');
+      });
+    } catch (e) {
+      print('Error creating profile and affiliating employee: $e');
+    }
+  }
   
 }

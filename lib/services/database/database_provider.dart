@@ -3,6 +3,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:valgrow_ui/models/batch_details.dart';
 import 'package:valgrow_ui/models/customer_model.dart';
 import 'package:valgrow_ui/models/debts_model.dart';
+import 'package:valgrow_ui/models/expenses_details.dart';
 import 'package:valgrow_ui/models/history_model.dart';
 import 'package:valgrow_ui/models/item_details.dart';
 import 'package:valgrow_ui/models/notifications_details.dart';
@@ -10,6 +11,7 @@ import 'package:valgrow_ui/models/store_profile.dart';
 import 'package:valgrow_ui/models/user_profile.dart';
 import 'package:valgrow_ui/services/database/database_service.dart';
 import 'package:valgrow_ui/services/database/debts_database.dart';
+import 'package:valgrow_ui/services/database/expenses_database.dart';
 import 'package:valgrow_ui/services/database/history_database.dart';
 import 'package:valgrow_ui/services/database/inventory_database.dart';
 import 'package:valgrow_ui/services/database/management_database.dart';
@@ -26,6 +28,7 @@ class DatabaseProvider extends ChangeNotifier {
   final ManagementDatabase _managementDatabase = ManagementDatabase();
   final NotificationsDatabase _notificationsDatabase = NotificationsDatabase();
   final ReportsDatabase _reportsDatabase = ReportsDatabase();
+  final ExpensesDatabase _expensesDatabase = ExpensesDatabase();
 
   // loading status
   bool _isLoading = false;
@@ -106,6 +109,12 @@ class DatabaseProvider extends ChangeNotifier {
   bool _isLoadingTransaction = false;
   Map<String, dynamic>? get transactionDetails => _transactionDetails;
   bool get isLoadingTransaction => _isLoadingTransaction;
+
+  // ✅ List for store expenses
+  List<ExpenseModel> _expenses = [];
+  List<ExpenseModel> get expenses => _expenses;
+  bool _isLoadingExpenses = false;
+  bool get isLoadingExpenses => _isLoadingExpenses;
 
   Future<void> fetchUserProfile(String uid) async {
     try {
@@ -641,7 +650,7 @@ class DatabaseProvider extends ChangeNotifier {
     }
   }
 
- // ✅ Store transaction items
+  // ✅ Store transaction items
   List<Map<String, dynamic>> _transactionItems = [];
   List<Map<String, dynamic>> get transactionItems => _transactionItems;
 
@@ -1017,6 +1026,46 @@ class DatabaseProvider extends ChangeNotifier {
       print("❌ Error fetching sales report: $e");
     } finally {
       _isLoadingSalesReport = false;
+      notifyListeners();
+    }
+  }
+
+  /*
+
+    Expenses Functions
+
+  */
+
+  /// ✅ Add expenses to database
+  Future<void> addExpense(ExpenseModel expense) async {
+    try {
+      await _expensesDatabase.addExpense(expense);
+      print("✅ Expense added via provider");
+      // Optionally: refresh list of expenses here
+      // await fetchExpenses();
+      notifyListeners();
+    } catch (e) {
+      print("❌ Error adding expense in provider: $e");
+      rethrow;
+    }
+  }
+
+  /// ✅ Fetch expenses of store for the database
+  Future<void> fetchExpenses() async {
+    if (_store == null) return;
+
+    _isLoadingExpenses = true;
+    notifyListeners();
+
+    try {
+      _expenses = await _expensesDatabase.getExpensesByStoreId(_store!.storeId);
+      print(
+          "✅ Fetched ${_expenses.length} expenses for store ${_store!.storeId}");
+    } catch (e) {
+      print("❌ Error fetching expenses: $e");
+      _expenses = [];
+    } finally {
+      _isLoadingExpenses = false;
       notifyListeners();
     }
   }
