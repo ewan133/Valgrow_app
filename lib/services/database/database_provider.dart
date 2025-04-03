@@ -763,6 +763,56 @@ class DatabaseProvider extends ChangeNotifier {
     _selectedCustomerDebts = [];
   }
 
+  Future<void> fileCustomerReport({
+    required String storeId,
+    required String customerId,
+    required String customerName,
+    required String reportReason,
+    required String reportedByUserId,
+  }) async {
+    try {
+      await _debtsDatabase.fileCustomerReport(
+        storeId: storeId,
+        reportedId: customerId,
+        customerName: customerName,
+        reportReason: reportReason,
+        reportedByUserId: reportedByUserId,
+      );
+      print("✅ Report filed for customer $customerId");
+    } catch (e) {
+      print("❌ Failed to file report: $e");
+      rethrow;
+    }
+  }
+
+  /// Inside your DatabaseProvider class
+  Future<void> updateCustomerDetails({
+    required String customerId,
+    String? name,
+    String? phone,
+    String? imageUrl,
+  }) async {
+    try {
+      await _debtsDatabase.updateCustomerDetails(
+        customerId: customerId,
+        name: name,
+        phone: phone,
+        imageUrl: imageUrl,
+      );
+
+      // Optional: refresh data if needed
+      if (_store != null) {
+        await _debtsDatabase.fetchAllCustomersByStoreId(_store!.storeId);
+        notifyListeners();
+      }
+
+      print("✅ Provider: Customer $customerId updated successfully");
+    } catch (e) {
+      print("❌ Provider error updating customer: $e");
+      rethrow;
+    }
+  }
+
   /*
   
    History System

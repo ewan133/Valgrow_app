@@ -3,12 +3,15 @@ class StoreProfile {
   final String name;
   final String ownerId;
   final String storeCode;
+  final String contact;
 
   StoreProfile({
     required this.storeId,
     required this.name,
     required this.ownerId,
     required this.storeCode,
+    required this.contact,
+  
   });
 
   /// ✅ **copyWith Method for Updating StoreProfile**
@@ -17,12 +20,14 @@ class StoreProfile {
     String? name,
     String? ownerId,
     String? storeCode,
+    String? contact,
   }) {
     return StoreProfile(
       storeId: storeId ?? this.storeId,
       name: name ?? this.name,
       ownerId: ownerId ?? this.ownerId,
       storeCode: storeCode ?? this.storeCode, // Fixed missing field
+      contact: contact ?? this.contact, 
     );
   }
 
@@ -33,6 +38,7 @@ class StoreProfile {
       name: map['name'] ?? '',
       ownerId: map['ownerId'] ?? '',
       storeCode: map['storeCode'] ?? '',
+      contact: map['contact'] ?? '',
     );
   }
 
@@ -43,6 +49,7 @@ class StoreProfile {
       'name': name,
       'ownerId': ownerId,
       'storeCode': storeCode,
+      'contact': contact,
     };
   }
 }

@@ -369,4 +369,88 @@ class DebtsDatabase {
       print("❌ Error adding debt payment notification: $e");
     }
   }
+
+  Future<void> fileCustomerReport({
+    required String storeId,
+    required String reportedId,
+    required String customerName,
+    required String reportReason,
+    required String reportedByUserId,
+  }) async {
+    try {
+      final now = DateTime.now();
+      final yesterday = now.subtract(const Duration(hours: 24));
+
+      // 🔐 Check if a pending report already exists for this customer by this user
+      final existingQuery = await _db
+          .collection('admin_reports')
+          .where('storeId', isEqualTo: storeId)
+          .where('customerId', isEqualTo: reportedId)
+          .where('reportedBy', isEqualTo: reportedByUserId)
+          .where('status', isEqualTo: 'pending')
+          .get();
+
+      final recentDuplicate = existingQuery.docs.any((doc) {
+        final data = doc.data();
+        final timestamp = (data['timestamp'] as Timestamp?)?.toDate();
+        final reason = data['reason'] as String? ?? '';
+
+        return timestamp != null &&
+            timestamp.isAfter(yesterday) &&
+            reason.trim() == reportReason.trim();
+      });
+
+      if (recentDuplicate) {
+        print("⚠️ Duplicate report detected. Skipping report submission.");
+        return;
+      }
+
+      // 📝 Proceed with filing the report
+      final reportRef = _db.collection('admin_reports').doc();
+
+      await reportRef.set({
+        'reportId': reportRef.id,
+        'storeId': storeId,
+        'customerId': reportedId,
+        'customerName': customerName,
+        'reason': reportReason,
+        'reportedBy': reportedByUserId,
+        'timestamp': FieldValue.serverTimestamp(),
+        'status': 'pending', // Options: pending, reviewed, resolved
+      });
+
+      print("✅ Customer report filed successfully for $customerName");
+    } catch (e) {
+      print("❌ Error filing customer report: $e");
+    }
+  }
+
+  /// ✅ Update customer details (name, phone, image)
+  Future<void> updateCustomerDetails({
+    required String customerId,
+    String? name,
+    String? phone,
+    String? imageUrl,
+  }) async {
+    try {
+      final customerRef = _db.collection('customers').doc(customerId);
+
+      final Map<String, dynamic> updates = {};
+
+      if (name != null) updates['name'] = name;
+      if (phone != null) updates['phone'] = phone;
+      if (imageUrl != null) updates['imageUrl'] = imageUrl;
+
+      if (updates.isEmpty) {
+        print("⚠️ No changes provided for update.");
+        return;
+      }
+
+      await customerRef.update(updates);
+      print("✅ Customer $customerId updated successfully.");
+    } catch (e) {
+      print("❌ Error updating customer details: $e");
+      rethrow;
+    }
+  }
 }

@@ -53,6 +53,7 @@ class DatabaseService {
           'name': "$name's Store", // Default store name
           'ownerId': userId, // Assign Firebase UID
           'storeCode': storeCode,
+          'contact': phone,
         });
 
         print(
