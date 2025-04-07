@@ -426,7 +426,7 @@ class DebtsDatabase {
   }
 
   /// ✅ Update customer details (name, phone, image)
-  Future<void> updateCustomerDetails({
+  Future<CustomerDetails?> updateCustomerDetails({
     required String customerId,
     String? name,
     String? phone,
@@ -434,7 +434,6 @@ class DebtsDatabase {
   }) async {
     try {
       final customerRef = _db.collection('customers').doc(customerId);
-
       final Map<String, dynamic> updates = {};
 
       if (name != null) updates['name'] = name;
@@ -443,11 +442,20 @@ class DebtsDatabase {
 
       if (updates.isEmpty) {
         print("⚠️ No changes provided for update.");
-        return;
+        return null;
       }
 
       await customerRef.update(updates);
       print("✅ Customer $customerId updated successfully.");
+
+      // 🔁 Fetch and return the updated customer document using fromDocument
+      final updatedDoc = await customerRef.get();
+      if (updatedDoc.exists) {
+        return CustomerDetails.fromDocument(updatedDoc);
+      } else {
+        print("⚠️ Updated document not found.");
+        return null;
+      }
     } catch (e) {
       print("❌ Error updating customer details: $e");
       rethrow;

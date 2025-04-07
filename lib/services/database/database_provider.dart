@@ -116,6 +116,12 @@ class DatabaseProvider extends ChangeNotifier {
   bool _isLoadingExpenses = false;
   bool get isLoadingExpenses => _isLoadingExpenses;
 
+  // ✅ List for debts payment reports
+  List<Map<String, dynamic>> _debtPaymentReport = [];
+  bool _isLoadingDebtPaymentReport = false;
+  List<Map<String, dynamic>> get debtPaymentReport => _debtPaymentReport;
+  bool get isLoadingDebtPaymentReport => _isLoadingDebtPaymentReport;
+
   Future<void> fetchUserProfile(String uid) async {
     try {
       final userData = await _db.getCurrentUserInfo(uid);
@@ -785,28 +791,43 @@ class DatabaseProvider extends ChangeNotifier {
     }
   }
 
-  /// Inside your DatabaseProvider class
-  Future<void> updateCustomerDetails({
+  /// ✅ Update customer details and return the updated CustomerDetails
+  Future<CustomerDetails?> updateCustomerDetails({
     required String customerId,
     String? name,
     String? phone,
     String? imageUrl,
   }) async {
     try {
-      await _debtsDatabase.updateCustomerDetails(
+      // ✅ Update and retrieve the updated customer
+      CustomerDetails? updatedCustomer =
+          await _debtsDatabase.updateCustomerDetails(
         customerId: customerId,
         name: name,
         phone: phone,
         imageUrl: imageUrl,
       );
 
-      // Optional: refresh data if needed
-      if (_store != null) {
-        await _debtsDatabase.fetchAllCustomersByStoreId(_store!.storeId);
-        notifyListeners();
+      if (updatedCustomer == null) {
+        print("⚠️ No updates were made to customer $customerId");
+        return null;
       }
 
+      // ✅ Update local list
+      int index = _customers.indexWhere((c) => c.customerId == customerId);
+      if (index != -1) {
+        _customers[index] = updatedCustomer;
+      }
+
+      // ✅ Update selected customer if applicable
+      if (_selectedCustomer?.customerId == customerId) {
+        _selectedCustomer = updatedCustomer;
+      }
+      fetchDebtsWithCustomerInfo();
+      notifyListeners();
       print("✅ Provider: Customer $customerId updated successfully");
+
+      return updatedCustomer;
     } catch (e) {
       print("❌ Provider error updating customer: $e");
       rethrow;
@@ -1080,6 +1101,28 @@ class DatabaseProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> fetchDebtPaymentReport({
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    _isLoadingDebtPaymentReport = true;
+    notifyListeners();
+
+    try {
+      _debtPaymentReport = await _reportsDatabase.getDebtPaymentReport(
+        storeId: store!.storeId,
+        startDate: startDate,
+        endDate: endDate,
+      );
+      print(
+          "✅ Debt payment report fetched: ${_debtPaymentReport.length} records");
+    } catch (e) {
+      print("❌ Error fetching debt payment report: $e");
+    } finally {
+      _isLoadingDebtPaymentReport = false;
+      notifyListeners();
+    }
+  }
   /*
 
     Expenses Functions

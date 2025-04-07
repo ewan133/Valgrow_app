@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:valgrow_ui/components/general_components/appbar.dart';
 import 'package:valgrow_ui/components/general_components/button.dart';
 import 'package:valgrow_ui/components/general_components/datepicker.dart';
+import 'package:valgrow_ui/components/reports_components/debts_payment_report.dart';
 import 'package:valgrow_ui/components/reports_components/inventory_table.dart';
+import 'package:valgrow_ui/components/reports_components/sales_reports.dart';
 
+enum ReportType { inventory, sales, debtPayments }
 
 class ReportsMainPage extends StatefulWidget {
   const ReportsMainPage({super.key});
@@ -16,6 +19,8 @@ class _ReportsMainPageState extends State<ReportsMainPage> {
   DateTime? tempStartDate;
   DateTime? tempEndDate;
   DateTimeRange? selectedDateRange;
+
+  ReportType _selectedReportType = ReportType.inventory;
 
   void _onStartDateSelected(DateTime date) {
     setState(() {
@@ -32,18 +37,45 @@ class _ReportsMainPageState extends State<ReportsMainPage> {
   void _generateReport() {
     if (tempStartDate != null && tempEndDate != null) {
       setState(() {
-        selectedDateRange = DateTimeRange(start: tempStartDate!, end: tempEndDate!);
+        selectedDateRange = DateTimeRange(
+          start: tempStartDate!,
+          end: tempEndDate!,
+        );
       });
-      print("Generating report from $tempStartDate to $tempEndDate");
+      print("📊 Generating report from $tempStartDate to $tempEndDate");
     } else {
-      print("Please select both start and end dates.");
+      print("⚠️ Please select both start and end dates.");
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: MyAppbar(title: "Reports"),
+      appBar: MyAppbar(
+        title: "Reports",
+        actionWidget: PopupMenuButton<ReportType>(
+          icon: const Icon(Icons.arrow_drop_down, color: Colors.black87),
+          onSelected: (ReportType selected) {
+            setState(() {
+              _selectedReportType = selected;
+            });
+          },
+          itemBuilder: (BuildContext context) => <PopupMenuEntry<ReportType>>[
+            const PopupMenuItem<ReportType>(
+              value: ReportType.inventory,
+              child: Text('Inventory'),
+            ),
+            const PopupMenuItem<ReportType>(
+              value: ReportType.sales,
+              child: Text('Sales'),
+            ),
+            const PopupMenuItem<ReportType>(
+              value: ReportType.debtPayments,
+              child: Text('Debt Payments'),
+            ),
+          ],
+        ),
+      ),
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10),
         child: Column(
@@ -79,16 +111,32 @@ class _ReportsMainPageState extends State<ReportsMainPage> {
               ),
             ),
             const SizedBox(height: 30),
-            
             Expanded(
-              child: MyInventoryTable(
-                key: ValueKey(selectedDateRange), // Forces rebuild on date change
-                dateRange: selectedDateRange,
-              ),
+              child: _buildReportTable(),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildReportTable() {
+    switch (_selectedReportType) {
+      case ReportType.inventory:
+        return MyInventoryTable(
+          key: ValueKey('inventory_${selectedDateRange.toString()}'),
+          dateRange: selectedDateRange,
+        );
+      case ReportType.sales:
+        return MySalesTable(
+          key: ValueKey('sales_${selectedDateRange.toString()}'),
+          dateRange: selectedDateRange,
+        );
+      case ReportType.debtPayments:
+        return MyDebtPaymentsTable(
+          key: ValueKey('debts_${selectedDateRange.toString()}'),
+          dateRange: selectedDateRange,
+        );
+    }
   }
 }

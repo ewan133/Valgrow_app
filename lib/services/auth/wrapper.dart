@@ -23,10 +23,20 @@ class _WrapperPageState extends State<WrapperPage> {
   Future<void> _refreshUser() async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      await user.reload(); // Force Firebase to update user info
-      setState(() {
-        _isRefreshing = false; // UI updates after refresh
-      });
+      try {
+        await user.reload(); // Force Firebase to update user info
+        setState(() {
+          _isRefreshing = false; // UI updates after refresh
+        });
+      } catch (e) {
+        // ❌ No user found, navigate to LoginPage
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const LoginPage()),
+          );
+        }
+      }
     } else {
       setState(() {
         _isRefreshing = false; // UI updates when no user is found
@@ -38,7 +48,9 @@ class _WrapperPageState extends State<WrapperPage> {
   Widget build(BuildContext context) {
     if (_isRefreshing) {
       return const Scaffold(
-        body: Center(child: CircularProgressIndicator()), // Show loading until refresh is complete
+        body: Center(
+            child:
+                CircularProgressIndicator()), // Show loading until refresh is complete
       );
     }
 
