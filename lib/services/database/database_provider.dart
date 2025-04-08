@@ -1162,4 +1162,50 @@ class DatabaseProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  /// ✅ Update an existing expense and refresh the local list
+  Future<void> updateExpense({
+    required String expenseId,
+    double? amount,
+    String? category,
+    DateTime? date,
+    String? note,
+  }) async {
+    try {
+      await _expensesDatabase.updateExpense(
+        expenseId: expenseId,
+        amount: amount,
+        category: category,
+        date: date,
+        note: note,
+      );
+
+      // ✅ Refresh the expenses list after update
+      if (_store != null) {
+        await fetchExpenses();
+      }
+
+      print("✅ Provider: Expense $expenseId updated successfully");
+    } catch (e) {
+      print("❌ Provider error updating expense: $e");
+      rethrow;
+    }
+  }
+
+  /// ✅ Delete an expense and refresh local list
+  Future<void> deleteExpense(String expenseId) async {
+    try {
+      await _expensesDatabase.deleteExpense(expenseId);
+
+      // ✅ Refresh list after deletion
+      if (_store != null) {
+        await fetchExpenses();
+      }
+
+      print("🗑️ Provider: Expense $expenseId deleted and list refreshed.");
+    } catch (e) {
+      print("❌ Provider error deleting expense $expenseId: $e");
+      rethrow;
+    }
+  }
 }

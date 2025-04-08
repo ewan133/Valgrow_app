@@ -58,6 +58,7 @@ dependencies:
   googleapis_auth: ^1.6.0
   timeago: ^3.2.2
   cloud_functions: ^5.4.0
+  flutter_slidable: ^4.0.0
   
 dev_dependencies:
   flutter_test:

@@ -33,5 +33,50 @@ class ExpensesDatabase {
       return [];
     }
   }
-  
+
+  /// ✅ Update an existing expense by document ID
+  Future<void> updateExpense({
+    required String expenseId,
+    double? amount,
+    String? category,
+    DateTime? date,
+    String? note,
+  }) async {
+    try {
+      final expenseRef = _firestore.collection('expenses').doc(expenseId);
+
+      final Map<String, dynamic> updates = {};
+
+      if (amount != null) updates['amount'] = amount;
+      if (category != null) updates['category'] = category;
+      if (date != null) updates['date'] = Timestamp.fromDate(date);
+      if (note != null) updates['note'] = note;
+
+      if (updates.isEmpty) {
+        print("⚠️ No updates provided for expense $expenseId.");
+        return;
+      }
+
+      await expenseRef.update(updates);
+
+      print("✅ Expense $expenseId updated successfully.");
+    } catch (e) {
+      print("❌ Failed to update expense $expenseId: $e");
+      rethrow;
+    }
+  }
+
+  /// ✅ Delete an expense by its document ID
+  Future<void> deleteExpense(String expenseId) async {
+    try {
+      final expenseRef = _firestore.collection('expenses').doc(expenseId);
+
+      await expenseRef.delete();
+
+      print("🗑️ Expense $expenseId deleted successfully.");
+    } catch (e) {
+      print("❌ Failed to delete expense $expenseId: $e");
+      rethrow;
+    }
+  }
 }
