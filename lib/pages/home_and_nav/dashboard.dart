@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import 'package:valgrow_ui/components/general_components/button_home.dart';
 import 'package:valgrow_ui/components/general_components/logo.dart';
 import 'package:valgrow_ui/components/general_components/text.dart';
-import 'package:valgrow_ui/components/general_components/text_button.dart';
 import 'package:valgrow_ui/services/database/database_provider.dart';
 
 class DashboardPage extends StatefulWidget {
@@ -15,8 +14,18 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   @override
+  void initState() {
+    super.initState();
+    final storeId = context.read<DatabaseProvider>().user?.storeId;
+    if (storeId != null) {
+      context.read<DatabaseProvider>().loadTodaySummary(storeId);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final user = context.watch<DatabaseProvider>().user; // ✅ Fetch user data
+    final todaySummary = context.watch<DatabaseProvider>().todaySummary;
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -85,100 +94,84 @@ class _DashboardPageState extends State<DashboardPage> {
           child: Column(
             children: [
               Container(
-                height: 200,
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: Color.fromARGB(128, 20, 174, 92),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(10.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          MyText(
-                            text: "TODAY'S PROFIT",
-                            fontSize: 24,
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          MyTextButton(
-                            text: "View",
-                            fontSize: 16,
-                            color: Color(0xFF0D7940),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 10),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Color(0xFF14AE5C),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 12.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                "Sales",
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              Text(
-                                "₱255.00",
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 10),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Color(0xFF14AE5C),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16.0, vertical: 12.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                "Today's Profit",
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              Text(
-                                "₱255.00",
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.w500,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    width: 3,
+                    color: Theme.of(context).colorScheme.primary,
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 6,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "Today’s Summary",
+                          style: TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: user?.role == "Employee"
+                              ? null
+                              : () =>
+                                  Navigator.pushNamed(context, '/dashboard'),
+                          style: TextButton.styleFrom(
+                            foregroundColor: user?.role == "Employee"
+                                ? Colors.grey
+                                : const Color(0xFF15803D),
+                            textStyle: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          child: const Text("View"),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+
+                    // 🟢 Sales
+                    _buildSummaryTile(
+                      context,
+                      title: "Sales",
+                      value:
+                          "₱${(todaySummary['totalSales'] ?? 0).toStringAsFixed(2)}",
+                      backgroundColor: const Color(0xFFF0FDF4),
+                    ),
+
+                    // 🔴 Debts
+                    _buildSummaryTile(
+                      context,
+                      title: "Total Debts",
+                      value:
+                          "₱${(todaySummary['totalDebtAmount'] ?? 0).toStringAsFixed(2)}",
+                      backgroundColor: const Color(0xFFFFEAEA),
+                    ),
+
+                    // 🟠 Expenses
+                    _buildSummaryTile(
+                      context,
+                      title: "Journal",
+                      value:
+                          "₱${(todaySummary['totalExpenses'] ?? 0).toStringAsFixed(2)}",
+                      backgroundColor: const Color(0xFFFFF4E5),
+                    ),
+                  ],
                 ),
               ),
               Padding(
@@ -237,7 +230,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                   : Colors.grey),
                         ),
                         MyHomeButton(
-                          text: "Expenses",
+                          text: "Store Journal",
                           onPressed: user?.expenses == true
                               ? () => Navigator.pushNamed(context, '/expenses')
                               : null, // ❌ Disabled if user has no permission
@@ -270,4 +263,37 @@ class _DashboardPageState extends State<DashboardPage> {
       ),
     );
   }
+}
+
+Widget _buildSummaryTile(
+  BuildContext context, {
+  required String title,
+  required String value,
+  required Color backgroundColor,
+}) {
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    margin: const EdgeInsets.only(bottom: 12),
+    decoration: BoxDecoration(
+      color: backgroundColor,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(fontSize: 14, color: Colors.black54),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
+      ],
+    ),
+  );
 }

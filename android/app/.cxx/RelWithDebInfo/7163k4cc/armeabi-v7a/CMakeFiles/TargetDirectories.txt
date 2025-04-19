@@ -1,0 +1,2 @@
+C:/flutter projects/valgrow_ui/android/app/.cxx/RelWithDebInfo/7163k4cc/armeabi-v7a/CMakeFiles/edit_cache.dir
+C:/flutter projects/valgrow_ui/android/app/.cxx/RelWithDebInfo/7163k4cc/armeabi-v7a/CMakeFiles/rebuild_cache.dir

@@ -28,7 +28,7 @@ class MyHomeButton extends StatelessWidget {
               color: isDisabled ? Colors.grey.shade300 : Colors.white, // 🔹 Gray when disabled
               border: Border.all(
                 color: isDisabled ? Colors.grey.shade500 : const Color(0xFF14AE5C), // 🔹 Adjust border color
-                width: 4,
+                width: 3,
               ),
               boxShadow: isDisabled
                   ? [] // ❌ Remove shadow when disabled

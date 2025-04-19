@@ -59,6 +59,7 @@ dependencies:
   timeago: ^3.2.2
   cloud_functions: ^5.4.0
   flutter_slidable: ^4.0.0
+  fl_chart: ^0.71.0
   
 dev_dependencies:
   flutter_test:

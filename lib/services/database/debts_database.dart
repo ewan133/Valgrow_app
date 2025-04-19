@@ -381,12 +381,12 @@ class DebtsDatabase {
       final now = DateTime.now();
       final yesterday = now.subtract(const Duration(hours: 24));
 
-      // 🔐 Check if a pending report already exists for this customer by this user
+      // 🔍 Check for duplicate reports within 24 hours
       final existingQuery = await _db
           .collection('admin_reports')
           .where('storeId', isEqualTo: storeId)
-          .where('customerId', isEqualTo: reportedId)
-          .where('reportedBy', isEqualTo: reportedByUserId)
+          .where('respondent', isEqualTo: reportedId) // ✅ Fixed field
+          .where('complainant', isEqualTo: reportedByUserId) // ✅ Fixed field
           .where('status', isEqualTo: 'pending')
           .get();
 
@@ -411,12 +411,13 @@ class DebtsDatabase {
       await reportRef.set({
         'reportId': reportRef.id,
         'storeId': storeId,
-        'customerId': reportedId,
-        'customerName': customerName,
+        'complainant': reportedByUserId,
+        'respondent': reportedId,
+        'respondentName': customerName,
         'reason': reportReason,
-        'reportedBy': reportedByUserId,
-        'timestamp': FieldValue.serverTimestamp(),
-        'status': 'pending', // Options: pending, reviewed, resolved
+        'timestamp': Timestamp.now(),
+        'status': 'pending',
+        'type': 'Business to Customer',
       });
 
       print("✅ Customer report filed successfully for $customerName");

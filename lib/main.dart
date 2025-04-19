@@ -14,6 +14,7 @@ import 'package:valgrow_ui/pages/authpages/login.dart';
 import 'package:valgrow_ui/pages/management/add_employee.dart';
 import 'package:valgrow_ui/pages/management/mangement.dart';
 import 'package:valgrow_ui/pages/notifications/notification.dart';
+import 'package:valgrow_ui/pages/reports/dashboard_report.dart';
 import 'package:valgrow_ui/pages/reports/reports_main.dart';
 import 'package:valgrow_ui/pages/authpages/signup.dart';
 import 'package:valgrow_ui/services/auth/wrapper.dart';
@@ -58,6 +59,7 @@ class MyApp extends StatelessWidget {
           '/management': (context) => const ManagementPage(),
           '/notifications': (context) => const NotificationPage(),
           '/add_employee': (context) => const AddEmployeePage(),
+          '/dashboard': (context) => const DashboardReportPage(),
         });
   }
 }

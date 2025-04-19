@@ -471,6 +471,7 @@ class DatabaseProvider extends ChangeNotifier {
 
       // ✅ Clear basket only if transaction is successful
       fetchItemsByStoreId();
+      loadTodaySummary(store!.storeId);
       clearBasket();
 
       return transactionId; // ✅ Return the transaction ID
@@ -660,6 +661,10 @@ class DatabaseProvider extends ChangeNotifier {
   List<Map<String, dynamic>> _transactionItems = [];
   List<Map<String, dynamic>> get transactionItems => _transactionItems;
 
+  Map<String, dynamic> todaySummary = {};
+  Map<String, dynamic> generalOverview = {};
+  Map<String, dynamic> dateRangeReport = {};
+
   // ✅ Loading status for transactions
   bool _isLoadingTransactionItems = false;
   bool get isLoadingTransactionItems => _isLoadingTransactionItems;
@@ -674,6 +679,7 @@ class DatabaseProvider extends ChangeNotifier {
           await _debtsDatabase.fetchTransactionItems(transactionId);
       print(
           "✅ Stored ${_transactionItems.length} transaction items in provider.");
+          
     } catch (e) {
       print("❌ Error fetching transaction items: $e");
       _transactionItems = []; // Reset on failure
@@ -1123,6 +1129,30 @@ class DatabaseProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  Future<void> loadTodaySummary(String storeId) async {
+    todaySummary = await _reportsDatabase.getTodaySummary(storeId);
+    notifyListeners();
+  }
+
+  Future<void> loadGeneralOverview(String storeId) async {
+    generalOverview = await _reportsDatabase.getGeneralOverview(storeId);
+    notifyListeners();
+  }
+
+  Future<void> loadDateRangeReport({
+    required String storeId,
+    required DateTime start,
+    required DateTime end,
+  }) async {
+    dateRangeReport = await _reportsDatabase.getDateRangeFinancialReport(
+      storeId: storeId,
+      startDate: start,
+      endDate: end,
+    );
+    notifyListeners();
+  }
+
   /*
 
     Expenses Functions
