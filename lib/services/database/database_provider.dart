@@ -122,6 +122,7 @@ class DatabaseProvider extends ChangeNotifier {
   List<Map<String, dynamic>> get debtPaymentReport => _debtPaymentReport;
   bool get isLoadingDebtPaymentReport => _isLoadingDebtPaymentReport;
 
+  
   Future<void> fetchUserProfile(String uid) async {
     try {
       final userData = await _db.getCurrentUserInfo(uid);
@@ -679,7 +680,6 @@ class DatabaseProvider extends ChangeNotifier {
           await _debtsDatabase.fetchTransactionItems(transactionId);
       print(
           "✅ Stored ${_transactionItems.length} transaction items in provider.");
-          
     } catch (e) {
       print("❌ Error fetching transaction items: $e");
       _transactionItems = []; // Reset on failure
@@ -1238,4 +1238,8 @@ class DatabaseProvider extends ChangeNotifier {
       rethrow;
     }
   }
+
+
+
+  
 }
