@@ -465,6 +465,192 @@ class ReportsDatabase {
     }
   }
 
+  /// ✅ Fetch data for Quick Summary Cards
+  Future<Map<String, dynamic>> getQuickSummary(String storeId) async {
+    try {
+      int totalInStockItems = 0;
+      int totalOutOfStockItems = 0;
+      int customersWithBalance = 0;
 
+      // 🔹 Fetch all items for the store
+      QuerySnapshot itemSnapshot = await _db
+          .collection('items')
+          .where('storeId', isEqualTo: storeId)
+          .get();
 
+      for (var doc in itemSnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final stock = (data['total_stock'] ?? 0) as int;
+        if (stock > 0) {
+          totalInStockItems++;
+        } else {
+          totalOutOfStockItems++;
+        }
+      }
+
+      // 🔸 Count customers with unpaid or partial debts
+      QuerySnapshot debtSnapshot = await _db
+          .collection('debts')
+          .where('storeId', isEqualTo: storeId)
+          .where('status', whereIn: ['unpaid', 'partial']).get();
+
+      // Group by customerId using a Set to avoid duplicates
+      Set<String> customerIdsWithBalance = {};
+
+      for (var doc in debtSnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final customerId = data['customerId'];
+        if (customerId != null && customerId != "guest") {
+          customerIdsWithBalance.add(customerId);
+        }
+      }
+
+      customersWithBalance = customerIdsWithBalance.length;
+
+      return {
+        'totalInStockItems': totalInStockItems,
+        'totalOutOfStockItems': totalOutOfStockItems,
+        'customersWithBalance': customersWithBalance,
+      };
+    } catch (e) {
+      print("❌ Error in getQuickSummary: $e");
+      return {
+        'totalInStockItems': 0,
+        'totalOutOfStockItems': 0,
+        'customersWithBalance': 0,
+      };
+    }
+  }
+
+  Future<Map<String, dynamic>> getPerformanceChartData(String storeId) async {
+    try {
+      final now = DateTime.now();
+      final startDate = now.subtract(const Duration(days: 56)); // Last 8 weeks
+
+      List<double> weeklySales = List.filled(8, 0.0);
+      List<double> weeklyExpenses = List.filled(8, 0.0);
+
+      // Transactions
+      QuerySnapshot txSnapshot = await _db
+          .collection('transactions')
+          .where('storeId', isEqualTo: storeId)
+          .where('created_at', isGreaterThanOrEqualTo: startDate)
+          .get();
+
+      for (var doc in txSnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final createdAt = (data['created_at'] as Timestamp).toDate();
+        final index = now.difference(createdAt).inDays ~/ 7;
+        if (index < 8) {
+          weeklySales[7 - index] += (data['total_amount'] ?? 0.0) as double;
+        }
+      }
+
+      // Expenses
+      QuerySnapshot expSnapshot = await _db
+          .collection('expenses')
+          .where('storeId', isEqualTo: storeId)
+          .where('date', isGreaterThanOrEqualTo: startDate)
+          .get();
+
+      for (var doc in expSnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final date = (data['date'] as Timestamp).toDate();
+        final index = now.difference(date).inDays ~/ 7;
+        if (index < 8) {
+          weeklyExpenses[7 - index] += (data['amount'] ?? 0.0) as double;
+        }
+      }
+
+      // POS Breakdown
+      int paidCount = 0;
+      int unpaidCount = 0;
+
+      for (var doc in txSnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final method = data['payment_method'];
+        if (method == "cash" || method == "gcash") {
+          paidCount++;
+        } else if (method == "debt") {
+          unpaidCount++;
+        }
+      }
+
+      // Debt Payments
+      QuerySnapshot debtPaymentSnapshot = await _db
+          .collection('debt_payments')
+          .where('storeId', isEqualTo: storeId)
+          .where('payment_date', isGreaterThanOrEqualTo: startDate)
+          .get();
+
+      int debtPaymentCount = debtPaymentSnapshot.docs.length;
+
+      // Most Sold Items
+      Map<String, int> itemSales = {};
+
+      for (var tx in txSnapshot.docs) {
+        final txId = tx.id;
+        QuerySnapshot txItems = await _db
+            .collection('transaction_items')
+            .where('transaction_id', isEqualTo: txId)
+            .get();
+
+        for (var item in txItems.docs) {
+          final itemData = item.data() as Map<String, dynamic>;
+          final itemId = itemData['item_id'];
+          final qty = (itemData['quantity'] ?? 0) as int;
+          itemSales[itemId] = (itemSales[itemId] ?? 0) + qty;
+        }
+      }
+
+      final sortedItems = itemSales.entries.toList()
+        ..sort((a, b) => b.value.compareTo(a.value));
+
+      final topSoldItems = <double>[];
+      final topSoldLabels = <String>[];
+
+      for (var entry in sortedItems.take(5)) {
+        final itemDoc = await _db.collection('items').doc(entry.key).get();
+        final itemName = itemDoc['item_name'] ?? 'Unknown Item';
+        topSoldLabels.add('$itemName \n(${entry.value} sold)');
+        topSoldItems.add(entry.value.toDouble());
+      }
+
+      // Fill missing slots with placeholders
+      while (topSoldItems.length < 5) {
+        topSoldItems.add(0.0);
+        topSoldLabels.add('');
+      }
+
+      print("📊 Weekly Sales: $weeklySales");
+      print("📉 Weekly Expenses: $weeklyExpenses");
+      print(
+          "💳 POS Breakdown → Paid: $paidCount | Unpaid: $unpaidCount | Debt Payments: $debtPaymentCount");
+      print("🔥 Top 5 Most Sold Items:");
+      for (int i = 0; i < topSoldLabels.length; i++) {
+        print("• ${topSoldLabels[i]}: ${topSoldItems[i].toInt()} sold");
+      }
+
+      return {
+        'weeklySales': weeklySales,
+        'weeklyExpenses': weeklyExpenses,
+        'posBreakdown': [
+          paidCount.toDouble(),
+          unpaidCount.toDouble(),
+          debtPaymentCount.toDouble(),
+        ],
+        'topSoldItems': topSoldItems,
+        'topSoldLabels': topSoldLabels,
+      };
+    } catch (e) {
+      print("❌ Error in getPerformanceChartData: $e");
+      return {
+        'weeklySales': List.filled(8, 0.0),
+        'weeklyExpenses': List.filled(8, 0.0),
+        'posBreakdown': [0.0, 0.0, 0.0],
+        'topSoldItems': List.filled(5, 0.0),
+        'topSoldLabels': List.filled(5, ''),
+      };
+    }
+  }
 }

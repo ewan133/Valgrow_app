@@ -122,7 +122,15 @@ class DatabaseProvider extends ChangeNotifier {
   List<Map<String, dynamic>> get debtPaymentReport => _debtPaymentReport;
   bool get isLoadingDebtPaymentReport => _isLoadingDebtPaymentReport;
 
-  
+  Map<String, dynamic> quickSummary = {};
+  bool isLoadingQuickSummary = false;
+
+  Map<String, dynamic> _performanceChartData =
+      {}; // Changed from Map<String, List<double>>
+  Map<String, dynamic> get performanceChartData => _performanceChartData;
+  bool _isLoadingPerformanceCharts = false;
+  bool get isLoadingPerformanceCharts => _isLoadingPerformanceCharts;
+
   Future<void> fetchUserProfile(String uid) async {
     try {
       final userData = await _db.getCurrentUserInfo(uid);
@@ -1153,6 +1161,67 @@ class DatabaseProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> loadQuickSummary(String storeId) async {
+    isLoadingQuickSummary = true;
+    notifyListeners();
+
+    quickSummary = await _reportsDatabase.getQuickSummary(storeId);
+
+    isLoadingQuickSummary = false;
+    notifyListeners();
+  }
+
+  Future<void> loadPerformanceChartData(String storeId) async {
+    _isLoadingPerformanceCharts = true;
+    notifyListeners();
+
+    try {
+      final data = await _reportsDatabase.getPerformanceChartData(storeId);
+
+      final topSoldValues =
+          List<double>.from(data['topSoldItems'] ?? List.filled(5, 0.0));
+      final topSoldLabels =
+          List<String>.from(data['topSoldLabels'] ?? List.filled(5, ''));
+
+      // Ensure exactly 5 entries
+      while (topSoldValues.length < 5) {
+        topSoldValues.add(0.0);
+        topSoldLabels.add('');
+      }
+
+      _performanceChartData = {
+        'weeklySales':
+            List<double>.from(data['weeklySales'] ?? List.filled(8, 0.0)),
+        'weeklyExpenses':
+            List<double>.from(data['weeklyExpenses'] ?? List.filled(8, 0.0)),
+        'posBreakdown':
+            List<double>.from(data['posBreakdown'] ?? [0.0, 0.0, 0.0]),
+        'topSoldItems': topSoldValues,
+        'topSoldLabels': topSoldLabels,
+      };
+
+      print("✅ Performance chart data loaded successfully.");
+      print("📊 Performance Chart Data:");
+      print("• weeklySales     : ${_performanceChartData['weeklySales']}");
+      print("• weeklyExpenses  : ${_performanceChartData['weeklyExpenses']}");
+      print("• posBreakdown    : ${_performanceChartData['posBreakdown']}");
+      print("• topSoldItems    : ${_performanceChartData['topSoldItems']}");
+      print("• topSoldLabels   : ${_performanceChartData['topSoldLabels']}");
+    } catch (e) {
+      print("❌ Error loading performance chart data: $e");
+      _performanceChartData = {
+        'weeklySales': List.filled(8, 0.0),
+        'weeklyExpenses': List.filled(8, 0.0),
+        'posBreakdown': [0.0, 0.0, 0.0],
+        'topSoldItems': List.filled(5, 0.0),
+        'topSoldLabels': List.filled(5, ''),
+      };
+    } finally {
+      _isLoadingPerformanceCharts = false;
+      notifyListeners();
+    }
+  }
+
   /*
 
     Expenses Functions
@@ -1238,8 +1307,4 @@ class DatabaseProvider extends ChangeNotifier {
       rethrow;
     }
   }
-
-
-
-  
 }
