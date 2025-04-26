@@ -612,7 +612,7 @@ class ReportsDatabase {
       for (var entry in sortedItems.take(5)) {
         final itemDoc = await _db.collection('items').doc(entry.key).get();
         final itemName = itemDoc['item_name'] ?? 'Unknown Item';
-        topSoldLabels.add('$itemName \n(${entry.value} sold)');
+        topSoldLabels.add('$itemName');
         topSoldItems.add(entry.value.toDouble());
       }
 
@@ -650,6 +650,100 @@ class ReportsDatabase {
         'posBreakdown': [0.0, 0.0, 0.0],
         'topSoldItems': List.filled(5, 0.0),
         'topSoldLabels': List.filled(5, ''),
+      };
+    }
+  }
+
+  /// ✅ Fetch financial insights data for last 8 weeks
+  Future<Map<String, List<double>>> getFinancialInsights(String storeId) async {
+    try {
+      final now = DateTime.now();
+      final startDate = now.subtract(const Duration(days: 56)); // Last 8 weeks
+
+      List<double> weeklySales = List.filled(8, 0.0);
+      List<double> weeklyAvailableItems = List.filled(8, 0.0);
+      List<double> weeklyExpenses = List.filled(8, 0.0);
+      List<double> weeklyNetProfit = List.filled(8, 0.0);
+
+      // 🔹 Fetch Transactions
+      QuerySnapshot txSnapshot = await _db
+          .collection('transactions')
+          .where('storeId', isEqualTo: storeId)
+          .where('created_at', isGreaterThanOrEqualTo: startDate)
+          .get();
+
+      for (var doc in txSnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final createdAt = (data['created_at'] as Timestamp).toDate();
+        final index = now.difference(createdAt).inDays ~/ 7;
+        if (index < 8) {
+          weeklySales[7 - index] += (data['total_amount'] ?? 0.0) as double;
+        }
+      }
+
+      // 🔹 Fetch Expenses
+      QuerySnapshot expSnapshot = await _db
+          .collection('expenses')
+          .where('storeId', isEqualTo: storeId)
+          .where('date', isGreaterThanOrEqualTo: startDate)
+          .get();
+
+      for (var doc in expSnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final date = (data['date'] as Timestamp).toDate();
+        final index = now.difference(date).inDays ~/ 7;
+        if (index < 8) {
+          weeklyExpenses[7 - index] += (data['amount'] ?? 0.0) as double;
+        }
+      }
+
+      // 🔹 Fetch Available Items
+      QuerySnapshot itemSnapshot = await _db
+          .collection('items')
+          .where('storeId', isEqualTo: storeId)
+          .get();
+
+      int availableItemCount = 0;
+      for (var doc in itemSnapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final stock = (data['total_stock'] ?? 0) as int;
+        if (stock > 0) {
+          availableItemCount++;
+        }
+      }
+
+      // Fill Available Items for each week
+      for (int i = 0; i < 8; i++) {
+        weeklyAvailableItems[i] = availableItemCount.toDouble();
+      }
+
+      // 🔹 Calculate Net Profit
+      for (int i = 0; i < 8; i++) {
+        weeklyNetProfit[i] = weeklySales[i] - weeklyExpenses[i];
+      }
+
+      // ✅ Final Debug Print
+      print("✅ Financial Insights Computed:");
+      print("─────────────────────────────────");
+      print("📈 Weekly Sales        : $weeklySales");
+      print("📦 Weekly Available Items: $weeklyAvailableItems");
+      print("💸 Weekly Expenses      : $weeklyExpenses");
+      print("📊 Weekly Net Profit    : $weeklyNetProfit");
+      print("─────────────────────────────────");
+
+      return {
+        'weeklySales': weeklySales,
+        'weeklyAvailableItems': weeklyAvailableItems,
+        'weeklyExpenses': weeklyExpenses,
+        'weeklyNetProfit': weeklyNetProfit,
+      };
+    } catch (e) {
+      print('❌ Error fetching financial insights: $e');
+      return {
+        'weeklySales': List.filled(8, 0.0),
+        'weeklyAvailableItems': List.filled(8, 0.0),
+        'weeklyExpenses': List.filled(8, 0.0),
+        'weeklyNetProfit': List.filled(8, 0.0),
       };
     }
   }

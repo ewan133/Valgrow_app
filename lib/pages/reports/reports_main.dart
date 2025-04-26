@@ -5,8 +5,9 @@ import 'package:valgrow_ui/components/general_components/datepicker.dart';
 import 'package:valgrow_ui/components/reports_components/debts_payment_report.dart';
 import 'package:valgrow_ui/components/reports_components/inventory_table.dart';
 import 'package:valgrow_ui/components/reports_components/sales_reports.dart';
+import 'package:valgrow_ui/pages/reports/overview_report.dart'; // Import your Overview widget
 
-enum ReportType { inventory, sales, debtPayments }
+enum ReportType { overview, inventory, sales, debtPayments }
 
 class ReportsMainPage extends StatefulWidget {
   const ReportsMainPage({super.key});
@@ -20,7 +21,7 @@ class _ReportsMainPageState extends State<ReportsMainPage> {
   DateTime? tempEndDate;
   DateTimeRange? selectedDateRange;
 
-  ReportType _selectedReportType = ReportType.inventory;
+  ReportType _selectedReportType = ReportType.overview;
 
   void _onStartDateSelected(DateTime date) {
     setState(() {
@@ -62,6 +63,10 @@ class _ReportsMainPageState extends State<ReportsMainPage> {
           },
           itemBuilder: (BuildContext context) => <PopupMenuEntry<ReportType>>[
             const PopupMenuItem<ReportType>(
+              value: ReportType.overview,
+              child: Text('Overview'),
+            ),
+            const PopupMenuItem<ReportType>(
               value: ReportType.inventory,
               child: Text('Inventory'),
             ),
@@ -82,35 +87,37 @@ class _ReportsMainPageState extends State<ReportsMainPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 15),
-            Row(
-              children: [
-                Expanded(
-                  child: MyDatePicker(
-                    label: "Start Date",
-                    onDateSelected: _onStartDateSelected,
+            if (_selectedReportType != ReportType.overview) ...[
+              Row(
+                children: [
+                  Expanded(
+                    child: MyDatePicker(
+                      label: "Start Date",
+                      onDateSelected: _onStartDateSelected,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 20),
-                Expanded(
-                  child: MyDatePicker(
-                    label: "End Date",
-                    onDateSelected: _onEndDateSelected,
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: MyDatePicker(
+                      label: "End Date",
+                      onDateSelected: _onEndDateSelected,
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 15),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 30.0),
-              child: MyButton(
-                text: "Generate Report",
-                color: const Color(0xFF14AE5C),
-                width: double.infinity,
-                borderRadius: 999,
-                onTap: _generateReport,
+                ],
               ),
-            ),
-            const SizedBox(height: 30),
+              const SizedBox(height: 15),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 30.0),
+                child: MyButton(
+                  text: "Generate Report",
+                  color: const Color(0xFF14AE5C),
+                  width: double.infinity,
+                  borderRadius: 999,
+                  onTap: _generateReport,
+                ),
+              ),
+              const SizedBox(height: 30),
+            ],
             Expanded(
               child: _buildReportTable(),
             ),
@@ -122,6 +129,8 @@ class _ReportsMainPageState extends State<ReportsMainPage> {
 
   Widget _buildReportTable() {
     switch (_selectedReportType) {
+      case ReportType.overview:
+        return const OverviewReportPage(); // 📊 Overview Widget
       case ReportType.inventory:
         return MyInventoryTable(
           key: ValueKey('inventory_${selectedDateRange.toString()}'),

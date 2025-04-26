@@ -221,7 +221,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         MyHomeButton(
                           text: "Reports",
                           onPressed: user?.reports == true
-                              ? () => Navigator.pushNamed(context, '/overview_report')
+                              ? () => Navigator.pushNamed(context, '/reports')
                               : null,
                           icon: Icon(Icons.summarize,
                               size: 32,

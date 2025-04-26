@@ -24,7 +24,7 @@ class _OverviewReportPageState extends State<OverviewReportPage> {
         final provider = context.read<DatabaseProvider>();
         provider.loadQuickSummary(storeId);
         provider.loadPerformanceChartData(storeId);
-        //provider.loadFinancialInsights(storeId);
+        provider.loadFinancialInsights(storeId);
       } else {
         debugPrint("⚠️ No store ID found.");
       }
@@ -34,12 +34,7 @@ class _OverviewReportPageState extends State<OverviewReportPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
-      appBar: AppBar(
-        title: const Text('Store Overview'),
-        centerTitle: true,
-        backgroundColor: Colors.teal,
-      ),
+      backgroundColor: Colors.white,
       body: Consumer<DatabaseProvider>(
         builder: (context, provider, child) {
           return SingleChildScrollView(

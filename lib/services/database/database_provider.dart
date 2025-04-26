@@ -125,11 +125,16 @@ class DatabaseProvider extends ChangeNotifier {
   Map<String, dynamic> quickSummary = {};
   bool isLoadingQuickSummary = false;
 
-  Map<String, dynamic> _performanceChartData =
-      {}; // Changed from Map<String, List<double>>
+  Map<String, dynamic> _performanceChartData = {};
   Map<String, dynamic> get performanceChartData => _performanceChartData;
   bool _isLoadingPerformanceCharts = false;
   bool get isLoadingPerformanceCharts => _isLoadingPerformanceCharts;
+
+// ✅ New field for Financial Insights
+  Map<String, List<double>> _financialInsightsData = {};
+  Map<String, List<double>> get financialInsightsData => _financialInsightsData;
+  bool _isLoadingFinancialInsights = false;
+  bool get isLoadingFinancialInsights => _isLoadingFinancialInsights;
 
   Future<void> fetchUserProfile(String uid) async {
     try {
@@ -1218,6 +1223,46 @@ class DatabaseProvider extends ChangeNotifier {
       };
     } finally {
       _isLoadingPerformanceCharts = false;
+      notifyListeners();
+    }
+  }
+
+  /// ✅ Load Financial Insights (Default = Last 8 weeks)
+  Future<void> loadFinancialInsights(String storeId) async {
+    _isLoadingFinancialInsights = true;
+    notifyListeners();
+
+    try {
+      final data = await _reportsDatabase.getFinancialInsights(storeId);
+
+      _financialInsightsData = {
+        'weeklySales':
+            List<double>.from(data['weeklySales'] ?? List.filled(8, 0.0)),
+        'weeklyItemsSold':
+            List<double>.from(data['weeklyItemsSold'] ?? List.filled(8, 0.0)),
+        'weeklyExpenses':
+            List<double>.from(data['weeklyExpenses'] ?? List.filled(8, 0.0)),
+        'weeklyNetProfit':
+            List<double>.from(data['weeklyNetProfit'] ?? List.filled(8, 0.0)),
+      };
+
+      print("✅ Financial insights data loaded.");
+      print("📈 Weekly Sales: ${_financialInsightsData['weeklySales']}");
+      print(
+          "🛒 Weekly Items Sold: ${_financialInsightsData['weeklyItemsSold']}");
+      print("💸 Weekly Expenses: ${_financialInsightsData['weeklyExpenses']}");
+      print(
+          "📈 Weekly Net Profit: ${_financialInsightsData['weeklyNetProfit']}");
+    } catch (e) {
+      print("❌ Error loading financial insights: $e");
+      _financialInsightsData = {
+        'weeklySales': List.filled(8, 0.0),
+        'weeklyItemsSold': List.filled(8, 0.0),
+        'weeklyExpenses': List.filled(8, 0.0),
+        'weeklyNetProfit': List.filled(8, 0.0),
+      };
+    } finally {
+      _isLoadingFinancialInsights = false;
       notifyListeners();
     }
   }

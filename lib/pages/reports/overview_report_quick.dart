@@ -25,17 +25,38 @@ class OverviewReportQuickSummary extends StatelessWidget {
             color: Colors.teal.shade800,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         Row(
           children: [
-            Expanded(child: _SummaryCard(title: 'In Stock', value: inStock)),
+            Expanded(
+              child: _SummaryCard(
+                title: 'In Stock',
+                value: inStock,
+                icon: Icons.inventory_2_rounded,
+                backgroundColor: Colors.green.shade50,
+                iconColor: Colors.green,
+              ),
+            ),
             const SizedBox(width: 12),
             Expanded(
-                child: _SummaryCard(title: 'Out of Stock', value: outOfStock)),
+              child: _SummaryCard(
+                title: 'Out of Stock',
+                value: outOfStock,
+                icon: Icons.warning_amber_rounded,
+                backgroundColor: Colors.red.shade50,
+                iconColor: Colors.red,
+              ),
+            ),
             const SizedBox(width: 12),
             Expanded(
-                child: _SummaryCard(
-                    title: 'Customers w/ Balance', value: customers)),
+              child: _SummaryCard(
+                title: 'Customers w/ Balance',
+                value: customers,
+                icon: Icons.account_balance_wallet_rounded,
+                backgroundColor: Colors.orange.shade50,
+                iconColor: Colors.orange,
+              ),
+            ),
           ],
         ),
       ],
@@ -46,23 +67,46 @@ class OverviewReportQuickSummary extends StatelessWidget {
 class _SummaryCard extends StatelessWidget {
   final String title;
   final String value;
-  const _SummaryCard({required this.title, required this.value});
+  final IconData icon;
+  final Color backgroundColor;
+  final Color iconColor;
+
+  const _SummaryCard({
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.backgroundColor,
+    required this.iconColor,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 4,
+      color: backgroundColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
+      elevation: 2, // lighter minimalist shadow
+      child: Container(
+        height: 150, // fix all cards to same height
+        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 16.0),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            Text(title, style: const TextStyle(fontSize: 16)),
-            const SizedBox(height: 8),
+            Icon(icon, size: 32, color: iconColor),
             Text(
               value,
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 13,
+                color: Colors.black54,
+              ),
             ),
           ],
         ),
