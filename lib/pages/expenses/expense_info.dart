@@ -39,7 +39,7 @@ class ExpenseInfoPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: MyAppbar(title: "Expense Info"),
+      appBar: MyAppbar(title: "Record Info"),
       body: Consumer<DatabaseProvider>(
         builder: (context, provider, _) {
           final expenses = provider.expenses.where((expense) {

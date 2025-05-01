@@ -115,26 +115,61 @@ class AuthService {
     required BuildContext context,
   }) async {
     try {
+      if (email.isEmpty || password.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("❌ Email or password is empty."),
+          ),
+        );
+        print("❌ Email or password is empty.");
+        return;
+      }
+
       final callable =
           FirebaseFunctions.instance.httpsCallable('createUserAsAdmin');
+
+      // 🔥 Print debug message BEFORE calling
+      print("📤 Sending to Cloud Function:");
+      print("Email: $email");
+      print("Password: $password");
+
       final result = await callable.call({
-        'email': email,
-        'password': password,
+        'email': email.trim(),
+        'password': password.trim(),
       });
 
-      final data = result.data;
-      String newUserId = data['uid'];
+      final data = result.data as Map<String, dynamic>;
+      final String newUserId = data['uid'];
 
-      _db.createEmployeeProfile(email, name, phone, storeCode, newUserId);
-      
+      // 🔥 Now create the Firestore employee profile
+      await _db.createEmployeeProfile(
+        email,
+        name,
+        phone,
+        storeCode,
+        newUserId,
+      );
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("✅ Created user: ${data['email']}")),
+        const SnackBar(
+          content: Text("✅ Employee account created successfully!"),
+          duration: Duration(seconds: 3),
+        ),
       );
     } on FirebaseFunctionsException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("❌ Failed to create user: ${e.message}")),
+        SnackBar(
+          content:
+              Text("❌ Failed to create user: ${e.message ?? 'Unknown error'}"),
+        ),
       );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("❌ Unexpected error occurred."),
+        ),
+      );
+      print('❌ Unexpected error during employee creation: $e');
     }
   }
 }

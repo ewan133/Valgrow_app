@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'package:valgrow_ui/components/general_components/appbar.dart';
 import 'package:valgrow_ui/components/general_components/button.dart';
@@ -20,8 +21,10 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
   final _numberController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-//  final _storeCodeController = TextEditingController();
   final _auth = AuthService();
+
+  bool _isLoading = false;
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -32,19 +35,86 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
     super.dispose();
   }
 
-  void _submit() {
+  void _showToast(String message) {
+    Fluttertoast.showToast(
+      msg: message,
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+    );
+  }
+
+  bool _isValidEmail(String email) {
+    return RegExp(r'^[^@]+@[^@]+\.[^@]+$').hasMatch(email);
+  }
+
+  bool _isValidPhone(String phone) {
+    return RegExp(r'^09\d{9}$').hasMatch(phone);
+  }
+
+  void _submit() async {
     final databaseProvider =
         Provider.of<DatabaseProvider>(context, listen: false);
     final storeCode = databaseProvider.store?.storeCode ?? "";
 
-    _auth.createUserAsAdmin(
-      email: _emailController.text.trim(),
-      password: _passwordController.text.trim(),
-      name: _nameController.text.trim(),
-      phone: _numberController.text.trim(),
-      storeCode: storeCode,
-      context: context,
-    );
+    final name = _nameController.text.trim();
+    final email = _emailController.text.trim();
+    final phone = _numberController.text.trim();
+    final password = _passwordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
+
+    if (name.isEmpty ||
+        email.isEmpty ||
+        phone.isEmpty ||
+        password.isEmpty ||
+        confirmPassword.isEmpty) {
+      _showToast("❗ Please fill in all fields.");
+      return;
+    }
+
+    if (!_isValidEmail(email)) {
+      _showToast("❗ Enter a valid email address.");
+      return;
+    }
+
+    if (!_isValidPhone(phone)) {
+      _showToast("❗ Enter a valid 11-digit phone number (e.g. 09123456789).");
+      return;
+    }
+
+    if (password.length < 8) {
+      _showToast("❗ Password must be at least 8 characters long.");
+      return;
+    }
+
+    if (password != confirmPassword) {
+      _showToast("❗ Passwords do not match.");
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      await _auth.createUserAsAdmin(
+        email: email,
+        password: password,
+        name: name,
+        phone: phone,
+        storeCode: storeCode,
+        context: context,
+      );
+
+      _showToast("✅ Employee created successfully!");
+      
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/management',
+        (route) => route.settings.name == '/home' || route.isFirst,
+      );
+    } catch (e) {
+      _showToast("❌ Error: ${e.toString()}");
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -101,13 +171,15 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
               isObscure: true,
             ),
             const SizedBox(height: 20),
-            MyButton(
-              onTap: _submit,
-              text: "Create Employee",
-              color: const Color(0xFF14AE5C),
-              width: double.infinity,
-              borderRadius: 100,
-            ),
+            _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : MyButton(
+                    onTap: _submit,
+                    text: "Create Employee",
+                    color: const Color(0xFF14AE5C),
+                    width: double.infinity,
+                    borderRadius: 100,
+                  ),
           ],
         ),
       ),

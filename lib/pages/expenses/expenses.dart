@@ -118,9 +118,9 @@ class _ExpensesPageState extends State<ExpensesPage> {
         final groupedExpenses = _groupExpensesByMonth(provider.expenses);
 
         return Scaffold(
-          appBar: MyAppbar(title: "Expenses"),
+          appBar: MyAppbar(title: "Journal"),
           floatingActionButton: MyFloatingActionButton(
-            text: "Record Expense",
+            text: "Add record",
             onPressed: () => _openAddExpensesModal(context),
           ),
           body: SingleChildScrollView(

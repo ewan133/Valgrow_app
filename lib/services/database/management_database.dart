@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:valgrow_ui/models/store_profile.dart';
 import 'package:valgrow_ui/models/user_profile.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 
 class ManagementDatabase {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -51,25 +52,52 @@ class ManagementDatabase {
     }
   }
 
-  /// ✅ Remove an employee from a store (Unassign storeId & reset permissions)
+  /// ✅ Remove an employee from a store (Unassign storeId & reset permissions) version 1
+  // Future<void> removeEmployeeFromStore(String userId) async {
+  //   try {
+  //     DocumentReference userRef = _db.collection('users').doc(userId);
+
+  //     await userRef.update({
+  //       'storeId': '', // ✅ Remove the store affiliation
+  //       'role': 'Unassigned', // ✅ Optionally change role
+  //       'pos': true, // ✅ Default permissions
+  //       'ims': false,
+  //       'debts': true,
+  //       'expenses': false,
+  //       'reports': false,
+  //     });
+
+  //     print(
+  //         "✅ Employee $userId has been removed from the store and permissions reset.");
+  //   } catch (e) {
+  //     print("❌ Error removing employee $userId from store: $e");
+  //   }
+  // }
+  
+  // vesion 2
   Future<void> removeEmployeeFromStore(String userId) async {
     try {
-      DocumentReference userRef = _db.collection('users').doc(userId);
+      // 1. Update Firestore user data (optional if you are fully deleting)
+      //optional
+      // DocumentReference userRef = _db.collection('users').doc(userId);
+      // await userRef.update({
+      //   'storeId': '',
+      //   'role': 'Unassigned',
+      //   'pos': true,
+      //   'ims': false,
+      //   'debts': true,
+      //   'expenses': false,
+      //   'reports': false,
+      // });
 
-      await userRef.update({
-        'storeId': '', // ✅ Remove the store affiliation
-        'role': 'Unassigned', // ✅ Optionally change role
-        'pos': true, // ✅ Default permissions
-        'ims': false,
-        'debts': true,
-        'expenses': false,
-        'reports': false,
-      });
+      // 2. Call Cloud Function to delete the Auth account
+      final callable =
+          FirebaseFunctions.instance.httpsCallable('deleteUserAsAdmin');
+      final response = await callable.call({'uid': userId});
 
-      print(
-          "✅ Employee $userId has been removed from the store and permissions reset.");
+      print(response.data['message']);
     } catch (e) {
-      print("❌ Error removing employee $userId from store: $e");
+      print("❌ Error removing/deleting employee $userId: $e");
     }
   }
 
@@ -158,12 +186,9 @@ class ManagementDatabase {
   }
 
 // create profile for employees in management
-  Future<void> createEmployeeProfile(
-      String userEmail, String name, String phone, String storeCode, String userId) async {
+  Future<void> createEmployeeProfile(String userEmail, String name,
+      String phone, String storeCode, String userId) async {
     try {
-      
-
-
       await _db.runTransaction((transaction) async {
         // Find store by storeCode
         QuerySnapshot storeQuery = await _db
@@ -215,5 +240,4 @@ class ManagementDatabase {
       print('Error creating profile and affiliating employee: $e');
     }
   }
-  
 }
