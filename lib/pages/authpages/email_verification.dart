@@ -80,6 +80,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
             TextButton(
               onPressed: () {
                 Navigator.pushNamed(context, '/login');
+                _auth.signout();
               },
               child: const Text(
                 "Back to Login",

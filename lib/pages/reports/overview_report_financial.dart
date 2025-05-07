@@ -190,7 +190,7 @@ class _ProfitChart extends StatelessWidget {
     final double minY = minProfit * 1.2;
 
     return _ChartContainer(
-      title: 'Net Profit (Sales - Expenses)',
+      title: 'Net Profit',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

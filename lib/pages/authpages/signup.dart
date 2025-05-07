@@ -24,7 +24,7 @@ class _SignupPageState extends State<SignupPage> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _storeCodeController = TextEditingController(); // Store Code Controller
-  List<String> dropdownItems = ["Store Owner", "Employee"];
+  List<String> dropdownItems = ["Store Owner"];
   String selectedItem = "Store Owner"; // Default selected item
 
   @override
@@ -122,6 +122,8 @@ class _SignupPageState extends State<SignupPage> {
           duration: const Duration(seconds: 3),
         ),
       );
+      Navigator.pushNamed(context, "/login");
+
     }
   }
 
@@ -192,7 +194,7 @@ class _SignupPageState extends State<SignupPage> {
               ),
 
               // dropdown button
-              Padding(
+              /*Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -239,7 +241,7 @@ class _SignupPageState extends State<SignupPage> {
                     ),
                   ],
                 ),
-              ),
+              ),*/
 
               // Store Code Field (Only for Employee & Staff)
               if (selectedItem != "Store Owner")

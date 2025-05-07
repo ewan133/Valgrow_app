@@ -25,7 +25,7 @@ class OverviewReportPerformanceCharts extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionTitle('Performance Charts'),
+        const _SectionTitle('Performance Charts \n(last 8 weeks)'),
         const SizedBox(height: 16),
         _PieChartSection(posBreakdown: posBreakdown),
         const SizedBox(height: 24),
@@ -103,7 +103,7 @@ class _LineChartSection extends StatelessWidget {
     final double minY = -maxY * 0.1; // ✅ Add small negative space at bottom
 
     return _ChartContainer(
-      title: 'Sales vs Expenses (Last 8 Weeks)',
+      title: 'Sales and Journal',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

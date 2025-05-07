@@ -76,13 +76,13 @@ class _DebtsPersonalListState extends State<DebtsPersonalList> {
     final userId = provider.user?.uid;
 
 final reason = '''
-📄 Customer Overdue Report \n\n<br><br>
+📄 Customer Overdue Report
 
-This report concerns an overdue debt from ${widget.customerDetails.name}, who can be contacted at ${widget.customerDetails.phone}. The debt in question has the ID ${overdueDebt.debtId}, with an outstanding balance of ₱${overdueDebt.balance.toStringAsFixed(2)}. The due date for this debt was ${overdueDebt.dueDate.toLocal().toString().split(' ')[0]}.\n\n<br><br>
+This report concerns an overdue debt from ${widget.customerDetails.name}, who can be contacted at ${widget.customerDetails.phone}. The debt in question has the ID ${overdueDebt.debtId}, with an outstanding balance of ₱${overdueDebt.balance.toStringAsFixed(2)}. The due date for this debt was ${overdueDebt.dueDate.toLocal().toString().split(' ')[0]}.
 
-The report was submitted by $storeName, which can be reached at $storePhone. The store's ID is $storeId.\n\n<br><br>
+The report was submitted by $storeName, which can be reached at $storePhone. The store's ID is $storeId.
 
-This complaint is filed due to unpaid and overdue debts beyond the agreed due date.\n\n<br><br>
+This complaint is filed due to unpaid and overdue debts beyond the agreed due date.
 ''';
 
 

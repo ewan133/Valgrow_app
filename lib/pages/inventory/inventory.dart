@@ -78,18 +78,25 @@ class _InventoryPageState extends State<InventoryPage> {
           final items = inventoryProvider.items;
 
           if (isLoading) {
-            return const Center(child: CircularProgressIndicator()); // ✅ Show loading
+            return const Center(
+                child: CircularProgressIndicator()); // ✅ Show loading
           }
 
           // ✅ Apply search and category filters
           final filteredItems = items.where((item) {
             final matchesSearch = _searchQuery.isEmpty ||
                 item.item_name.toLowerCase().contains(_searchQuery);
-            final matchesCategory =
-                _selectedCategory == "All" || item.category == _selectedCategory;
+            final matchesCategory = _selectedCategory == "All" ||
+                item.category == _selectedCategory;
 
             return matchesSearch && matchesCategory;
-          }).toList();
+          }).toList()
+            ..sort((a, b) {
+              // ✅ Sort: items with stock first
+              if (a.total_stock > 0 && b.total_stock == 0) return -1;
+              if (a.total_stock == 0 && b.total_stock > 0) return 1;
+              return 0;
+            });
 
           return Column(
             children: [
@@ -121,7 +128,7 @@ class _InventoryPageState extends State<InventoryPage> {
                           final item = filteredItems[index];
                           return Padding(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
+                                horizontal: 6, vertical: 2),
                             child: GestureDetector(
                               onTap: () {
                                 Navigator.push(

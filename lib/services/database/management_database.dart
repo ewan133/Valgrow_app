@@ -79,16 +79,16 @@ class ManagementDatabase {
     try {
       // 1. Update Firestore user data (optional if you are fully deleting)
       //optional
-      // DocumentReference userRef = _db.collection('users').doc(userId);
-      // await userRef.update({
-      //   'storeId': '',
-      //   'role': 'Unassigned',
-      //   'pos': true,
-      //   'ims': false,
-      //   'debts': true,
-      //   'expenses': false,
-      //   'reports': false,
-      // });
+      DocumentReference userRef = _db.collection('users').doc(userId);
+      await userRef.update({
+        'storeId': '',
+        'role': 'Unassigned',
+        'pos': true,
+        'ims': false,
+        'debts': true,
+        'expenses': false,
+        'reports': false,
+      });
 
       // 2. Call Cloud Function to delete the Auth account
       final callable =
