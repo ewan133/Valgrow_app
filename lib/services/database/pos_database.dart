@@ -203,7 +203,7 @@ class POSDatabase {
         "created_at": FieldValue.serverTimestamp(),
         "updated_at": FieldValue.serverTimestamp(),
         "due_date": due_date ??
-            Timestamp.fromDate(DateTime.now().add(Duration(days: 7))),
+            Timestamp.fromDate(DateTime.now().add(Duration(days: 14))),
       });
 
       print("✅ Debt recorded for customer: $customerId | Balance: $balance");

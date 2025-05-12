@@ -120,7 +120,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         const Text(
                           "Today’s Summary",
                           style: TextStyle(
-                            fontSize: 26,
+                            fontSize: 22,
                             fontWeight: FontWeight.bold,
                             color: Colors.black87,
                           ),

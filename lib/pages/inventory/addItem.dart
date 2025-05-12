@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
@@ -160,14 +161,34 @@ class _AdditemPageState extends State<AdditemPage> {
     }
 
     String barcode = _barcodeController.text.trim();
+    num regularPrice = num.parse(_regularPriceController.text.trim());
+    num unpaidPrice = num.parse(_unpaidPriceController.text.trim());
 
     // Check if a barcode is entered and ensure it's unique
     if (barcode.isNotEmpty && items.any((item) => item.barcode == barcode)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text("An item with this barcode already exists!")),
+
+      Fluttertoast.showToast(
+        msg: "An item with this barcode already exists!",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
       );
       return;
+    }
+
+    // Check if the unpaid price is right
+    if (unpaidPrice < regularPrice) {
+      Fluttertoast.showToast(
+        msg: "The unpaid price must be greater than or equal the regular price!",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+      return;   
     }
 
     setState(() => _isUploading = true);

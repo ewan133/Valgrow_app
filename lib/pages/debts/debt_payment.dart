@@ -358,7 +358,7 @@ Please settle your balance before the due date. Thank you!
                       child: _buildPaymentField(
                           "Received Amount:", _customerMoneyController),
                     ),
-                    const SizedBox(width: 10), // Space between inputs
+                    const SizedBox(width: 20), // Space between inputs
 
                     // Payment Method Dropdown (Takes 30% of the Row)
                     Expanded(

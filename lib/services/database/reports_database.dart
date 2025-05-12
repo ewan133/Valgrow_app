@@ -21,7 +21,9 @@ class ReportsDatabase {
         query = query.where('created_at', isGreaterThanOrEqualTo: startDate);
       }
       if (endDate != null) {
-        query = query.where('created_at', isLessThanOrEqualTo: endDate);
+        // ✅ Add one day to include entire endDate day
+        query = query.where('created_at',
+            isLessThan: endDate.add(Duration(days: 1)));
       }
 
       QuerySnapshot querySnapshot = await query.get();
@@ -164,7 +166,8 @@ class ReportsDatabase {
         query = query.where('payment_date', isGreaterThanOrEqualTo: startDate);
       }
       if (endDate != null) {
-        query = query.where('payment_date', isLessThanOrEqualTo: endDate);
+        query = query.where('payment_date',
+            isLessThan: endDate.add(Duration(days: 1)));
       }
 
       QuerySnapshot snapshot = await query.get();
@@ -231,7 +234,6 @@ class ReportsDatabase {
     };
   }
 
-  // ✅ Fetch  summary
   Future<Map<String, dynamic>> getTodaySummary(String storeId) async {
     try {
       final now = DateTime.now();
@@ -244,7 +246,7 @@ class ReportsDatabase {
       int paidCount = 0;
       int debtCount = 0;
 
-      // Sales (Paid and Debt)
+      // 🔹 Sales (Paid and Debt)
       QuerySnapshot salesSnapshot = await _db
           .collection('transactions')
           .where('storeId', isEqualTo: storeId)
@@ -259,14 +261,27 @@ class ReportsDatabase {
 
         if (paymentMethod == 'debt') {
           debtCount++;
-          totalDebtAmount += totalAmount; // ✅ Add to totalDebtAmount
+          totalDebtAmount += totalAmount;
         } else {
           paidCount++;
           totalSales += totalAmount;
         }
       }
 
-      // Expenses
+      // 🔹 Add today's debt payments to totalSales
+      QuerySnapshot debtPaymentsSnapshot = await _db
+          .collection('debt_payments')
+          .where('storeId', isEqualTo: storeId)
+          .where('payment_date', isGreaterThanOrEqualTo: today)
+          .where('payment_date', isLessThan: tomorrow)
+          .get();
+
+      for (var doc in debtPaymentsSnapshot.docs) {
+        final paymentData = doc.data() as Map<String, dynamic>;
+        totalSales += (paymentData['amount_paid'] ?? 0.0) as double;
+      }
+
+      // 🔹 Expenses
       QuerySnapshot expenseSnapshot = await _db
           .collection('expenses')
           .where('storeId', isEqualTo: storeId)
@@ -278,9 +293,20 @@ class ReportsDatabase {
         totalExpenses += (doc['amount'] ?? 0.0) as double;
       }
 
+      // 🔹 Print summary
+      print("📊 Sales Report Summary:");
+      print(
+          "• Total Sales (with debt payments): ₱${totalSales.toStringAsFixed(2)}");
+      print(
+          "• Total Debt Amount (new debts): ₱${totalDebtAmount.toStringAsFixed(2)}");
+      print("• Total Expenses: ₱${totalExpenses.toStringAsFixed(2)}");
+      print("• Profit: ₱${(totalSales - totalExpenses).toStringAsFixed(2)}");
+      print("• Paid Transactions: $paidCount");
+      print("• Debt Transactions: $debtCount");
+
       return {
         'totalSales': totalSales,
-        'totalDebtAmount': totalDebtAmount, // ✅ NEW field
+        'totalDebtAmount': totalDebtAmount,
         'totalExpenses': totalExpenses,
         'profit': totalSales - totalExpenses,
         'paidTransactions': paidCount,

@@ -131,6 +131,23 @@ class _EditItemModalState extends State<EditItemModal> {
       return;
     }
 
+    num regularPrice = num.parse(_regularPriceController.text.trim());
+    num unpaidPrice = num.parse(_unpaidPriceController.text.trim());
+    // Check if the unpaid price is right
+
+    if (unpaidPrice < regularPrice) {
+      Fluttertoast.showToast(
+        msg:
+            "The unpaid price must be greater than or equal the regular price!",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+      return;
+    }
+
     setState(() => _isUploading = true);
 
     String imageUrl = widget.item.item_image;
@@ -162,8 +179,14 @@ class _EditItemModalState extends State<EditItemModal> {
 
     await databaseProvider.editItem(updatedItem);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Item Successfully Updated")),
+
+    Fluttertoast.showToast(
+      msg: "Item Successfully Updated",
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      backgroundColor: Colors.green,
+      textColor: Colors.white,
+      fontSize: 16.0,
     );
 
     Navigator.pop(context);

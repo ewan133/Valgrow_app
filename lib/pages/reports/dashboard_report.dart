@@ -63,6 +63,7 @@ class _DashboardReportPageState extends State<DashboardReportPage> {
     const primaryGreen = Color(0xFF14AE5C);
 
     final report = context.watch<DatabaseProvider>();
+    final todaySummary = context.watch<DatabaseProvider>().todaySummary;
     final today = report.todaySummary;
     final overview = report.generalOverview;
     final dateRange = report.dateRangeReport;
@@ -136,7 +137,7 @@ class _DashboardReportPageState extends State<DashboardReportPage> {
                   child: _buildTotalCard(
                     title: "Journal Total",
                     value:
-                        "₱${(dateRange['totalExpenses'] ?? 0).toStringAsFixed(2)}",
+                        "₱${(todaySummary['totalExpenses'] ?? 0).toStringAsFixed(2)}",
                     color: Colors.red.withOpacity(0.1),
                   ),
                 ),

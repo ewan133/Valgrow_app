@@ -227,7 +227,7 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
 
                 // Due Date Picker
                 _buildDatePickerField(
-                  label: "Due Date (default # weeks)",
+                  label: "Due Date (default 2 weeks from now)",
                   value: _selectedDueDate,
                   onDatePicked: (newDate) {
                     setState(() {

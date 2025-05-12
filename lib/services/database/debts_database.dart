@@ -417,6 +417,7 @@ class DebtsDatabase {
         'reason': reportReason,
         'timestamp': Timestamp.now(),
         'status': 'pending',
+        'reportCategory': 'Debt Dispute',
         'type': 'Business to Customer',
       });
 
