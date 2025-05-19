@@ -100,71 +100,93 @@ class ExpenseInfoPage extends StatelessWidget {
                     )
                   else
                     ...expenses.map((expense) => Padding(
-                          padding: const EdgeInsets.only(bottom: 15.0),
-                          child: MyExpensesInfoList(
-                            expense: expense,
-                            onEdit: () async {
-                              final result =
-                                  await showDialog<Map<String, dynamic>>(
+                          padding: const EdgeInsets.only(bottom: 0.0),
+                          child: GestureDetector(
+                            onTap: () async {
+                              await showDialog(
                                 context: context,
-                                builder: (context) =>
-                                    EditExpensesModal(expense: expense),
-                              );
-
-                              if (result != null) {
-                                await provider.updateExpense(
-                                  expenseId: result['expenseId'],
-                                  amount: result['amount'],
-                                  category: result['category'],
-                                  note: result['note'],
-                                  date: result['date'],
-                                );
-
-                                Fluttertoast.showToast(
-                                  msg: "Expense updated successfully.",
-                                  toastLength: Toast.LENGTH_SHORT,
-                                  gravity: ToastGravity.BOTTOM,
-                                  backgroundColor: Colors.green,
-                                  textColor: Colors.white,
-                                );
-                              }
-                            },
-                            onDelete: () async {
-                              final confirm = await showDialog<bool>(
-                                context: context,
-                                builder: (ctx) => AlertDialog(
-                                  title: const Text("Delete Expense"),
-                                  content: const Text(
-                                      "Are you sure you want to delete this expense?"),
+                                builder: (context) => AlertDialog(
+                                  title: const Text("Expense Note"),
+                                  content: Text(
+                                      (expense.note?.trim().isEmpty ?? true)
+                                          ? "No note provided."
+                                          : expense.note!),
                                   actions: [
                                     TextButton(
-                                      onPressed: () =>
-                                          Navigator.pop(ctx, false),
-                                      child: const Text("Cancel"),
-                                    ),
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(ctx, true),
-                                      child: const Text(
-                                        "Delete",
-                                        style: TextStyle(color: Colors.red),
-                                      ),
+                                      onPressed: () => Navigator.pop(context),
+                                      child: const Text("Close"),
                                     ),
                                   ],
                                 ),
                               );
-
-                              if (confirm == true) {
-                                await provider.deleteExpense(expense.expenseId);
-
-                                Fluttertoast.showToast(
-                                  msg: "Expense deleted successfully.",
-                                  toastLength: Toast.LENGTH_SHORT,
-                                  gravity: ToastGravity.BOTTOM,
-                                  backgroundColor: Colors.red,
-                                  textColor: Colors.white,
-                                );
-                              }
                             },
+                            child: MyExpensesInfoList(
+                              expense: expense,
+                              onEdit: () async {
+                                final result =
+                                    await showDialog<Map<String, dynamic>>(
+                                  context: context,
+                                  builder: (context) =>
+                                      EditExpensesModal(expense: expense),
+                                );
+
+                                if (result != null) {
+                                  await provider.updateExpense(
+                                    expenseId: result['expenseId'],
+                                    amount: result['amount'],
+                                    category: result['category'],
+                                    note: result['note'],
+                                    date: result['date'],
+                                  );
+
+                                  Fluttertoast.showToast(
+                                    msg: "Expense updated successfully.",
+                                    toastLength: Toast.LENGTH_SHORT,
+                                    gravity: ToastGravity.BOTTOM,
+                                    backgroundColor: Colors.green,
+                                    textColor: Colors.white,
+                                  );
+                                }
+                              },
+                              onDelete: () async {
+                                final confirm = await showDialog<bool>(
+                                  context: context,
+                                  builder: (ctx) => AlertDialog(
+                                    title: const Text("Delete Expense"),
+                                    content: const Text(
+                                        "Are you sure you want to delete this expense?"),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(ctx, false),
+                                        child: const Text("Cancel"),
+                                      ),
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(ctx, true),
+                                        child: const Text(
+                                          "Delete",
+                                          style: TextStyle(color: Colors.red),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+
+                                if (confirm == true) {
+                                  await provider
+                                      .deleteExpense(expense.expenseId);
+
+                                  Fluttertoast.showToast(
+                                    msg: "Expense deleted successfully.",
+                                    toastLength: Toast.LENGTH_SHORT,
+                                    gravity: ToastGravity.BOTTOM,
+                                    backgroundColor: Colors.red,
+                                    textColor: Colors.white,
+                                  );
+                                }
+                              },
+                            ),
                           ),
                         )),
                 ],

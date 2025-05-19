@@ -234,6 +234,7 @@ class DebtsDatabase {
     required String paymentMethod,
     required String storeId,
     required String customerId,
+     String? reference_number
   }) async {
     final FirebaseFirestore _db = FirebaseFirestore.instance;
     final WriteBatch batch = _db.batch();
@@ -277,7 +278,10 @@ class DebtsDatabase {
         'payment_method': paymentMethod,
         'storeId': storeId,
         'transactionId':
-            transactionId, // ✅ Link to the **original** transaction
+            transactionId,
+        'reference_number':
+            reference_number ?? "",
+             // ✅ Link to the **original** transaction
       });
 
       // ✅ Update the debt document

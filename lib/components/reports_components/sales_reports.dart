@@ -46,6 +46,7 @@
         "Items Sold",
         "Total Sales",
         "Payment Method",
+        "Reference No.",
         "Customer"
       ];
 
@@ -63,7 +64,8 @@
             .setNumber((sale['Items Sold'] as num).toDouble());
         sheet.getRangeByIndex(i + 2, 5).setText(sale['Total Sales']);
         sheet.getRangeByIndex(i + 2, 6).setText(sale['Payment Method']);
-        sheet.getRangeByIndex(i + 2, 7).setText(sale['Customer']);
+        sheet.getRangeByIndex(i + 2, 7).setText(sale['Reference Number']);
+        sheet.getRangeByIndex(i + 2, 8).setText(sale['Customer']);
       }
 
       final List<int> bytes = workbook.saveAsStream();
@@ -133,7 +135,7 @@
                         WidgetStateProperty.all(const Color(0xFF14AE5C)),
                     columnSpacing: 12,
                     horizontalMargin: 12,
-                    minWidth: 1100,
+                    minWidth: 1300,
                     columns: [
                       DataColumn2(
                           label: _headerText("Transaction ID"), fixedWidth: 190),
@@ -162,6 +164,8 @@
                             child: Center(child: _headerText("Payment")),
                           ), fixedWidth: 130),
                       DataColumn2(
+                          label: _headerText("Ref No."), fixedWidth: 150),
+                      DataColumn2(
                           label: _headerText("Customer"), fixedWidth: 150),
                     ],
                     rows: filteredSales.map((sale) {
@@ -185,6 +189,7 @@
                             padding: const EdgeInsets.only(right: 30.0),
                             child: Center(child: Text(sale['Payment Method'])),
                           )),
+                          DataCell(Text(sale['Reference Number'])),
                           DataCell(Text(sale['Customer'])),
                         ],
                       );

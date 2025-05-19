@@ -16,12 +16,14 @@ class UnpaidTransaction extends StatefulWidget {
 class _UnpaidTransactionState extends State<UnpaidTransaction> {
   final TextEditingController _receivingAmountController =
       TextEditingController();
+  final TextEditingController _referenceController = TextEditingController();
 
   double _receivedAmount = 0.00;
   double _balance = 00.0;
   CustomerDetails? _selectedCustomer; // Default customer
   double totalAmount = 0.00;
   DateTime? _selectedDueDate; // Default Due Date
+  String _selectedPaymentMethod = "Cash"; // Default selection
 
   @override
   void initState() {
@@ -46,6 +48,45 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
         msg: "Please select a customer before saving the transaction.",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.TOP, // Position: BOTTOM, CENTER, or TOP
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+      return; // ❌ Stop function execution if no customer is selected
+    }
+    double? receivingAmount = double.tryParse(_receivingAmountController.text);
+    if (receivingAmount! >= totalAmount) {
+      Fluttertoast.showToast(
+        msg: "Please use the 'Paid' tab for full payments.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM, // Position: BOTTOM, CENTER, or TOP
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+      return; // ❌ Stop function execution if no customer is selected
+    }
+
+    if (_selectedPaymentMethod == "Gcash" &&
+        _referenceController.text.isEmpty) {
+      Fluttertoast.showToast(
+        msg: "Please enter the reference number.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM, // Position: BOTTOM, CENTER, or TOP
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+      return; // ❌ Stop function execution if no customer is selected
+    }
+
+    if (_selectedPaymentMethod == "Gcash" &&
+        _referenceController.text.isNotEmpty &&
+        _referenceController.text.length != 4) {
+      Fluttertoast.showToast(
+        msg: "Please enter a valid reference number.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM, // Position: BOTTOM, CENTER, or TOP
         backgroundColor: Colors.red,
         textColor: Colors.white,
         fontSize: 16.0,
@@ -122,6 +163,7 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
         isDebt: true,
         due_date: _selectedDueDate,
         customerName: _selectedCustomer!.name,
+        reference_number: _referenceController.text
       );
 
       // ✅ Reset UI
@@ -191,13 +233,31 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
 
                 // Receiving Amount (User Input)
                 _buildInputField(
-                  label: "Enter Received Amount",
+                  label: "Customer Money (for partial payments)",
                   controller: _receivingAmountController,
+                  maxLength: 6,
                   onChanged: (value) => _calculateBalance(value, totalAmount),
                 ),
 
                 const SizedBox(height: 15),
 
+                // Payment Method Dropdown
+                _buildDropdownField(
+                  label: "Select Payment Method",
+                  items: ["Cash", "Gcash"],
+                ),
+
+                const SizedBox(height: 15),
+
+                if (_selectedPaymentMethod == "Gcash")
+                  // Receiving Amount (User Input)
+                  _buildInputField(
+                    label: "Enter last 4 digit of Reference No.",
+                    hint: "Enter reference number",
+                    maxLength: 4,
+                    controller: _referenceController,
+                  ),
+                const SizedBox(height: 15),
                 // Balance (Auto Calculated)
                 _buildSummaryCard(
                   title: "Balance",
@@ -409,12 +469,61 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
       },
     );
   }
+
+  // Function to build dropdown field
+  Widget _buildDropdownField({
+    required String label,
+    required List<String> items,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+        ),
+        const SizedBox(height: 5),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF6F6F6),
+            border: Border.all(color: Colors.grey.shade400),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _selectedPaymentMethod,
+              isExpanded: true,
+              onChanged: (newValue) {
+                setState(() {
+                  _selectedPaymentMethod = newValue!;
+                });
+              },
+              items: items.map((String item) {
+                return DropdownMenuItem<String>(
+                  value: item,
+                  child: Text(
+                    item,
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
+// Function to build user input field
 // Function to build user input field
 Widget _buildInputField({
   required String label,
   required TextEditingController controller,
+  String? hint,
+  int? maxLength,
   Function(String)? onChanged,
 }) {
   return Column(
@@ -425,34 +534,21 @@ Widget _buildInputField({
         style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
       ),
       const SizedBox(height: 5),
-
-      /// ✅ Wrapping the TextField inside a `Container` to apply shadow
-      Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8), // ✅ Adds rounded corners
-          boxShadow: [
-            BoxShadow(
-                color: Colors.black, // ✅ Soft shadow
-                blurRadius: 0,
-                offset: const Offset(0, 0), // ✅ Moves shadow downward slightly
-                spreadRadius: 1),
-          ],
-        ),
-        child: TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          onChanged: onChanged,
-          decoration: const InputDecoration(
-            hintText: "Enter amount",
-            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 15),
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderSide: BorderSide.none, // ✅ No extra border
-              borderRadius: BorderRadius.all(
-                  Radius.circular(8)), // ✅ Match outer container
-            ),
+      TextField(
+        controller: controller,
+        keyboardType: TextInputType.number,
+        onChanged: onChanged,
+        maxLength: maxLength ?? 100000,
+        decoration: InputDecoration(
+          hintText: hint ?? "Enter amount",
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 15),
+          filled: true,
+          fillColor: Colors.white,
+          counterText: "", // This hides the character counter
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: Colors.grey.shade400),
           ),
         ),
       ),

@@ -76,50 +76,50 @@ class _AddBatchModalState extends State<AddBatchModal> {
 
             // 🔹 Expiration Date Picker (Optional)
             // 🔹 Expiration Date Picker (Optional)
-            GestureDetector(
-              onTap: () async {
-                DateTime? pickedDate = await showDatePicker(
-                  context: context,
-                  initialDate: DateTime.now(),
-                  firstDate: DateTime.now(),
-                  lastDate: DateTime(2100),
-                );
-                if (pickedDate != null) {
-                  setState(() {
-                    _selectedDate = pickedDate;
-                  });
-                }
-              },
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 15, horizontal: 12),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  border: Border.all(
-                      color: Colors.grey.shade400, width: 1.5), // ✅ Grey Border
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      _selectedDate == null
-                          ? "No Expiration Date (Optional)" // ✅ Display when null
-                          : DateFormat('yyyy-MM-dd').format(_selectedDate!),
-                      style: TextStyle(
-                        fontSize: 16,
-                        color:
-                            _selectedDate == null ? Colors.grey : Colors.black,
-                      ),
-                    ),
-                    const Icon(Icons.calendar_today,
-                        size: 20, color: Colors.grey),
-                  ],
-                ),
-              ),
-            ),
+            // GestureDetector(
+            //   onTap: () async {
+            //     DateTime? pickedDate = await showDatePicker(
+            //       context: context,
+            //       initialDate: DateTime.now(),
+            //       firstDate: DateTime.now(),
+            //       lastDate: DateTime(2100),
+            //     );
+            //     if (pickedDate != null) {
+            //       setState(() {
+            //         _selectedDate = pickedDate;
+            //       });
+            //     }
+            //   },
+            //   child: Container(
+            //     padding:
+            //         const EdgeInsets.symmetric(vertical: 15, horizontal: 12),
+            //     decoration: BoxDecoration(
+            //       color: Colors.grey.shade100,
+            //       border: Border.all(
+            //           color: Colors.grey.shade400, width: 1.5), // ✅ Grey Border
+            //       borderRadius: BorderRadius.circular(12),
+            //     ),
+            //     child: Row(
+            //       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            //       children: [
+            //         Text(
+            //           _selectedDate == null
+            //               ? "No Expiration Date (Optional)" // ✅ Display when null
+            //               : DateFormat('yyyy-MM-dd').format(_selectedDate!),
+            //           style: TextStyle(
+            //             fontSize: 16,
+            //             color:
+            //                 _selectedDate == null ? Colors.grey : Colors.black,
+            //           ),
+            //         ),
+            //         const Icon(Icons.calendar_today,
+            //             size: 20, color: Colors.grey),
+            //       ],
+            //     ),
+            //   ),
+            // ),
 
-            const SizedBox(height: 20),
+           // const SizedBox(height: 20),
 
             // 🔹 Buttons (Cancel & Add) aligned to right
             Row(

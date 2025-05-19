@@ -29,6 +29,7 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
   final TextEditingController _payingAmountController = TextEditingController();
   final TextEditingController _customerMoneyController =
       TextEditingController();
+  final TextEditingController _referenceController = TextEditingController();
 
   double _change = 0.0;
   String _selectedPaymentMethod = "Cash"; // Default payment method
@@ -348,15 +349,16 @@ Please settle your balance before the due date. Thank you!
 
               if (widget.debtDetails.balance > 0) ...[
                 // ✅ Payment Section
-                _buildPaymentField("Paying Amount:", _payingAmountController),
+                _buildPaymentField("Paying Amount:", _payingAmountController,
+                    true, "00.00", 100000),
                 const SizedBox(height: 10),
                 Row(
                   children: [
                     // Received Amount Field (Takes 70% of the Row)
                     Expanded(
                       flex: 7, // ✅ 70% width
-                      child: _buildPaymentField(
-                          "Received Amount:", _customerMoneyController),
+                      child: _buildPaymentField("Customer Money:",
+                          _customerMoneyController, true, "00.00", 100000),
                     ),
                     const SizedBox(width: 20), // Space between inputs
 
@@ -400,6 +402,10 @@ Please settle your balance before the due date. Thank you!
                   ],
                 ),
 
+                const SizedBox(height: 15),
+                if (_selectedPaymentMethod == "Gcash")
+                  _buildPaymentField("Enter last 4 digit of Reference No.:",
+                      _referenceController, false, "Enter reference number", 4),
                 const SizedBox(height: 15),
 
                 // ✅ Change Display
@@ -480,6 +486,35 @@ Please settle your balance before the due date. Thank you!
                               return;
                             }
 
+                            if (_selectedPaymentMethod == "Gcash" &&
+                                _referenceController.text.isEmpty) {
+                              Fluttertoast.showToast(
+                                msg: "Please enter the reference number!",
+                                toastLength: Toast.LENGTH_SHORT,
+                                gravity: ToastGravity.BOTTOM,
+                                backgroundColor: Colors.red,
+                                textColor: Colors.white,
+                                fontSize: 16.0,
+                              );
+                              setState(() => _isProcessing = false);
+                              return;
+                            }
+
+
+                            if (_selectedPaymentMethod == "Gcash" &&
+                                _referenceController.text.isNotEmpty && _referenceController.text.length < 4) {
+                              Fluttertoast.showToast(
+                                msg: "Please enter the valid reference number!",
+                                toastLength: Toast.LENGTH_SHORT,
+                                gravity: ToastGravity.BOTTOM,
+                                backgroundColor: Colors.red,
+                                textColor: Colors.white,
+                                fontSize: 16.0,
+                              );
+                              setState(() => _isProcessing = false);
+                              return;
+                            }
+
                             // ✅ Process debt payment and get the transaction ID
                             String? transactionId =
                                 await Provider.of<DatabaseProvider>(
@@ -493,7 +528,7 @@ Please settle your balance before the due date. Thank you!
                               customerId: widget.customerDetails.customerId,
                               customerName: widget.customerDetails.name,
                               remainingBalance:
-                                  widget.debtDetails.balance - payingAmount,
+                                  widget.debtDetails.balance - payingAmount, reference_number: _referenceController.text,
                             );
 
                             if (transactionId != null) {
@@ -574,7 +609,8 @@ Please settle your balance before the due date. Thank you!
   }
 
   // ✅ Payment Input Fields with Validation
-  Widget _buildPaymentField(String label, TextEditingController controller) {
+  Widget _buildPaymentField(String label, TextEditingController controller,
+      bool showPrefix, String? hint, int? max) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -591,15 +627,25 @@ Please settle your balance before the due date. Thank you!
           ),
           child: TextField(
             controller: controller,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               border: InputBorder.none,
-              prefixIcon: Text("₱ ",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500)),
+              prefixIcon: showPrefix
+                  ? Padding(
+                      padding: const EdgeInsets.only(left: 12.0),
+                      child: Text(
+                        "₱ ",
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.w500),
+                      ),
+                    )
+                  : null,
               prefixIconConstraints: BoxConstraints(minWidth: 40),
-              hintText: "00.00",
+              hintText: hint ?? "00.00",
               hintStyle: TextStyle(fontSize: 14, color: Color(0xFFBDBDBD)),
+              counterText: "", // This hides the character counter
             ),
             keyboardType: TextInputType.number,
+            maxLength: max ?? 100000,
           ),
         ),
       ],

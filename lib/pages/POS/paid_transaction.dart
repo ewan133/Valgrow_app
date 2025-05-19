@@ -15,6 +15,8 @@ class PaidTransaction extends StatefulWidget {
 class _PaidTransactionState extends State<PaidTransaction> {
   final TextEditingController _receivingAmountController =
       TextEditingController();
+
+  final TextEditingController _referenceController = TextEditingController();
   double _change = 0.00;
   double _receivedAmount = 0.00;
   String _selectedPaymentMethod = "Cash"; // Default selection
@@ -88,6 +90,17 @@ class _PaidTransactionState extends State<PaidTransaction> {
                   items: ["Cash", "Gcash"],
                 ),
 
+                const SizedBox(height: 15),
+
+                if (_selectedPaymentMethod == "Gcash")
+                  // Receiving Amount (User Input)
+                  _buildInputField(
+                    label: "Enter last 4 digit of Reference No.",
+                    hint: "Enter reference number",
+                    maxLength: 4,
+                    controller: _referenceController,
+                  ),
+
                 const SizedBox(height: 25),
 
                 // Confirm Payment Button (Disabled if amount is insufficient)
@@ -104,7 +117,11 @@ class _PaidTransactionState extends State<PaidTransaction> {
                       ),
                     ),
                     onPressed: _isAmountValid &&
-                            _receivingAmountController.text.isNotEmpty
+                            _receivingAmountController.text.isNotEmpty &&
+                            ((_selectedPaymentMethod == "Gcash" &&
+                                    _referenceController.text.isNotEmpty &&
+                                    _referenceController.text.length == 4) ||
+                                (_selectedPaymentMethod == "Cash"))
                         ? () {
                             _confirmPayment(totalAmount);
                           }
@@ -162,6 +179,8 @@ class _PaidTransactionState extends State<PaidTransaction> {
   Widget _buildInputField({
     required String label,
     required TextEditingController controller,
+    String? hint,
+    int? maxLength,
     Function(String)? onChanged,
   }) {
     return Column(
@@ -176,12 +195,14 @@ class _PaidTransactionState extends State<PaidTransaction> {
           controller: controller,
           keyboardType: TextInputType.number,
           onChanged: onChanged,
+          maxLength: maxLength ?? 100000,
           decoration: InputDecoration(
-            hintText: "Enter amount",
+            hintText: hint ?? "Enter amount",
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 12, vertical: 15),
             filled: true,
             fillColor: Colors.white,
+            counterText: "", // This hides the character counter
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(color: Colors.grey.shade400),
@@ -345,6 +366,19 @@ class _PaidTransactionState extends State<PaidTransaction> {
         return;
       }
 
+      if (_referenceController.text.isEmpty &&
+          _selectedPaymentMethod == "Gcash") {
+        Fluttertoast.showToast(
+          msg: "Please enter the reference number.",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.TOP,
+          backgroundColor: Colors.orange,
+          textColor: Colors.white,
+          fontSize: 16.0,
+        );
+        return;
+      }
+
       // Ensure user is not paying more than they owe
       if (!isDebt && receivedAmount < totalAmount) {
         Fluttertoast.showToast(
@@ -365,6 +399,7 @@ class _PaidTransactionState extends State<PaidTransaction> {
         customerId: null, // If there's a customer, pass their ID here
         isDebt: isDebt,
         due_date: dueDate,
+        reference_number: _referenceController.text,
       );
 
       // ✅ Reset UI after successful transaction
@@ -383,7 +418,6 @@ class _PaidTransactionState extends State<PaidTransaction> {
           ),
         ),
       );
-      
     } catch (e) {
       Fluttertoast.showToast(
         msg: "❌ Something went wrong: $e",

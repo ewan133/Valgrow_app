@@ -114,35 +114,53 @@ class InventoryDatabase {
   }
 
   Future<void> addBatch(ItemBatch batch) async {
-    try {
-      // 🔹 Reference Firestore batch collection
-      final batchRef = _db.collection('item_batch').doc();
+  try {
+    // 🔹 Reference Firestore batch collection
+    final batchRef = _db.collection('item_batch').doc();
 
-      // 🔹 Convert batch to a Map and remove the 'batchId' field before adding
-      Map<String, dynamic> batchMap = batch.toMap();
-      batchMap.remove('batchId');
+    // 🔹 Convert batch to a Map and remove the 'batchId' field before adding
+    Map<String, dynamic> batchMap = batch.toMap();
+    batchMap.remove('batchId');
 
-      // 🔹 Add batch to Firestore
-      await batchRef.set(batchMap);
+    // 🔹 Add batch to Firestore
+    await batchRef.set(batchMap);
 
-      print("✅ Batch added successfully for item: ${batch.itemId}");
+    print("✅ Batch added successfully for item: ${batch.itemId}");
 
-      // ✅ Insert into inventory_log
-      await _insertInventoryLog(
-        itemId: batch.itemId,
-        quantity: batch.quantity,
-        reason: "New Stock Added", // ✅ Log stock addition
-        storeId: batch.storeId,
-        type: "Addition",
-      );
+    // ✅ Insert into inventory_log
+    await _insertInventoryLog(
+      itemId: batch.itemId,
+      quantity: batch.quantity,
+      reason: "New Stock Added",
+      storeId: batch.storeId,
+      type: "Addition",
+    );
 
-      // ✅ **Fix: Update stock immediately after adding batch**
-      await _updateItemStock(batch.itemId);
-    } catch (e) {
-      print("❌ Error adding batch: $e");
-      throw e;
-    }
+    // ✅ Update item stock
+    await _updateItemStock(batch.itemId);
+
+    // 🔍 Fetch item name from Firestore
+    final itemSnapshot = await _db.collection('items').doc(batch.itemId).get();
+    final itemData = itemSnapshot.data();
+    final itemName = itemData?['item_name'] ?? 'Unknown Item';
+
+    // ✅ Insert capital expense with detailed note
+    await _db.collection('expenses').add({
+      'amount': batch.purchasePrice,
+      'category': 'Capital',
+      'note':
+          'Purchased ${batch.quantity}x $itemName for ₱${batch.purchasePrice.toStringAsFixed(2)} in total',
+      'date': DateTime.now(),
+      'storeId': batch.storeId,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+
+    print("✅ Capital expense logged.");
+  } catch (e) {
+    print("❌ Error adding batch: $e");
+    throw e;
   }
+}
 
   /// 🔹 **Insert a record into inventory_log**
   Future<void> _insertInventoryLog({

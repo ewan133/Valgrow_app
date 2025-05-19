@@ -113,7 +113,7 @@ class _LineChartSection extends StatelessWidget {
             children: const [
               _LegendIndicator(color: Colors.teal, text: 'Sales'),
               SizedBox(width: 16),
-              _LegendIndicator(color: Colors.redAccent, text: 'Expenses'),
+              _LegendIndicator(color: Colors.redAccent, text: 'Journal'),
             ],
           ),
           const SizedBox(height: 15),
@@ -313,12 +313,15 @@ class _BarChartSection extends StatelessWidget {
                       final label = topLabels[index];
                       return Padding(
                         padding: const EdgeInsets.only(top: 4.0),
-                        child: Text(
-                          label,
-                          style: const TextStyle(fontSize: 11),
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                        child: SizedBox(
+                          width: 100, // ⬅️ Set a fixed width for each label
+                          child: Text(
+                            label,
+                            style: const TextStyle(fontSize: 11),
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       );
                     }

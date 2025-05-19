@@ -92,10 +92,14 @@ class _InventoryPageState extends State<InventoryPage> {
             return matchesSearch && matchesCategory;
           }).toList()
             ..sort((a, b) {
-              // ✅ Sort: items with stock first
+              // ✅ First: prioritize in-stock items
               if (a.total_stock > 0 && b.total_stock == 0) return -1;
               if (a.total_stock == 0 && b.total_stock > 0) return 1;
-              return 0;
+
+              // ✅ Then: sort alphabetically by item_name
+              return a.item_name
+                  .toLowerCase()
+                  .compareTo(b.item_name.toLowerCase());
             });
 
           return Column(

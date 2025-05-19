@@ -69,7 +69,7 @@ class _DashboardReportPageState extends State<DashboardReportPage> {
     final dateRange = report.dateRangeReport;
 
     return Scaffold(
-      appBar: MyAppbar(title: "Dashboard Report"),
+      appBar: MyAppbar(title: "Dashboard"),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(

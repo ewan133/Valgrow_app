@@ -53,6 +53,7 @@ class ReportsDatabase {
           "Items Sold": totalItemsSold,
           "Total Sales": "₱${data['total_amount'].toStringAsFixed(2)}",
           "Payment Method": _capitalize(data['payment_method']),
+          "Reference Number": _capitalize(data['reference_number']),
           "Customer": customerName,
         };
 
@@ -188,6 +189,7 @@ class ReportsDatabase {
           "Payment Method": _capitalize(data['payment_method'] ?? "Unknown"),
           "Customer": customerInfo['name'],
           "Remaining Balance": customerInfo['remainingBalance'], // ✅ NEW FIELD
+          "Reference Number": data['reference_number'], // ✅ NEW FIELD
         });
       }
 

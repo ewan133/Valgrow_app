@@ -55,7 +55,17 @@ class _ReportsMainPageState extends State<ReportsMainPage> {
       appBar: MyAppbar(
         title: "Reports",
         actionWidget: PopupMenuButton<ReportType>(
-          icon: const Icon(Icons.arrow_drop_down, color: Colors.black87),
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: const Text(
+              "Select",
+              style: TextStyle(
+                color: Colors.black87,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
           onSelected: (ReportType selected) {
             setState(() {
               _selectedReportType = selected;

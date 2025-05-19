@@ -215,7 +215,7 @@ class _EmployeeCardsState extends State<EmployeeCards> {
             _buildPermissionRow("Reports", reportsPermission,
                 (val) => _updatePermission("Reports", val)),
             _buildPermissionRow(
-                "Expenses",
+                "Journal",
                 expensesPermission,
                 (val) =>
                     _updatePermission("Expenses", val)), // ✅ Added Expenses Row

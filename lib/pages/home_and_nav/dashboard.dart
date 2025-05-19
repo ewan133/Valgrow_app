@@ -185,73 +185,54 @@ class _DashboardPageState extends State<DashboardPage> {
                       mainAxisSpacing: 10,
                       crossAxisSpacing: 10,
                       children: [
-                        MyHomeButton(
-                          text: "POS",
-                          onPressed: user?.pos == true
-                              ? () => Navigator.pushNamed(context, '/POS')
-                              : null,
-                          icon: Icon(Icons.point_of_sale,
-                              size: 32,
-                              color: user?.pos == true
-                                  ? Colors.black
-                                  : Colors.grey),
-                        ),
-                        MyHomeButton(
-                          text: "Debts",
-                          onPressed: user?.debts == true
-                              ? () => Navigator.pushNamed(context, '/debts')
-                              : null,
-                          icon: Icon(Icons.note,
-                              size: 32,
-                              color: user?.debts == true
-                                  ? Colors.black
-                                  : Colors.grey),
-                        ),
-                        MyHomeButton(
-                          text: "Inventory",
-                          onPressed: user?.ims == true
-                              ? () => Navigator.pushNamed(context, '/inventory')
-                              : null, // ❌ Disabled if user has no permission
-                          icon: Icon(Icons.inventory_2,
-                              size: 32,
-                              color: user?.ims == true
-                                  ? Colors.black
-                                  : Colors.grey),
-                        ),
-                        MyHomeButton(
-                          text: "Reports",
-                          onPressed: user?.reports == true
-                              ? () => Navigator.pushNamed(context, '/reports')
-                              : null,
-                          icon: Icon(Icons.summarize,
-                              size: 32,
-                              color: user?.reports == true
-                                  ? Colors.black
-                                  : Colors.grey),
-                        ),
-                        MyHomeButton(
-                          text: "Store Journal",
-                          onPressed: user?.expenses == true
-                              ? () => Navigator.pushNamed(context, '/expenses')
-                              : null, // ❌ Disabled if user has no permission
-                          icon: Icon(Icons.wallet,
-                              size: 32,
-                              color: user?.expenses == true
-                                  ? Colors.black
-                                  : Colors.grey),
-                        ),
-                        MyHomeButton(
-                          text: "Management",
-                          onPressed: user?.role == "Employee"
-                              ? null // ✅ Disable button for employees
-                              : () =>
-                                  Navigator.pushNamed(context, '/management'),
-                          icon: Icon(Icons.people,
-                              size: 32,
-                              color: user?.role == "Employee"
-                                  ? Colors.grey
-                                  : Colors.black),
-                        ),
+                        if (user?.pos == true)
+                          MyHomeButton(
+                            text: "POS",
+                            onPressed: () =>
+                                Navigator.pushNamed(context, '/POS'),
+                            icon: Icon(Icons.point_of_sale,
+                                size: 32, color: Colors.black),
+                          ),
+                        if (user?.debts == true)
+                          MyHomeButton(
+                            text: "Debts",
+                            onPressed: () =>
+                                Navigator.pushNamed(context, '/debts'),
+                            icon:
+                                Icon(Icons.note, size: 32, color: Colors.black),
+                          ),
+                        if (user?.ims == true)
+                          MyHomeButton(
+                            text: "Inventory",
+                            onPressed: () =>
+                                Navigator.pushNamed(context, '/inventory'),
+                            icon: Icon(Icons.inventory_2,
+                                size: 32, color: Colors.black),
+                          ),
+                        if (user?.reports == true)
+                          MyHomeButton(
+                            text: "Reports",
+                            onPressed: () =>
+                                Navigator.pushNamed(context, '/reports'),
+                            icon: Icon(Icons.summarize,
+                                size: 32, color: Colors.black),
+                          ),
+                        if (user?.expenses == true)
+                          MyHomeButton(
+                            text: "Store Journal",
+                            onPressed: () =>
+                                Navigator.pushNamed(context, '/expenses'),
+                            icon: Icon(Icons.wallet,
+                                size: 32, color: Colors.black),
+                          ),
+                        if (user?.role != "Employee")
+                          MyHomeButton(
+                            text: "Management",
+                            onPressed: () =>
+                                Navigator.pushNamed(context, '/management'),
+                            icon: Icon(Icons.people,
+                                size: 32, color: Colors.black),
+                          ),
                       ],
                     ),
                   ],

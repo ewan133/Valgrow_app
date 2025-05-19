@@ -431,6 +431,7 @@ class DatabaseProvider extends ChangeNotifier {
     required bool isDebt,
     DateTime? due_date,
     String? customerName,
+    String? reference_number,
   }) async {
     _isLoading = true;
     notifyListeners();
@@ -472,7 +473,8 @@ class DatabaseProvider extends ChangeNotifier {
                 })
             .toList(),
         customerName: customerName ?? "Guest",
-        storeOwnerId: _store!.storeId,
+        storeOwnerId: _store!.storeId, 
+        reference_number: reference_number ?? null,
       );
 
       // ✅ If transaction fails, return null
@@ -710,6 +712,7 @@ class DatabaseProvider extends ChangeNotifier {
     required String customerId,
     required String customerName,
     required double remainingBalance,
+    String? reference_number
   }) async {
     _isLoading = true;
     notifyListeners();
@@ -721,7 +724,7 @@ class DatabaseProvider extends ChangeNotifier {
         amountPaid: amountPaid,
         paymentMethod: paymentMethod,
         storeId: storeId,
-        customerId: customerId,
+        customerId: customerId, reference_number: reference_number ,
       );
 
       if (newTransactionId != null) {
@@ -1056,7 +1059,7 @@ class DatabaseProvider extends ChangeNotifier {
   /// ✅ **Mark All Notifications as Read**
   Future<void> markAllNotificationsAsRead() async {
     try {
-      await _notificationsDatabase.markAllNotificationsAsRead(_user!.uid);
+      await _notificationsDatabase.markAllNotificationsAsRead(store!.storeId);
 
       // ✅ Update the local list to reflect the changes
       _notifications =

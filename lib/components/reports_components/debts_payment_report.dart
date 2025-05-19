@@ -44,7 +44,8 @@ class _MyDebtPaymentsTableState extends State<MyDebtPaymentsTable> {
       "Customer",
       "Amount Paid",
       "Remaining Balance",
-      "Payment Method"
+      "Payment Method",
+      "Reference Number"
     ];
 
     for (int i = 0; i < headers.length; i++) {
@@ -56,9 +57,14 @@ class _MyDebtPaymentsTableState extends State<MyDebtPaymentsTable> {
       sheet.getRangeByIndex(i + 2, 1).setText(item['Payment ID'] ?? '');
       sheet.getRangeByIndex(i + 2, 2).setText(item['Date'] ?? '');
       sheet.getRangeByIndex(i + 2, 3).setText(item['Customer'] ?? '');
-      sheet.getRangeByIndex(i + 2, 4).setNumber((item['Amount Paid'] ?? 0.0) as double);
-      sheet.getRangeByIndex(i + 2, 5).setNumber((item['Remaining Balance'] ?? 0.0) as double);
+      sheet
+          .getRangeByIndex(i + 2, 4)
+          .setNumber((item['Amount Paid'] ?? 0.0) as double);
+      sheet
+          .getRangeByIndex(i + 2, 5)
+          .setNumber((item['Remaining Balance'] ?? 0.0) as double);
       sheet.getRangeByIndex(i + 2, 6).setText(item['Payment Method'] ?? '');
+      sheet.getRangeByIndex(i + 2, 7).setText(item['Reference Number'] ?? '');
     }
 
     final List<int> bytes = workbook.saveAsStream();
@@ -101,9 +107,11 @@ class _MyDebtPaymentsTableState extends State<MyDebtPaymentsTable> {
                 OutlinedButton.icon(
                   onPressed: () => _exportToExcel(data),
                   icon: const Icon(Icons.download, color: Colors.black),
-                  label: const Text("Excel", style: TextStyle(color: Colors.black)),
+                  label: const Text("Excel",
+                      style: TextStyle(color: Colors.black)),
                   style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     minimumSize: const Size(10, 10),
                     side: const BorderSide(color: Colors.black, width: 1),
                     shape: RoundedRectangleBorder(
@@ -122,17 +130,30 @@ class _MyDebtPaymentsTableState extends State<MyDebtPaymentsTable> {
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: DataTable2(
-                  headingRowColor: WidgetStateProperty.all(const Color(0xFF14AE5C)),
+                  headingRowColor:
+                      WidgetStateProperty.all(const Color(0xFF14AE5C)),
                   columnSpacing: 12,
                   horizontalMargin: 12,
                   minWidth: 1000,
                   columns: [
-                    DataColumn2(label: _headerText("Payment ID"), fixedWidth: 170),
+                    DataColumn2(
+                        label: _headerText("Payment ID"), fixedWidth: 170),
                     DataColumn2(label: _headerText("Date"), fixedWidth: 120),
-                    DataColumn2(label: _headerText("Customer"), fixedWidth: 150),
-                    DataColumn2(label: _headerText("Amount Paid"), numeric: true, fixedWidth: 130),
-                    DataColumn2(label: _headerText("Remaining"), numeric: true, fixedWidth: 130),
-                    DataColumn2(label: _headerText("Method"), fixedWidth: 110),
+                    DataColumn2(
+                        label: _headerText("Customer"), fixedWidth: 150),
+                    DataColumn2(
+                        label: _headerText("Amount Paid"),
+                        numeric: true,
+                        fixedWidth: 130),
+                    DataColumn2(
+                        label: _headerText("Remaining"),
+                        numeric: true,
+                        fixedWidth: 130),
+                    DataColumn2(label: Padding(
+                      padding: const EdgeInsets.only(left: 30.0),
+                      child: _headerText("Method"),
+                    ), fixedWidth: 130),
+                    DataColumn2(label: _headerText("Ref No."), fixedWidth: 110),
                   ],
                   rows: data.map((item) {
                     final amountPaid = (item['Amount Paid'] ?? 0.0) as num;
@@ -144,7 +165,11 @@ class _MyDebtPaymentsTableState extends State<MyDebtPaymentsTable> {
                         DataCell(Text(item['Customer'] ?? '')),
                         DataCell(Text("₱${amountPaid.toStringAsFixed(2)}")),
                         DataCell(Text("₱${remaining.toStringAsFixed(2)}")),
-                        DataCell(Text(item['Payment Method'] ?? '')),
+                        DataCell(Padding(
+                          padding: const EdgeInsets.only(left: 30.0),
+                          child: Text(item['Payment Method'] ?? ''),
+                        )),
+                        DataCell(Text(item['Reference Number'] ?? '')),
                       ],
                     );
                   }).toList(),
@@ -160,6 +185,7 @@ class _MyDebtPaymentsTableState extends State<MyDebtPaymentsTable> {
   Widget _headerText(String text) {
     return Text(text,
         textAlign: TextAlign.left,
-        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white));
+        style:
+            const TextStyle(fontWeight: FontWeight.bold, color: Colors.white));
   }
 }
