@@ -50,11 +50,11 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
             Text("Batch Name: ${generateBatchName()}"),
             Text("Quantity: $quantity"),
             Text("Purchase Price: ₱${purchasePrice.toStringAsFixed(2)}"),
-            Text(
-              expirationDate != null
-                  ? "Expiration: ${DateFormat('yyyy-MM-dd').format(expirationDate)}"
-                  : "No Expiration Date",
-            ),
+            // Text(
+            //   expirationDate != null
+            //       ? "Expiration: ${DateFormat('yyyy-MM-dd').format(expirationDate)}"
+            //       : "No Expiration Date",
+            // ),
           ],
         ),
         actions: [

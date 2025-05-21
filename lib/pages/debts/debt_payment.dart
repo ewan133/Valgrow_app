@@ -134,13 +134,11 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
 Dear ${widget.customerDetails.name},
 
 Your outstanding debt details at *$storeName*:
-- Total Amount: ₱${widget.debtDetails.totalAmount.toStringAsFixed(2)}
-- Paid: ₱${widget.debtDetails.amountPaid.toStringAsFixed(2)}
-- Balance: ₱${widget.debtDetails.balance.toStringAsFixed(2)}
-- Due Date: ${_formatDate(widget.debtDetails.dueDate)}
-
-📌 *Purchased Items:*
-$itemsList
+- Created At: ${_formatDate(widget.debtDetails.createdAt)} 
+- Total Amount: ${widget.debtDetails.totalAmount.toStringAsFixed(2)} pesos
+- Paid: ${widget.debtDetails.amountPaid.toStringAsFixed(2)} pesos
+- Balance: ${widget.debtDetails.balance.toStringAsFixed(2)} pesos
+- Due Date: ${_formatDate(widget.debtDetails.dueDate)} pesos
 
 Please settle your balance before the due date. Thank you!
 - $storeName
@@ -282,7 +280,7 @@ Please settle your balance before the due date. Thank you!
             : null, // ✅ Hides the button if debt is fully paid
       ),
       body: Padding(
-        padding: const EdgeInsets.only(left: 20, right: 20, top: 16),
+        padding: const EdgeInsets.only(left: 15, right: 15, top: 16),
         child: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

@@ -109,223 +109,262 @@ class _CustomerSelectionModalState extends State<CustomerSelectionModal> {
   void _showCustomerDetailsDialog(BuildContext context) {
     showDialog(
       context: context,
-      barrierDismissible: false, // ❌ Prevent dismiss without saving
+      barrierDismissible: false,
       builder: (context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: SingleChildScrollView(
-            child: Container(
-              width: MediaQuery.of(context).size.width * 0.8,
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  /// ✅ Header with Close Button
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        File? localImage = _selectedImage;
+
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            Future<void> _pickImageInDialog(ImageSource source) async {
+              final pickedFile = await ImagePicker().pickImage(source: source);
+              if (pickedFile != null) {
+                final file = File(pickedFile.path);
+                setState(() {
+                  _selectedImage = file; // Update parent state
+                });
+                setDialogState(() {
+                  localImage = file; // Update dialog UI
+                });
+              }
+            }
+
+            void _showImagePickerOptionsInDialog() {
+              showModalBottomSheet(
+                context: context,
+                builder: (context) => SafeArea(
+                  child: Wrap(
                     children: [
-                      const Text(
-                        "Customer Details",
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold),
+                      ListTile(
+                        leading: const Icon(Icons.camera_alt),
+                        title: const Text("Take a Photo"),
+                        onTap: () {
+                          Navigator.pop(context);
+                          _pickImageInDialog(ImageSource.camera);
+                        },
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.pop(context),
+                      ListTile(
+                        leading: const Icon(Icons.photo_library),
+                        title: const Text("Choose from Gallery"),
+                        onTap: () {
+                          Navigator.pop(context);
+                          _pickImageInDialog(ImageSource.gallery);
+                        },
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
+                ),
+              );
+            }
 
-                  /// ✅ Image Picker with Camera & Gallery Options
-                  Center(
-                    child: GestureDetector(
-                      onTap: _showImagePickerOptions,
-                      child: CircleAvatar(
-                        radius: 60,
-                        backgroundColor: Colors.grey.shade300,
-                        backgroundImage: _selectedImage != null
-                            ? FileImage(_selectedImage!)
-                            : null,
-                        child: _selectedImage == null
-                            ? const Icon(Icons.camera_alt,
-                                color: Colors.white, size: 30)
-                            : null,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  /// ✅ Name Input Field
-                  TextField(
-                    controller: _nameController,
-                    decoration: InputDecoration(
-                      labelText: "Customer Name",
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-
-                  /// ✅ Phone Input Field
-                  /// ✅ Phone Input Field with Validation
-                  TextField(
-                    controller: _phoneController,
-                    keyboardType: TextInputType.phone,
-                    maxLength: 11, // ✅ Limit input length to 11
-                    decoration: InputDecoration(
-                      labelText: "Phone Number",
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      errorText: _phoneError, // ✅ Display validation error
-                    ),
-                    onChanged: (value) {
-                      _validatePhoneNumber(value);
-                    },
-                  ),
-
-                  const SizedBox(height: 15),
-
-                  /// ✅ Actions (Cancel & Save Buttons)
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: SingleChildScrollView(
+                child: Container(
+                  width: MediaQuery.of(context).size.width * 0.8,
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text("Cancel"),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            "Customer Details",
+                            style: TextStyle(
+                                fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                        ],
                       ),
-                      ElevatedButton(
-                        onPressed: _handleAddCustomer, // ✅ Calls add customer
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green, // ✅ Green Background
-                          foregroundColor: Colors.white, // ✅ White Text Color
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 20, vertical: 12), // ✅ Better padding
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(
-                                10), // ✅ Slightly rounded corners
+                      const SizedBox(height: 10),
+                      Center(
+                        child: GestureDetector(
+                          onTap: _showImagePickerOptionsInDialog,
+                          child: CircleAvatar(
+                            radius: 60,
+                            backgroundColor: Colors.grey.shade300,
+                            backgroundImage: _selectedImage != null
+                                ? FileImage(_selectedImage!)
+                                : null,
+                            child: localImage == null
+                                ? const Icon(Icons.camera_alt,
+                                    color: Colors.white, size: 30)
+                                : null,
                           ),
                         ),
-                        child: _isUploading
-                            ? const CircularProgressIndicator(
-                                color: Colors.white) // ✅ White Spinner
-                            : const Text(
-                                "Save",
-                                style: TextStyle(
-                                    fontSize: 16, fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 20),
+                      TextField(
+                        controller: _nameController,
+                        decoration: InputDecoration(
+                          labelText: "Customer Name",
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: _phoneController,
+                        keyboardType: TextInputType.phone,
+                        maxLength: 11,
+                        decoration: InputDecoration(
+                          labelText: "Phone Number",
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          errorText: _phoneError,
+                        ),
+                        onChanged: (value) {
+                          _validatePhoneNumber(value);
+                        },
+                      ),
+                      const SizedBox(height: 15),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text("Cancel"),
+                          ),
+                          ElevatedButton(
+                            onPressed: _handleAddCustomer,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
                               ),
+                            ),
+                            child: _isUploading
+                                ? const CircularProgressIndicator(
+                                    color: Colors.white)
+                                : const Text(
+                                    "Save",
+                                    style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600),
+                                  ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
         );
       },
     );
   }
-/// ✅ Function to Validate Phone Number
-bool _validatePhoneNumber(String phone) {
-  setState(() {
-    if (phone.isEmpty) {
-      _phoneError = "Phone number is required";
-    } else if (!RegExp(r'^09\d{9}$').hasMatch(phone)) {
-      _phoneError = "Phone number must be 11 digits and start with 09";
-    } else {
-      _phoneError = null; // ✅ No errors
-    }
-  });
-  return _phoneError == null;
-}
-  /// ✅ Handles adding a new customer with image upload
-void _handleAddCustomer() async {
-  String name = _nameController.text.trim();
-  String phone = _phoneController.text.trim();
 
-  if (name.isEmpty || phone.isEmpty) {
-    Fluttertoast.showToast(
-      msg: "Please fill in all required fields.",
-      toastLength: Toast.LENGTH_SHORT,
-      gravity: ToastGravity.BOTTOM,
-      backgroundColor: Colors.red,
-      textColor: Colors.white,
-      fontSize: 16.0,
-    );
-    return;
+  /// ✅ Function to Validate Phone Number
+  bool _validatePhoneNumber(String phone) {
+    setState(() {
+      if (phone.isEmpty) {
+        _phoneError = "Phone number is required";
+      } else if (!RegExp(r'^09\d{9}$').hasMatch(phone)) {
+        _phoneError = "Phone number must be 11 digits and start with 09";
+      } else {
+        _phoneError = null; // ✅ No errors
+      }
+    });
+    return _phoneError == null;
   }
 
-  if (!_validatePhoneNumber(phone)) return; // ✅ Stop if phone is invalid
+  /// ✅ Handles adding a new customer with image upload
+  void _handleAddCustomer() async {
+    String name = _nameController.text.trim();
+    String phone = _phoneController.text.trim();
 
-  setState(() => _isUploading = true);
-
-  // Default Image URL
-  String imageUrl =
-      "https://firebasestorage.googleapis.com/v0/b/valgrow-new.firebasestorage.app/o/uploaded_images%2Fdefault.jpg?alt=media";
-
-  try {
-    if (_selectedImage != null) {
-      String imageName = "customer-${DateTime.now().millisecondsSinceEpoch}";
-      String? uploadedUrl = await Provider.of<StorageService>(context, listen: false)
-          .uploadImage(_selectedImage!, imageName, context);
-      imageUrl = uploadedUrl ?? imageUrl;
-    }
-
-    bool success = await Provider.of<DatabaseProvider>(context, listen: false)
-        .addNewCustomer(name: name, phone: phone, imageUrl: imageUrl);
-
-    if (!success) {
+    if (name.isEmpty || phone.isEmpty) {
       Fluttertoast.showToast(
-        msg: "Customer already exists.",
+        msg: "Please fill in all required fields.",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
-        backgroundColor: Colors.orange,
+        backgroundColor: Colors.red,
         textColor: Colors.white,
         fontSize: 16.0,
       );
       return;
     }
 
-    _fetchCustomers();
-    final newCustomer = Provider.of<DatabaseProvider>(context, listen: false)
-        .customers
-        .firstWhereOrNull((c) => c.name == name);
+    if (!_validatePhoneNumber(phone)) return; // ✅ Stop if phone is invalid
 
-    if (newCustomer != null) {
-      widget.onItemSelected(newCustomer);
-    }
+    setState(() => _isUploading = true);
 
-    Fluttertoast.showToast(
-      msg: "Customer successfully added.",
-      toastLength: Toast.LENGTH_SHORT,
-      gravity: ToastGravity.TOP,
-      backgroundColor: Colors.green,
-      textColor: Colors.white,
-      fontSize: 16.0,
-    );
+    // Default Image URL
+    String imageUrl =
+        "https://firebasestorage.googleapis.com/v0/b/valgrow-new.firebasestorage.app/o/uploaded_images%2Fdefault.jpg?alt=media";
 
-    if (mounted) {
-      Navigator.pop(context);
-    }
-  } catch (e) {
-    Fluttertoast.showToast(
-      msg: "Error adding customer. Try again.",
-      toastLength: Toast.LENGTH_SHORT,
-      gravity: ToastGravity.TOP,
-      backgroundColor: Colors.red,
-      textColor: Colors.white,
-      fontSize: 16.0,
-    );
-  } finally {
-    if (mounted) {
-      setState(() => _isUploading = false);
+    try {
+      if (_selectedImage != null) {
+        String imageName = "customer-${DateTime.now().millisecondsSinceEpoch}";
+        String? uploadedUrl =
+            await Provider.of<StorageService>(context, listen: false)
+                .uploadImage(_selectedImage!, imageName, context);
+        imageUrl = uploadedUrl ?? imageUrl;
+      }
+
+      bool success = await Provider.of<DatabaseProvider>(context, listen: false)
+          .addNewCustomer(name: name, phone: phone, imageUrl: imageUrl);
+
+      if (!success) {
+        Fluttertoast.showToast(
+          msg: "Customer already exists.",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.orange,
+          textColor: Colors.white,
+          fontSize: 16.0,
+        );
+        return;
+      }
+
+      _fetchCustomers();
+      final newCustomer = Provider.of<DatabaseProvider>(context, listen: false)
+          .customers
+          .firstWhereOrNull((c) => c.name == name);
+
+      if (newCustomer != null) {
+        widget.onItemSelected(newCustomer);
+      }
+
+      Fluttertoast.showToast(
+        msg: "Customer successfully added.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.TOP,
+        backgroundColor: Colors.green,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+
+      if (mounted) {
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      Fluttertoast.showToast(
+        msg: "Error adding customer. Try again.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.TOP,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isUploading = false);
+      }
     }
   }
-}
 
   @override
   Widget build(BuildContext context) {

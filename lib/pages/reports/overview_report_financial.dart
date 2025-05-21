@@ -15,13 +15,12 @@ class OverviewReportFinancialInsights extends StatelessWidget {
         _SectionTitle('Financial Insights'),
         SizedBox(height: 16),
         _ScrollableChart(child: _MonthlyGrowthChart()),
-        SizedBox(height: 24),
-        _ScrollableChart(child: _ProfitChart()),
+        // SizedBox(height: 24),
+        // _ScrollableChart(child: _ProfitChart()),
       ],
     );
   }
 }
-
 
 class _ScrollableChart extends StatelessWidget {
   final Widget child;
@@ -64,7 +63,8 @@ class _MonthlyGrowthChart extends StatelessWidget {
     for (int i = 0; i < 8; i++) {
       final startOfWeek = now.subtract(Duration(days: i * 7 + 6));
       final endOfWeek = now.subtract(Duration(days: i * 7));
-      labels.add('${formatter.format(startOfWeek)}-${formatter.format(endOfWeek)}');
+      labels.add(
+          '${formatter.format(startOfWeek)}-${formatter.format(endOfWeek)}');
     }
     return labels.reversed.toList();
   }
@@ -75,7 +75,8 @@ class _MonthlyGrowthChart extends StatelessWidget {
     final sales = List<double>.from(data['weeklySales'] ?? List.filled(8, 0.0));
     final weekLabels = _generateWeekLabels();
 
-    final maxSales = sales.isNotEmpty ? sales.reduce((a, b) => a > b ? a : b) : 0;
+    final maxSales =
+        sales.isNotEmpty ? sales.reduce((a, b) => a > b ? a : b) : 0;
     final double maxY = maxSales * 1.2;
     final double minY = -maxY * 0.1;
 
@@ -147,8 +148,10 @@ class _MonthlyGrowthChart extends StatelessWidget {
                         },
                       ),
                     ),
-                    topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    topTitles:
+                        AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    rightTitles:
+                        AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   ),
                   gridData: FlGridData(show: true),
                   borderData: FlBorderData(show: true),
@@ -172,7 +175,8 @@ class _ProfitChart extends StatelessWidget {
     for (int i = 0; i < 8; i++) {
       final startOfWeek = now.subtract(Duration(days: i * 7 + 6));
       final endOfWeek = now.subtract(Duration(days: i * 7));
-      labels.add('${formatter.format(startOfWeek)}-${formatter.format(endOfWeek)}');
+      labels.add(
+          '${formatter.format(startOfWeek)}-${formatter.format(endOfWeek)}');
     }
     return labels.reversed.toList();
   }
@@ -180,11 +184,14 @@ class _ProfitChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final data = context.watch<DatabaseProvider>().financialInsightsData;
-    final netProfit = List<double>.from(data['weeklyNetProfit'] ?? List.filled(8, 0.0));
+    final netProfit =
+        List<double>.from(data['weeklyNetProfit'] ?? List.filled(8, 0.0));
     final weekLabels = _generateWeekLabels();
 
-    final maxProfit = netProfit.isNotEmpty ? netProfit.reduce((a, b) => a > b ? a : b) : 0;
-    final minProfit = netProfit.isNotEmpty ? netProfit.reduce((a, b) => a < b ? a : b) : 0;
+    final maxProfit =
+        netProfit.isNotEmpty ? netProfit.reduce((a, b) => a > b ? a : b) : 0;
+    final minProfit =
+        netProfit.isNotEmpty ? netProfit.reduce((a, b) => a < b ? a : b) : 0;
 
     final double maxY = maxProfit * 1.2;
     final double minY = minProfit * 1.2;
@@ -214,8 +221,8 @@ class _ProfitChart extends StatelessWidget {
                   clipData: FlClipData.all(),
                   lineBarsData: [
                     LineChartBarData(
-                      spots: List.generate(
-                          netProfit.length, (i) => FlSpot(i.toDouble(), netProfit[i])),
+                      spots: List.generate(netProfit.length,
+                          (i) => FlSpot(i.toDouble(), netProfit[i])),
                       isCurved: true,
                       color: Colors.deepPurple,
                       barWidth: 3,
@@ -257,8 +264,10 @@ class _ProfitChart extends StatelessWidget {
                         },
                       ),
                     ),
-                    topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    topTitles:
+                        AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    rightTitles:
+                        AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   ),
                   gridData: FlGridData(show: true),
                   borderData: FlBorderData(show: true),
@@ -287,7 +296,9 @@ class _ChartContainer extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(title,
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             child,
           ],

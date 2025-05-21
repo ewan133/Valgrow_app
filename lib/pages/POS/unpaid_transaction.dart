@@ -55,7 +55,9 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
       return; // ❌ Stop function execution if no customer is selected
     }
     double? receivingAmount = double.tryParse(_receivingAmountController.text);
-    if (receivingAmount! >= totalAmount) {
+    if (receivingAmount != null &&
+        _receivingAmountController.text.isNotEmpty &&
+        receivingAmount >= totalAmount) {
       Fluttertoast.showToast(
         msg: "Please use the 'Paid' tab for full payments.",
         toastLength: Toast.LENGTH_SHORT,
@@ -92,6 +94,19 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
         fontSize: 16.0,
       );
       return; // ❌ Stop function execution if no customer is selected
+    }
+
+    if (_selectedDueDate != null &&
+        _selectedDueDate!.isBefore(DateTime.now())) {
+      Fluttertoast.showToast(
+        msg: "Please select a valid due date.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+      return;
     }
 
     // ✅ Show Confirmation Dialog
@@ -156,15 +171,14 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
 
       print("✅ Processing Payment...");
       String? transactionId = await databaseProvider.processPOS(
-        totalAmount: totalAmount,
-        amountPaid: _receivedAmount.toDouble() ?? 0.00,
-        paymentMethod: "debt",
-        customerId: _selectedCustomer!.customerId,
-        isDebt: true,
-        due_date: _selectedDueDate,
-        customerName: _selectedCustomer!.name,
-        reference_number: _referenceController.text
-      );
+          totalAmount: totalAmount,
+          amountPaid: _receivedAmount.toDouble() ?? 0.00,
+          paymentMethod: "debt",
+          customerId: _selectedCustomer!.customerId,
+          isDebt: true,
+          due_date: _selectedDueDate,
+          customerName: _selectedCustomer!.name,
+          reference_number: _referenceController.text);
 
       // ✅ Reset UI
       setState(() {
