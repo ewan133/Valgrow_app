@@ -94,7 +94,7 @@ class ExpenseInfoPage extends StatelessWidget {
                     const Padding(
                       padding: EdgeInsets.only(top: 50),
                       child: Text(
-                        "No expenses found for this month.",
+                        "No records found for this month.",
                         style: TextStyle(fontSize: 16),
                       ),
                     )
@@ -106,7 +106,7 @@ class ExpenseInfoPage extends StatelessWidget {
                               await showDialog(
                                 context: context,
                                 builder: (context) => AlertDialog(
-                                  title: const Text("Expense Note"),
+                                  title: const Text("Record Note"),
                                   content: Text(
                                       (expense.note?.trim().isEmpty ?? true)
                                           ? "No note provided."
@@ -140,7 +140,7 @@ class ExpenseInfoPage extends StatelessWidget {
                                   );
 
                                   Fluttertoast.showToast(
-                                    msg: "Expense updated successfully.",
+                                    msg: "Record updated successfully.",
                                     toastLength: Toast.LENGTH_SHORT,
                                     gravity: ToastGravity.BOTTOM,
                                     backgroundColor: Colors.green,
@@ -152,9 +152,9 @@ class ExpenseInfoPage extends StatelessWidget {
                                 final confirm = await showDialog<bool>(
                                   context: context,
                                   builder: (ctx) => AlertDialog(
-                                    title: const Text("Delete Expense"),
+                                    title: const Text("Delete Record"),
                                     content: const Text(
-                                        "Are you sure you want to delete this expense?"),
+                                        "Are you sure you want to delete this record?"),
                                     actions: [
                                       TextButton(
                                         onPressed: () =>
@@ -178,7 +178,7 @@ class ExpenseInfoPage extends StatelessWidget {
                                       .deleteExpense(expense.expenseId);
 
                                   Fluttertoast.showToast(
-                                    msg: "Expense deleted successfully.",
+                                    msg: "Record deleted successfully.",
                                     toastLength: Toast.LENGTH_SHORT,
                                     gravity: ToastGravity.BOTTOM,
                                     backgroundColor: Colors.red,

@@ -294,92 +294,92 @@ class _ProfilePageState extends State<ProfilePage> {
                                     onTap: () {},
                                   ),
                                   Divider(),
-                                  if (!_isLoading && user.role == "Store Owner")
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        // Store Code Text
-                                        Expanded(
-                                          child: MyProfileDetails(
-                                            label: "Store Code",
-                                            value: store.storeCode,
-                                            onTap:
-                                                () {}, // No need for tap action
-                                          ),
-                                        ),
+                                  // if (!_isLoading && user.role == "Store Owner")
+                                  //   Row(
+                                  //     mainAxisAlignment:
+                                  //         MainAxisAlignment.spaceBetween,
+                                  //     children: [
+                                  //       // Store Code Text
+                                  //       Expanded(
+                                  //         child: MyProfileDetails(
+                                  //           label: "Store Code",
+                                  //           value: store.storeCode,
+                                  //           onTap:
+                                  //               () {}, // No need for tap action
+                                  //         ),
+                                  //       ),
 
-                                        // Copy Button
-                                        IconButton(
-                                          onPressed: () {
-                                            Clipboard.setData(ClipboardData(
-                                                text: store.storeCode));
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(
-                                              SnackBar(
-                                                  content: Text(
-                                                      "Store Code Copied!")),
-                                            );
-                                          },
-                                          icon: Icon(Icons.copy,
-                                              color: Colors.blueAccent),
-                                          tooltip: "Copy Store Code",
-                                        ),
+                                  //       // Copy Button
+                                  //       IconButton(
+                                  //         onPressed: () {
+                                  //           Clipboard.setData(ClipboardData(
+                                  //               text: store.storeCode));
+                                  //           ScaffoldMessenger.of(context)
+                                  //               .showSnackBar(
+                                  //             SnackBar(
+                                  //                 content: Text(
+                                  //                     "Store Code Copied!")),
+                                  //           );
+                                  //         },
+                                  //         icon: Icon(Icons.copy,
+                                  //             color: Colors.blueAccent),
+                                  //         tooltip: "Copy Store Code",
+                                  //       ),
 
-                                        // Regenerate Button
+                                  //       // Regenerate Button
 
-                                        IconButton(
-                                          onPressed: () async {
-                                            bool confirm = await showDialog(
-                                              context: context,
-                                              builder: (BuildContext context) {
-                                                return AlertDialog(
-                                                  title: Text(
-                                                      "Regenerate Store Code"),
-                                                  content: Text(
-                                                      "Are you sure you want to generate a new store code?"),
-                                                  actions: [
-                                                    TextButton(
-                                                      onPressed: () =>
-                                                          Navigator.of(context)
-                                                              .pop(false),
-                                                      child: Text("Cancel"),
-                                                    ),
-                                                    TextButton(
-                                                      onPressed: () =>
-                                                          Navigator.of(context)
-                                                              .pop(true),
-                                                      child: Text("Confirm",
-                                                          style: TextStyle(
-                                                              color:
-                                                                  Colors.red)),
-                                                    ),
-                                                  ],
-                                                );
-                                              },
-                                            );
+                                  //       IconButton(
+                                  //         onPressed: () async {
+                                  //           bool confirm = await showDialog(
+                                  //             context: context,
+                                  //             builder: (BuildContext context) {
+                                  //               return AlertDialog(
+                                  //                 title: Text(
+                                  //                     "Regenerate Store Code"),
+                                  //                 content: Text(
+                                  //                     "Are you sure you want to generate a new store code?"),
+                                  //                 actions: [
+                                  //                   TextButton(
+                                  //                     onPressed: () =>
+                                  //                         Navigator.of(context)
+                                  //                             .pop(false),
+                                  //                     child: Text("Cancel"),
+                                  //                   ),
+                                  //                   TextButton(
+                                  //                     onPressed: () =>
+                                  //                         Navigator.of(context)
+                                  //                             .pop(true),
+                                  //                     child: Text("Confirm",
+                                  //                         style: TextStyle(
+                                  //                             color:
+                                  //                                 Colors.red)),
+                                  //                   ),
+                                  //                 ],
+                                  //               );
+                                  //             },
+                                  //           );
 
-                                            if (confirm == true) {
-                                              await databaseProvider
-                                                  .updateStoreCode();
-                                              Fluttertoast.showToast(
-                                                msg:
-                                                    "New Store Code Generated!",
-                                                toastLength: Toast.LENGTH_SHORT,
-                                                gravity: ToastGravity.CENTER,
-                                                backgroundColor: Colors.green,
-                                                textColor: Colors.white,
-                                              );
-                                            }
-                                          },
-                                          icon: Icon(Icons.refresh,
-                                              color: Colors.green),
-                                          tooltip: "Regenerate Store Code",
-                                        ),
-                                      ],
-                                    ),
+                                  //           if (confirm == true) {
+                                  //             await databaseProvider
+                                  //                 .updateStoreCode();
+                                  //             Fluttertoast.showToast(
+                                  //               msg:
+                                  //                   "New Store Code Generated!",
+                                  //               toastLength: Toast.LENGTH_SHORT,
+                                  //               gravity: ToastGravity.CENTER,
+                                  //               backgroundColor: Colors.green,
+                                  //               textColor: Colors.white,
+                                  //             );
+                                  //           }
+                                  //         },
+                                  //         icon: Icon(Icons.refresh,
+                                  //             color: Colors.green),
+                                  //         tooltip: "Regenerate Store Code",
+                                  //       ),
+                                  //     ],
+                                  //   ),
                                   SizedBox(
-                                    height: 10,
+                                    height: 30,
                                   ),
                                   Row(
                                     mainAxisAlignment:

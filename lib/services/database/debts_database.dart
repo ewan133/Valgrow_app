@@ -380,6 +380,7 @@ class DebtsDatabase {
     required String customerName,
     required String reportReason,
     required String reportedByUserId,
+    required String complainant_contact,
   }) async {
     try {
       final now = DateTime.now();
@@ -423,6 +424,7 @@ class DebtsDatabase {
         'status': 'pending',
         'reportCategory': 'Debt Dispute',
         'type': 'Business to Customer',
+        'complainant_contact': complainant_contact,
       });
 
       print("✅ Customer report filed successfully for $customerName");

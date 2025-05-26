@@ -805,6 +805,7 @@ class DatabaseProvider extends ChangeNotifier {
         customerName: customerName,
         reportReason: reportReason,
         reportedByUserId: reportedByUserId,
+        complainant_contact: _user!.phone,
       );
       print("✅ Report filed for customer $customerId");
     } catch (e) {

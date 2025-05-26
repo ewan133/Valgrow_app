@@ -591,7 +591,7 @@ Widget _buildDatePickerField({
           DateTime? pickedDate = await showDatePicker(
             context: context,
             initialDate: value ?? DateTime.now(),
-            firstDate: DateTime(2000),
+            firstDate: DateTime.now(),
             lastDate: DateTime(2101),
           );
           if (pickedDate != null) {

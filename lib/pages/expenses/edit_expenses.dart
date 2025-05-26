@@ -128,7 +128,7 @@ class _EditExpensesModalState extends State<EditExpensesModal> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text("Edit Expense",
+      title: const Text("Edit Record",
           style: TextStyle(fontWeight: FontWeight.bold)),
       content: SizedBox(
         width: MediaQuery.of(context).size.width * 0.9,
