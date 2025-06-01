@@ -6,7 +6,7 @@ class ProfileFunctions {
 
   /// Creates a profile for the user and a store if they are an owner
   Future<void> createStoreOwnerProfile(
-      String userEmail, String name, String phone) async {
+      String userEmail, String name, String phone, String address) async {
     try {
       await _firestore.collection('users').doc(userEmail).set({
         'name': name,
@@ -24,6 +24,7 @@ class ProfileFunctions {
         'name': '$name\'s Store', // Default store name
         'ownerId': userEmail,
         'storeCode': storeCode,
+        'address': address,
       });
 
       print(

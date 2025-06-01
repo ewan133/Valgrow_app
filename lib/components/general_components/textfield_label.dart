@@ -8,6 +8,7 @@ class MyTextfieldLabeled extends StatefulWidget {
   final Color color;
   final bool isNumeric; // Accept numbers (int/decimal)
   final bool isObscure; // Toggle for password fields
+  final bool isReadOnly;
 
   const MyTextfieldLabeled({
     super.key,
@@ -17,6 +18,7 @@ class MyTextfieldLabeled extends StatefulWidget {
     required this.color,
     this.isNumeric = false, // Default to false (text input)
     this.isObscure = false, // Default to false (not a password field)
+    this.isReadOnly = false,
   });
 
   @override
@@ -25,11 +27,13 @@ class MyTextfieldLabeled extends StatefulWidget {
 
 class _MyTextfieldLabeledState extends State<MyTextfieldLabeled> {
   bool _obscureText = false;
+  bool _isReadOnly = false;
 
   @override
   void initState() {
     super.initState();
-    _obscureText = widget.isObscure; // Initialize obscure text state
+    _obscureText = widget.isObscure;
+    _isReadOnly = widget.isReadOnly; // Initialize obscure text state
   }
 
   @override
@@ -47,6 +51,7 @@ class _MyTextfieldLabeledState extends State<MyTextfieldLabeled> {
           ),
         ),
         TextField(
+          readOnly: _isReadOnly,
           controller: widget.controller,
           keyboardType: widget.isNumeric 
               ? const TextInputType.numberWithOptions(decimal: true)

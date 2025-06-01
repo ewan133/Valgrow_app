@@ -18,7 +18,7 @@ class DatabaseService {
 
   //create profile for owners
   Future<void> createStoreOwnerProfile(
-      String userEmail, String name, String phone) async {
+      String userEmail, String name, String phone, String houseNumber, String street, String storename) async {
     try {
       String userId = _auth.currentUser!.uid; // Get authenticated user ID
 
@@ -50,10 +50,14 @@ class DatabaseService {
         // Create the store associated with the owner
         DocumentReference storeRef = _db.collection('stores').doc(storeId);
         transaction.set(storeRef, {
-          'name': "$name's Store", // Default store name
+          'name': storename, // Default store name
           'ownerId': userId, // Assign Firebase UID
           'storeCode': storeCode,
           'contact': phone,
+          'houseNumber': houseNumber,
+          'street': street,
+          'barangay': "Dalandanan",
+          'city': "Valenzuela City",
         });
 
         print(

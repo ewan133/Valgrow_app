@@ -2,6 +2,7 @@ import 'dart:developer';
 import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:valgrow_ui/services/auth/wrapper.dart';
 import 'package:valgrow_ui/services/database/management_database.dart';
 
@@ -150,18 +151,22 @@ class AuthService {
         newUserId,
       );
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("✅ Employee account created successfully!"),
-          duration: Duration(seconds: 3),
-        ),
+      Fluttertoast.showToast(
+        msg: "✅ Employee account created successfully!",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.green,
+        textColor: Colors.white,
+        fontSize: 16.0,
       );
     } on FirebaseFunctionsException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content:
-              Text("❌ Failed to create user: ${e.message ?? 'Unknown error'}"),
-        ),
+      Fluttertoast.showToast(
+        msg: "❌ Failed to create user: ${e.message ?? 'Unknown error'}",
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.redAccent,
+        textColor: Colors.white,
+        fontSize: 16.0,
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(

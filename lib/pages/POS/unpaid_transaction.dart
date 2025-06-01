@@ -42,6 +42,18 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
   }
 
   void _confirmPayment() {
+    if (_balance < 100) {
+      Fluttertoast.showToast(
+        msg:"Unpaid transactions must have a minimum balance of ₱100.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM, // Position: BOTTOM, CENTER, or TOP
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+      return; // ❌ Stop function execution if no customer is selected
+    }
+
     // ✅ Ensure a customer is selected before proceeding
     if (_selectedCustomer == null) {
       Fluttertoast.showToast(

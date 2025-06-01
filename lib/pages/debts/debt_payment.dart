@@ -347,7 +347,7 @@ Please settle your balance before the due date. Thank you!
 
               if (widget.debtDetails.balance > 0) ...[
                 // ✅ Payment Section
-                _buildPaymentField("Paying Amount:", _payingAmountController,
+                _buildPaymentField("Amount to Pay:", _payingAmountController,
                     true, "00.00", 100000),
                 const SizedBox(height: 10),
                 Row(
@@ -355,7 +355,7 @@ Please settle your balance before the due date. Thank you!
                     // Received Amount Field (Takes 70% of the Row)
                     Expanded(
                       flex: 7, // ✅ 70% width
-                      child: _buildPaymentField("Customer Money:",
+                      child: _buildPaymentField("Cash Received:",
                           _customerMoneyController, true, "00.00", 100000),
                     ),
                     const SizedBox(width: 20), // Space between inputs
@@ -460,6 +460,20 @@ Please settle your balance before the due date. Thank you!
                               Fluttertoast.showToast(
                                 msg:
                                     "Received amount cannot be less than paying amount!",
+                                toastLength: Toast.LENGTH_SHORT,
+                                gravity: ToastGravity.BOTTOM,
+                                backgroundColor: Colors.red,
+                                textColor: Colors.white,
+                                fontSize: 16.0,
+                              );
+                              setState(() => _isProcessing = false);
+                              return;
+                            }
+                            // ✅ Ensure received amount is not less than paying amount
+                            if (payingAmount < widget.debtDetails.balance && receivedAmount > payingAmount) {
+                              Fluttertoast.showToast(
+                                msg:
+                                    "Partial payments cannot have change!",
                                 toastLength: Toast.LENGTH_SHORT,
                                 gravity: ToastGravity.BOTTOM,
                                 backgroundColor: Colors.red,

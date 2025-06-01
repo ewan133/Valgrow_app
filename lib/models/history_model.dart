@@ -50,6 +50,7 @@ class TransactionHistory {
 /// ✅ Model for Transaction Items
 class TransactionItem {
   final String itemId;
+  final String name;           // Added name field
   final int quantity;
   final double unitPrice;
   final double totalPrice;
@@ -57,6 +58,7 @@ class TransactionItem {
 
   TransactionItem({
     required this.itemId,
+    required this.name,       // initialize name
     required this.quantity,
     required this.unitPrice,
     required this.totalPrice,
@@ -69,10 +71,11 @@ class TransactionItem {
 
     return TransactionItem(
       itemId: data['item_id'] ?? '',
+      name: data['name'] ?? '',             // get name from Firestore data
       quantity: (data['quantity'] ?? 0).toInt(),
       unitPrice: (data['unit_price'] ?? 0.0).toDouble(),
       totalPrice: (data['total_price'] ?? 0.0).toDouble(),
-      discount: (data['discount'] ?? 0.0).toDouble(),
+      discount: data['discount'] != null ? (data['discount'] as num).toDouble() : null,
     );
   }
 
@@ -80,6 +83,7 @@ class TransactionItem {
   Map<String, dynamic> toMap() {
     return {
       'item_id': itemId,
+      'name': name,              // include name in the map
       'quantity': quantity,
       'unit_price': unitPrice,
       'total_price': totalPrice,

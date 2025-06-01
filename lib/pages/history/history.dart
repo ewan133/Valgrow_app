@@ -28,7 +28,8 @@ class _HistoryPageState extends State<HistoryPage> {
       final databaseProvider =
           Provider.of<DatabaseProvider>(context, listen: false);
       if (databaseProvider.store != null) {
-        databaseProvider.fetchTransactionHistory(databaseProvider.store!.storeId);
+        databaseProvider
+            .fetchTransactionHistory(databaseProvider.store!.storeId);
       }
     });
   }
@@ -50,7 +51,8 @@ class _HistoryPageState extends State<HistoryPage> {
                 else if (databaseProvider.transactionHistory.isEmpty)
                   _buildNoTransactionsMessage() // ✅ Show no data message
                 else
-                  _buildTransactionList(databaseProvider), // ✅ Show transactions
+                  _buildTransactionList(
+                      databaseProvider), // ✅ Show transactions
               ],
             ),
           );
@@ -142,13 +144,16 @@ class _HistoryPageState extends State<HistoryPage> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              MyDateContainer(date: date), // ✅ Uses MyDateContainer with real date
+              MyDateContainer(
+                  date: date), // ✅ Uses MyDateContainer with real date
               ...transactions.map((transaction) => GestureDetector(
-                    onTap: () => _showTransactionSummary(context, transaction), // ✅ Show alert on tap
+                    onTap: () => _showTransactionSummary(
+                        context, transaction), // ✅ Show alert on tap
                     child: Padding(
                       padding: const EdgeInsets.only(bottom: 2),
                       child: MyHistoryTile(
-                        transactionType: transaction.transactionType, // Sales / Expense
+                        transactionType:
+                            transaction.transactionType, // Sales / Expense
                         amount: transaction.totalAmount,
                         timestamp: transaction.createdAt,
                       ),
@@ -168,7 +173,7 @@ class _HistoryPageState extends State<HistoryPage> {
       builder: (BuildContext context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12), // ✅ Rounded corners
+            borderRadius: BorderRadius.circular(12),
           ),
           title: MyText(
             text: "Transaction Summary",
@@ -176,28 +181,73 @@ class _HistoryPageState extends State<HistoryPage> {
             fontWeight: FontWeight.w600,
             color: Colors.black,
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min, // ✅ Prevents oversized modal
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildSummaryRow("Type:", transaction.transactionType),
-              _buildSummaryRow("Amount:", "₱${transaction.totalAmount.toStringAsFixed(2)}"),
-              _buildSummaryRow("Date:", DateFormat('MMMM d, yyyy').format(transaction.createdAt)),
-              _buildSummaryRow("Time:", DateFormat.jm().format(transaction.createdAt)), // 5:27 PM
-              
-              if (transaction.transactionType == "Debts" && transaction.customerName != null)
-                _buildSummaryRow("Customer:", transaction.customerName ?? "N/A"),
-
-              if (transaction.transactionType == "Debts Payment" && transaction.debtPaymentMethod != null)
-                _buildSummaryRow("Payment Method:", transaction.debtPaymentMethod ?? "Unknown"),
-            ],
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildSummaryRow("Type:", transaction.transactionType),
+                _buildSummaryRow("Amount:",
+                    "₱${transaction.totalAmount.toStringAsFixed(2)}"),
+                _buildSummaryRow("Date:",
+                    DateFormat('MMMM d, yyyy').format(transaction.createdAt)),
+                _buildSummaryRow(
+                    "Time:", DateFormat.jm().format(transaction.createdAt)),
+                if (transaction.transactionType == "Debts" &&
+                    transaction.customerName != null)
+                  _buildSummaryRow(
+                      "Customer:", transaction.customerName ?? "N/A"),
+                if (transaction.transactionType == "Debts Payment" &&
+                    transaction.debtPaymentMethod != null)
+                  _buildSummaryRow("Payment Method:",
+                      transaction.debtPaymentMethod ?? "Unknown"),
+                const SizedBox(height: 16),
+                if (transaction.transactionType != "Debt Payment") ...[
+                  MyText(
+                    text: "Items:",
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                  ),
+                  const SizedBox(height: 8),
+                  ...List.generate(
+                    transaction.items.length,
+                    (index) {
+                      var item = transaction.items[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: MyText(
+                                text: "${item.name} x${item.quantity}",
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            MyText(
+                              text: "₱${(item.unitPrice * item.quantity).toStringAsFixed(2) }",
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black87,
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ],
+            ),
           ),
           actions: [
             Center(
               child: IconButton(
                 icon: const Icon(Icons.close, size: 24, color: Colors.black),
                 onPressed: () {
-                  Navigator.pop(context); // ✅ Close dialog
+                  Navigator.pop(context);
                 },
               ),
             ),

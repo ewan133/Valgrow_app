@@ -28,7 +28,7 @@ class _AddBatchModalState extends State<AddBatchModal> {
           children: [
             // 🔹 Header
             const Text(
-              "Add Batch",
+              "Add Stocks",
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
             ),

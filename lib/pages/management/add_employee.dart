@@ -102,8 +102,6 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
         storeCode: storeCode,
         context: context,
       );
-
-      _showToast("✅ Employee created successfully!");
       
       Navigator.pushNamedAndRemoveUntil(
         context,
