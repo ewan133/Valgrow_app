@@ -18,7 +18,13 @@ class DatabaseService {
 
   //create profile for owners
   Future<void> createStoreOwnerProfile(
-      String userEmail, String name, String phone, String houseNumber, String street, String storename) async {
+      String userEmail,
+      String name,
+      String phone,
+      String houseNumber,
+      String street,
+      String storename,
+      String barangay) async {
     try {
       String userId = _auth.currentUser!.uid; // Get authenticated user ID
 
@@ -56,7 +62,7 @@ class DatabaseService {
           'contact': phone,
           'houseNumber': houseNumber,
           'street': street,
-          'barangay': "Dalandanan",
+          'barangay': barangay,
           'city': "Valenzuela City",
         });
 
@@ -188,6 +194,19 @@ class DatabaseService {
       Map<String, dynamic> storeData = storeDoc.data() as Map<String, dynamic>;
       storeData['storeId'] = storeId; // ✅ Manually add storeId to the map
 
+      // ✅ Build the address string
+      final houseNumber = storeData['houseNumber'] ?? '';
+      final street = storeData['street'] ?? '';
+      final barangay = storeData['barangay'] ?? '';
+      final city = storeData['city'] ?? '';
+
+      final address = "$houseNumber $street, $barangay, $city"
+          .trim()
+          .replaceAll(RegExp(r'\s+'), ' ');
+
+      // ✅ Put it in the map so StoreProfile can use it
+      storeData['address'] = address;
+
       print('✅ Store document data: $storeData');
 
       return StoreProfile.fromMap(storeData);
@@ -296,6 +315,31 @@ class DatabaseService {
       }
     } catch (e) {
       print("❌ Error updating FCM token: $e");
+    }
+  }
+
+  /// ✅ Get all unique streets from stores collection
+  Future<List<String>> getAllUniqueStreets() async {
+    try {
+      QuerySnapshot snapshot = await _db.collection('stores').get();
+
+      // Extract streets into a Set to remove duplicates
+      Set<String> streets = {};
+      for (var doc in snapshot.docs) {
+        if (doc['street'] != null &&
+            doc['street'].toString().trim().isNotEmpty) {
+          streets.add(doc['street'].toString().trim());
+        }
+      }
+
+      List<String> streetList = streets.toList();
+      streetList.sort(); // optional: sort alphabetically
+
+      print("✅ Found ${streetList.length} unique streets.");
+      return streetList;
+    } catch (e) {
+      print("❌ Error fetching streets: $e");
+      return [];
     }
   }
 }

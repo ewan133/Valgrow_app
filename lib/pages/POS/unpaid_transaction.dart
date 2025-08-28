@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:valgrow_ui/models/customer_model.dart';
 import 'package:valgrow_ui/pages/POS/customer_selection.dart';
 import 'package:valgrow_ui/pages/POS/receipt.dart';
 import 'package:valgrow_ui/services/database/database_provider.dart';
+import 'package:valgrow_ui/components/global_keys.dart';
 
 class UnpaidTransaction extends StatefulWidget {
   const UnpaidTransaction({super.key});
@@ -25,6 +28,136 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
   DateTime? _selectedDueDate; // Default Due Date
   String _selectedPaymentMethod = "Cash"; // Default selection
 
+  TutorialCoachMark? tutorialCoachMark;
+  List<TargetFocus> myTargets = [];
+
+  nowStart(_) {
+    Future.delayed(Duration(seconds: 1));
+    tutorialCoachMark = TutorialCoachMark(targets: myTargets)
+      ..show(context: context);
+  }
+
+  void _checkAndStartTutorial() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasShownTutorial = prefs.getBool('hasShownUnpaidTutorial') ?? false;
+
+    if (!hasShownTutorial) {
+      // Add your target
+      addMyTargets(
+          totalUnpaidAmountKey,
+          "totalUnpaidAmountKey",
+          ContentAlign.bottom,
+          "Shows the total cost of all items in the cart.");
+
+      addMyTargets(
+          unpaidReceivedAmountKey,
+          "unpaidReceivedAmountKey",
+          ContentAlign.bottom,
+          "Enter the amount of money provided by the customer if they will pay partially.");
+
+      addMyTargets(
+          unpaidPaymentMethodKey,
+          "unpaidPaymentMethodKey",
+          ContentAlign.top,
+          "Choose the payment method, such as Cash or GCash.");
+
+      addMyTargets(unpaidBalanceKey, "unpaidBalanceKey", ContentAlign.top,
+          "Automatically calculates and displays the customer's remaining balance.");
+
+      addMyTargets(selectCustomerKey, "selectCustomerKey", ContentAlign.top,
+          "Select an existing customer or add a new one.");
+
+      addMyTargets(setUnpaidDuedateKey, "setUnpaidDuedateKey", ContentAlign.top,
+          "Set the due date for the unpaid amount.");
+
+      addMyTargets(unpaidSaveButtonKey, "unpaidSaveButtonKey", ContentAlign.top,
+          "Click to save and finalize the unpaid transaction.");
+
+      // Delay and start the tutorial
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Future.delayed(const Duration(seconds: 1), () {
+          tutorialCoachMark = TutorialCoachMark(targets: myTargets)
+            ..show(context: context);
+
+          // Set the flag so it won't show again
+          prefs.setBool('hasShownUnpaidTutorial', false);
+        });
+      });
+    }
+  }
+
+  addMyTargets(GlobalKey target, String identifier, ContentAlign alignment,
+      String content) {
+    myTargets.add(TargetFocus(
+      shape: ShapeLightFocus.RRect,
+      radius: 10,
+      keyTarget: target,
+      identify: identifier,
+      contents: [
+        TargetContent(
+          align: alignment,
+          padding: EdgeInsets.only(top: 20, bottom: 20, left: 20, right: 20),
+          builder: (context, controller) {
+            return Center(
+              child: Container(
+                margin: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(20.0),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 6,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      content,
+                      style: const TextStyle(
+                        color: Colors.black, // Black text
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.left,
+                    ),
+                    const SizedBox(height: 20),
+                    Align(
+                      alignment: Alignment.bottomRight,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          controller.next();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.black,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Text(
+                          "Next",
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        )
+      ],
+    ));
+  }
+
   @override
   void initState() {
     super.initState();
@@ -39,12 +172,14 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
         _balance = totalAmount; // ✅ Set _balance to totalAmount
       });
     });
+
+    _checkAndStartTutorial();
   }
 
   void _confirmPayment() {
     if (_balance < 100) {
       Fluttertoast.showToast(
-        msg:"Unpaid transactions must have a minimum balance of ₱100.",
+        msg: "Unpaid transactions must have a minimum balance of ₱100.",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM, // Position: BOTTOM, CENTER, or TOP
         backgroundColor: Colors.red,
@@ -251,6 +386,7 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
 
                 // Total Amount (Read-Only)
                 _buildSummaryCard(
+                  key: totalUnpaidAmountKey,
                   title: "Total Amount",
                   value: "₱${totalAmount.toStringAsFixed(2)}",
                 ),
@@ -259,6 +395,7 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
 
                 // Receiving Amount (User Input)
                 _buildInputField(
+                  key: unpaidReceivedAmountKey,
                   label: "Customer Money (for partial payments)",
                   controller: _receivingAmountController,
                   maxLength: 6,
@@ -269,6 +406,7 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
 
                 // Payment Method Dropdown
                 _buildDropdownField(
+                  key: unpaidPaymentMethodKey,
                   label: "Select Payment Method",
                   items: ["Cash", "Gcash"],
                 ),
@@ -286,6 +424,7 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
                 const SizedBox(height: 15),
                 // Balance (Auto Calculated)
                 _buildSummaryCard(
+                  key: unpaidBalanceKey,
                   title: "Balance",
                   value: "₱${_balance.toStringAsFixed(2)}",
                 ),
@@ -294,6 +433,7 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
 
                 // Customer Name Selection Field
                 _buildSelectionField(
+                  key: selectCustomerKey,
                   label: "Select Customer",
                   selectedValue: _selectedCustomer?.name ??
                       "Select or Add", // ✅ Fix: Avoid force unwrapping null
@@ -313,6 +453,7 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
 
                 // Due Date Picker
                 _buildDatePickerField(
+                  key: setUnpaidDuedateKey,
                   label: "Due Date (default 2 weeks from now)",
                   value: _selectedDueDate,
                   onDatePicked: (newDate) {
@@ -327,6 +468,7 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
 
                 // Save Transaction Button
                 SizedBox(
+                  key: unpaidSaveButtonKey,
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton(
@@ -360,8 +502,10 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
   }
 
   // Function to build summary cards for Total Amount & Balance
-  Widget _buildSummaryCard({required String title, required String value}) {
+  Widget _buildSummaryCard(
+      {required String title, required String value, Key? key}) {
     return Container(
+      key: key,
       width: double.infinity,
       padding: const EdgeInsets.only(top: 15, left: 15, right: 15, bottom: 15),
       decoration: BoxDecoration(
@@ -419,8 +563,10 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
     required String selectedValue,
     required Function(CustomerDetails) onItemSelected,
     required BuildContext context,
+    Key? key,
   }) {
     return Column(
+      key: key,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
@@ -500,8 +646,10 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
   Widget _buildDropdownField({
     required String label,
     required List<String> items,
+    Key? key,
   }) {
     return Column(
+      key: key,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
@@ -546,6 +694,7 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
 // Function to build user input field
 // Function to build user input field
 Widget _buildInputField({
+  Key? key,
   required String label,
   required TextEditingController controller,
   String? hint,
@@ -553,6 +702,7 @@ Widget _buildInputField({
   Function(String)? onChanged,
 }) {
   return Column(
+    key: key,
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Text(
@@ -583,12 +733,14 @@ Widget _buildInputField({
 }
 
 Widget _buildDatePickerField({
+  Key? key,
   required BuildContext context,
   required String label,
   required DateTime? value, // Accepts DateTime? instead of String
   required Function(DateTime) onDatePicked, // Pass DateTime instead of String
 }) {
   return Column(
+    key: key,
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Text(

@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:valgrow_ui/components/debts_components/debt_card.dart';
 import 'package:valgrow_ui/components/general_components/appbar.dart';
 import 'package:valgrow_ui/components/general_components/searchbar.dart';
 import 'package:valgrow_ui/models/customer_model.dart';
 import 'package:valgrow_ui/pages/debts/debts_personal_list.dart';
 import 'package:valgrow_ui/services/database/database_provider.dart';
+import 'package:valgrow_ui/components/global_keys.dart';
+import 'package:valgrow_ui/components/target.dart';
 
 class DebtsPage extends StatefulWidget {
   const DebtsPage({super.key});
@@ -25,6 +29,50 @@ class _DebtsPageState extends State<DebtsPage> {
       Provider.of<DatabaseProvider>(context, listen: false)
           .fetchDebtsWithCustomerInfo();
     });
+    _checkAndStartTutorial();
+    
+  }
+
+  //Needed Intances
+  
+  TutorialCoachMark? tutorialCoachMark;
+  List<TargetFocus> myTargets = [];
+  Target target = Target();
+
+  //Needed method
+  void _checkAndStartTutorial() async {
+    final prefs = await SharedPreferences.getInstance();
+    prefs.clear(); /// tanggalin mamaya
+    final hasShownTutorial =
+        prefs.getBool('hasShownMainDebtsTutorial') ?? false;
+
+    if (!hasShownTutorial) {
+      // Add your targets
+      target.addMyTargets(
+          mainDebtsSearch,
+          "mainDebtsSearch",
+          ContentAlign.bottom,
+          "You can use this search button to find specific person debts list.",
+          myTargets);
+
+      target.addMyTargets(
+          mainDebtsList,
+          "mainDebtsList",
+          ContentAlign.bottom,
+          "This part will display all the person with debts and your search results",
+          myTargets);
+
+      // Delay and start the tutorial
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Future.delayed(const Duration(seconds: 1), () {
+          tutorialCoachMark = TutorialCoachMark(targets: myTargets)
+            ..show(context: context);
+
+          // Set the flag so it won't show again
+          prefs.setBool('hasShownMainDebtsTutorial', true);
+        });
+      });
+    }
   }
 
   @override
@@ -60,6 +108,7 @@ class _DebtsPageState extends State<DebtsPage> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
             child: MySearchbar(
+              key: mainDebtsSearch,
               controller: _searchController,
               onChanged: (value) => setState(() {}), // Refresh list on search
             ),

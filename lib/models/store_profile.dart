@@ -4,6 +4,7 @@ class StoreProfile {
   final String ownerId;
   final String storeCode;
   final String contact;
+  final String address; // ✅ Added
 
   StoreProfile({
     required this.storeId,
@@ -11,7 +12,7 @@ class StoreProfile {
     required this.ownerId,
     required this.storeCode,
     required this.contact,
-  
+    required this.address, // ✅ Added
   });
 
   /// ✅ **copyWith Method for Updating StoreProfile**
@@ -21,13 +22,15 @@ class StoreProfile {
     String? ownerId,
     String? storeCode,
     String? contact,
+    String? address, // ✅ Added
   }) {
     return StoreProfile(
       storeId: storeId ?? this.storeId,
       name: name ?? this.name,
       ownerId: ownerId ?? this.ownerId,
-      storeCode: storeCode ?? this.storeCode, // Fixed missing field
-      contact: contact ?? this.contact, 
+      storeCode: storeCode ?? this.storeCode,
+      contact: contact ?? this.contact,
+      address: address ?? this.address, // ✅ Added
     );
   }
 
@@ -39,6 +42,7 @@ class StoreProfile {
       ownerId: map['ownerId'] ?? '',
       storeCode: map['storeCode'] ?? '',
       contact: map['contact'] ?? '',
+      address: map['address'] ?? '', // ✅ Added
     );
   }
 
@@ -50,6 +54,7 @@ class StoreProfile {
       'ownerId': ownerId,
       'storeCode': storeCode,
       'contact': contact,
+      'address': address, // ✅ Added
     };
   }
 }

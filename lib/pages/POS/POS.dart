@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:valgrow_ui/components/general_components/appbar.dart';
 import 'package:valgrow_ui/components/general_components/button.dart';
 import 'package:valgrow_ui/components/POS_components/table_pos.dart';
@@ -18,7 +20,123 @@ class POSPage extends StatefulWidget {
 }
 
 class _POSPageState extends State<POSPage> {
+  GlobalKey myAddButton = GlobalKey();
+  GlobalKey myScanButton = GlobalKey();
+  GlobalKey myCartSummary = GlobalKey();
+  GlobalKey myClearButton = GlobalKey();
+
+  TutorialCoachMark? tutorialCoachMark;
+  List<TargetFocus> myTargets = [];
+
   bool isScanning = false;
+
+  void initState() {
+    super.initState();
+    _checkAndStartTutorial();
+  }
+
+  nowStart(_) {
+    Future.delayed(Duration(seconds: 0));
+    tutorialCoachMark = TutorialCoachMark(targets: myTargets)
+      ..show(context: context);
+  }
+
+  void _checkAndStartTutorial() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasShownTutorial = prefs.getBool('hasShownPOSTutorial') ?? false;
+
+    if (!hasShownTutorial) {
+      // Add your targets
+      addMyTargets(myAddButton, "myAddButton", ContentAlign.bottom,
+          "Add a new product or item to the cart.");
+      addMyTargets(myScanButton, "myScanButton", ContentAlign.bottom,
+          "Scan an item’s barcode to quickly add it to the cart.");
+      addMyTargets(myCartSummary, "myCartSummary", ContentAlign.top,
+          "View the summary of all items in the cart, total and the proceed button to proceed into next step.");
+      addMyTargets(myClearButton, "myClearButton", ContentAlign.bottom,
+          "Clear all items from the current cart.");
+
+      // Delay and start the tutorial
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Future.delayed(const Duration(seconds: 1), () {
+          tutorialCoachMark = TutorialCoachMark(targets: myTargets)
+            ..show(context: context);
+
+          // Set the flag so it won't show again
+          prefs.setBool('hasShownPOSTutorial', true);
+        });
+      });
+    }
+   
+  }
+
+  addMyTargets(GlobalKey target, String identifier, ContentAlign alignment,
+      String content) {
+    myTargets.add(TargetFocus(
+      shape: ShapeLightFocus.RRect,
+      radius: 10,
+      keyTarget: target,
+      identify: identifier,
+      contents: [
+        TargetContent(
+          align: alignment,
+          padding: EdgeInsets.only(top: 10, bottom: 0, left: 20, right: 20),
+          builder: (context, controller) {
+            return Center(
+              child: Container(
+                padding: const EdgeInsets.all(10.0),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 6,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      content,
+                      style: const TextStyle(
+                        color: Colors.black, // Black text
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.left,
+                    ),
+                    const SizedBox(height: 0),
+                    Align(
+                      alignment: Alignment.bottomRight,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          controller.next();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.black,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 0, vertical: 0),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child:  Text("Next", style: TextStyle(fontSize: 14),),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        )
+      ],
+    ));
+  }
 
   // ✅ Method to scan barcode using MobileScanner
   void scanBarcode(BuildContext context) {
@@ -157,6 +275,7 @@ class _POSPageState extends State<POSPage> {
       appBar: MyAppbar(
         title: "Point of Sale",
         actionWidget: TextButton(
+          key: myClearButton,
           onPressed: () {
             showDialog(
               context: context,
@@ -209,6 +328,7 @@ class _POSPageState extends State<POSPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   MyButton(
+                    key: myAddButton,
                     text: "Add",
                     color: const Color(0xFF14AE5C),
                     onTap: () {
@@ -227,6 +347,7 @@ class _POSPageState extends State<POSPage> {
                   ),
                   const SizedBox(width: 20),
                   MyButton(
+                    key: myScanButton,
                     text: "Scan",
                     color: const Color(0xFF38B6FF),
                     onTap: () => scanBarcode(context), // ✅ Call scan function
@@ -246,6 +367,7 @@ class _POSPageState extends State<POSPage> {
               databaseProvider.isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : MyTable(
+                      key: myCartSummary,
                       products: databaseProvider.basket
                           .map((item) => {
                                 "Product": item.item_name,

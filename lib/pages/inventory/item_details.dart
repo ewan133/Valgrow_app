@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:valgrow_ui/components/general_components/FBA_multi.dart';
 import 'package:valgrow_ui/components/general_components/appbar.dart';
 import 'package:valgrow_ui/components/general_components/text.dart';
+import 'package:valgrow_ui/components/target.dart';
 import 'package:valgrow_ui/models/batch_details.dart';
 import 'package:valgrow_ui/models/item_details.dart';
 import 'package:valgrow_ui/pages/inventory/add_batch_modal.dart';
 import 'package:valgrow_ui/pages/inventory/edit_item.dart';
 import 'package:valgrow_ui/pages/inventory/reduce_stocks.dart';
 import 'package:valgrow_ui/services/database/database_provider.dart';
+import 'package:valgrow_ui/components/global_keys.dart';
 
 class ItemDetailsPage extends StatefulWidget {
   final ItemDetails item;
@@ -29,6 +33,7 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
       Provider.of<DatabaseProvider>(context, listen: false)
           .fetchBatchByItemId(widget.item.itemId);
     });
+    _checkAndStartTutorial();
   }
 
   /// 🔹 Generate a unique batch name
@@ -98,6 +103,61 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
         "✅ Added Batch: ${newBatch.batchName}, Quantity: $quantity, Expiration: $expirationDate");
   }
 
+  //Needed Intances
+  TutorialCoachMark? tutorialCoachMark;
+  List<TargetFocus> myTargets = [];
+  Target target = Target();
+
+  //Needed method
+  void _checkAndStartTutorial() async {
+    final prefs = await SharedPreferences.getInstance();
+    myTargets.clear();
+    final hasShownTutorial =
+        prefs.getBool('hasShownItemDetailsTutorial') ?? false;
+
+    if (!hasShownTutorial) {
+      // Add your targets
+      target.addMyTargets(
+          itemDetailsEdit,
+          "itemDetailsEdit",
+          ContentAlign.bottom,
+          "Tap here to edit the item's information, such as name, price, or category.",
+          myTargets);
+
+      target.addMyTargets(
+          itemDetailsImage,
+          "itemDetailsImage",
+          ContentAlign.bottom,
+          "Displays the product image.",
+          myTargets);
+
+      target.addMyTargets(
+          itemDetailsAddStock,
+          "itemDetailsAddStock",
+          ContentAlign.top,
+          "Add more stock to this item’s inventory from here.",
+          myTargets);
+
+      target.addMyTargets(
+          itemDetails,
+          "itemDetails",
+          ContentAlign.top,
+          "View complete details of the selected item, including stock quantity, price, and description.",
+          myTargets);
+
+      // Delay and start the tutorial
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Future.delayed(const Duration(seconds: 1), () {
+          tutorialCoachMark = TutorialCoachMark(targets: myTargets)
+            ..show(context: context);
+
+          // Set the flag so it won't show again
+          prefs.setBool('hasShownItemDetailsTutorial', false);
+        });
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -116,6 +176,7 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
             );
           },
           child: MyText(
+            key: itemDetailsEdit,
             text: "Edit",
             fontSize: 16,
             color: Colors.black,
@@ -125,6 +186,7 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
       ),
       floatingActionButton: MyFloatingActionButtonMulti(
         text: "Manage Stocks",
+        key: itemDetailsAddStock,
         choices: [
           {
             "label": "Add Stocks (by batch)",
@@ -199,6 +261,7 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
                         // image code
                         Center(
                           child: Container(
+                            key: itemDetailsImage,
                             width: 200, // ✅ Fixed width
                             height: 200, // ✅ Fixed height
                             decoration: BoxDecoration(
@@ -236,23 +299,28 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
                         ),
 
                         const SizedBox(height: 10),
-                        _buildDetailRow("Name:", item.item_name),
-                        _buildDetailRow("Category:", item.category),
-                        _buildDetailRow("Unit:", item.unit),
-                        _buildDetailRow("Barcode:", item.barcode),
-                        _buildDetailRow(
-                          "Regular Price:",
-                          "₱${item.regular_price.toStringAsFixed(2)}",
-                        ),
-                        _buildDetailRow(
-                          "Unpaid Price:",
-                          "₱${item.unpaid_price.toStringAsFixed(2)}",
-                        ),
-                        _buildDetailRow("Total Stock:", "${item.total_stock}"),
-                        _buildDetailRow(
-                          "Last Updated:",
-                          DateFormat('yyyy-MM-dd HH:mm')
-                              .format(item.last_updated),
+                        Column(
+                          key: itemDetails,
+                          children: [
+                            _buildDetailRow("Name:", item.item_name),
+                            _buildDetailRow("Category:", item.category),
+                            _buildDetailRow("Unit:", item.unit),
+                            _buildDetailRow("Barcode:", item.barcode),
+                            _buildDetailRow(
+                              "Regular Price:",
+                              "₱${item.regular_price.toStringAsFixed(2)}",
+                            ),
+                            _buildDetailRow(
+                              "Unpaid Price:",
+                              "₱${item.unpaid_price.toStringAsFixed(2)}",
+                            ),
+                            _buildDetailRow("Total Stock:", "${item.total_stock}"),
+                            _buildDetailRow(
+                              "Last Updated:",
+                              DateFormat('yyyy-MM-dd HH:mm')
+                                  .format(item.last_updated),
+                            ),
+                          ],
                         ),
                       ],
                     );

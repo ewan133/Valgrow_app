@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:valgrow_ui/components/general_components/appbar.dart';
 import 'package:valgrow_ui/pages/POS/paid_transaction.dart';
 import 'package:valgrow_ui/pages/POS/unpaid_transaction.dart';
+import 'package:valgrow_ui/components/global_keys.dart';
 
 class TransactionPage extends StatefulWidget {
   const TransactionPage({super.key});
@@ -34,6 +37,7 @@ class _TransactionPageState extends State<TransactionPage> {
                   // Paid Button (50%)
                   Expanded(
                     child: TextButton(
+                      key: paidTabKey,
                       onPressed: () {
                         setState(() {
                           _isPaidTransaction = true;
@@ -56,7 +60,7 @@ class _TransactionPageState extends State<TransactionPage> {
                         padding: const EdgeInsets.symmetric(
                             vertical: 8), // ✅ Less padding
                       ),
-                      child: const Text(
+                      child:  Text(
                         "Paid",
                         style: TextStyle(
                             fontSize: 18,
@@ -69,6 +73,7 @@ class _TransactionPageState extends State<TransactionPage> {
                   // Unpaid Button (50%)
                   Expanded(
                     child: TextButton(
+                      key: unpaidTabKey,
                       onPressed: () {
                         setState(() {
                           _isPaidTransaction = false;
@@ -91,8 +96,9 @@ class _TransactionPageState extends State<TransactionPage> {
                         padding: const EdgeInsets.symmetric(
                             vertical: 8), // ✅ Less padding
                       ),
-                      child: const Text(
-                        "Unpaid",
+                      child:  Text(
+                        
+                        "Utang",
                         style: TextStyle(
                             fontSize: 18,
                             fontWeight:

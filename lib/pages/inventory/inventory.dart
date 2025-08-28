@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:valgrow_ui/components/general_components/FBA.dart';
 import 'package:valgrow_ui/components/general_components/appbar.dart';
 import 'package:valgrow_ui/components/inventory_components/main_inventory_card.dart';
@@ -7,6 +9,8 @@ import 'package:valgrow_ui/components/general_components/searchbar.dart';
 import 'package:valgrow_ui/components/general_components/text.dart';
 import 'package:valgrow_ui/pages/inventory/item_details.dart';
 import 'package:valgrow_ui/services/database/database_provider.dart';
+import 'package:valgrow_ui/components/global_keys.dart';
+import 'package:valgrow_ui/components/target.dart';
 
 class InventoryPage extends StatefulWidget {
   const InventoryPage({super.key});
@@ -28,6 +32,58 @@ class _InventoryPageState extends State<InventoryPage> {
       Provider.of<DatabaseProvider>(context, listen: false)
           .fetchItemsByStoreId();
     });
+    _checkAndStartTutorial();
+  }
+
+  //Needed Intances
+  TutorialCoachMark? tutorialCoachMark;
+  List<TargetFocus> myTargets = [];
+  Target target = Target();
+
+  //Needed method
+  void _checkAndStartTutorial() async {
+    final prefs = await SharedPreferences.getInstance();
+    myTargets.clear();
+    final hasShownTutorial =
+        prefs.getBool('hasShownMainInventoryTutorial') ?? false;
+
+    if (!hasShownTutorial) {
+      // Add your targets
+      target.addMyTargets(
+          mainInventoryAddButton,
+          "mainInventoryAddButton",
+          ContentAlign.top,
+          "Tap here to add a new product to your inventory.",
+          myTargets);
+
+      target.addMyTargets(mainInventoryFilter, "mainInventoryFilter",
+          ContentAlign.bottom, "Filter products by category..", myTargets);
+
+      target.addMyTargets(
+          mainInventorySearchbar,
+          "mainInventorySearchbar",
+          ContentAlign.bottom,
+          "Search for a specific product by name or code.",
+          myTargets);
+
+      target.addMyTargets(
+          mainInventoryProductList,
+          "mainInventoryProductList",
+          ContentAlign.bottom,
+          "View and manage all products currently in your inventory.",
+          myTargets);
+
+      // Delay and start the tutorial
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Future.delayed(const Duration(seconds: 1), () {
+          tutorialCoachMark = TutorialCoachMark(targets: myTargets)
+            ..show(context: context);
+
+          // Set the flag so it won't show again
+          prefs.setBool('hasShownMainInventoryTutorial', false);
+        });
+      });
+    }
   }
 
   @override
@@ -36,6 +92,7 @@ class _InventoryPageState extends State<InventoryPage> {
       appBar: MyAppbar(
         title: "Inventory",
         actionWidget: Consumer<DatabaseProvider>(
+          key: mainInventoryFilter,
           builder: (context, inventoryProvider, child) {
             // ✅ Extract unique categories dynamically
             List<String> categories = [
@@ -69,6 +126,7 @@ class _InventoryPageState extends State<InventoryPage> {
         ),
       ),
       floatingActionButton: MyFloatingActionButton(
+        key: mainInventoryAddButton,
         text: "Add Product",
         onPressed: () => Navigator.pushNamed(context, '/additem'),
       ),
@@ -108,6 +166,7 @@ class _InventoryPageState extends State<InventoryPage> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                 child: MySearchbar(
+                  key: mainInventorySearchbar,
                   controller: _searchController,
                   onChanged: (value) {
                     setState(() {
@@ -134,6 +193,7 @@ class _InventoryPageState extends State<InventoryPage> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 6, vertical: 2),
                             child: GestureDetector(
+
                               onTap: () {
                                 Navigator.push(
                                   context,

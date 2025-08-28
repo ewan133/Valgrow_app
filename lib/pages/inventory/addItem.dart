@@ -4,6 +4,8 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:valgrow_ui/components/general_components/appbar.dart';
 import 'package:valgrow_ui/components/general_components/button.dart';
 import 'package:valgrow_ui/components/general_components/dropdown.dart';
@@ -13,6 +15,8 @@ import 'package:valgrow_ui/models/user_profile.dart';
 import 'package:valgrow_ui/services/database/database_provider.dart';
 import 'package:valgrow_ui/services/database/inventory_database.dart';
 import 'package:valgrow_ui/services/storage/storage_service.dart';
+import 'package:valgrow_ui/components/global_keys.dart';
+import 'package:valgrow_ui/components/target.dart';
 
 class AdditemPage extends StatefulWidget {
   const AdditemPage({super.key});
@@ -49,6 +53,8 @@ class _AdditemPageState extends State<AdditemPage> {
     setState(() {
       _isLoading = false;
     });
+
+    _checkAndStartTutorial();
   }
 
   void scanBarcode(BuildContext context) {
@@ -166,7 +172,6 @@ class _AdditemPageState extends State<AdditemPage> {
 
     // Check if a barcode is entered and ensure it's unique
     if (barcode.isNotEmpty && items.any((item) => item.barcode == barcode)) {
-
       Fluttertoast.showToast(
         msg: "An item with this barcode already exists!",
         toastLength: Toast.LENGTH_SHORT,
@@ -181,14 +186,15 @@ class _AdditemPageState extends State<AdditemPage> {
     // Check if the unpaid price is right
     if (unpaidPrice < regularPrice) {
       Fluttertoast.showToast(
-        msg: "The unpaid price must be greater than or equal the regular price!",
+        msg:
+            "The unpaid price must be greater than or equal the regular price!",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
         backgroundColor: Colors.red,
         textColor: Colors.white,
         fontSize: 16.0,
       );
-      return;   
+      return;
     }
 
     setState(() => _isUploading = true);
@@ -247,6 +253,89 @@ class _AdditemPageState extends State<AdditemPage> {
     }
   }
 
+//Needed Intances
+  TutorialCoachMark? tutorialCoachMark;
+  List<TargetFocus> myTargets = [];
+  Target target = Target();
+
+  //Needed method
+  void _checkAndStartTutorial() async {
+    final prefs = await SharedPreferences.getInstance();
+    myTargets.clear();
+    final hasShownTutorial =
+        prefs.getBool('hasShownAddProductTutorial') ?? false;
+
+    if (!hasShownTutorial) {
+      // Add your targets
+      target.addMyTargets(
+          addItemImage,
+          "addItemImage",
+          ContentAlign.bottom,
+          "Tap here to upload or capture a photo of the product for easy identification.",
+          myTargets);
+
+      target.addMyTargets(
+          addItemName,
+          "addItemName",
+          ContentAlign.bottom,
+          "Enter the product’s name here. This will appear in the inventory and sales records.",
+          myTargets);
+
+      target.addMyTargets(
+          addItemRegularPrice,
+          "addItemRegularPrice",
+          ContentAlign.top,
+          "Set the regular selling price for customers paying in full.",
+          myTargets);
+
+      target.addMyTargets(
+          addItemUnpaidPrice,
+          "addItemUnpaidPrice",
+          ContentAlign.top,
+          "Set the selling price for customers paying later (unpaid or credit transactions).",
+          myTargets);
+
+      target.addMyTargets(
+          addItemCategory,
+          "addItemCategory",
+          ContentAlign.top,
+          "Choose the category for this product to help organize your inventory.",
+          myTargets);
+
+      target.addMyTargets(
+          addItemUnit,
+          "addItemUnit",
+          ContentAlign.top,
+          "Specify the unit of measurement for this product, such as pcs, kg, or box.",
+          myTargets);
+
+      target.addMyTargets(
+          addItemBarcode,
+          "addItemBarcode",
+          ContentAlign.top,
+          "Scan or enter the product’s barcode to speed up searches and sales.",
+          myTargets);
+
+      target.addMyTargets(
+          addItemSaveButton,
+          "addItemSaveButton",
+          ContentAlign.top,
+          "Click here to save the new product to your inventory.",
+          myTargets);
+
+      // Delay and start the tutorial
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Future.delayed(const Duration(seconds: 1), () {
+          tutorialCoachMark = TutorialCoachMark(targets: myTargets)
+            ..show(context: context);
+
+          // Set the flag so it won't show again
+          prefs.setBool('hasShownAddProductTutorial', false);
+        });
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -274,6 +363,7 @@ class _AdditemPageState extends State<AdditemPage> {
                           ),
                         ),
                         Positioned(
+                          key: addItemImage,
                           bottom: 5,
                           right: 5,
                           child: GestureDetector(
@@ -293,6 +383,7 @@ class _AdditemPageState extends State<AdditemPage> {
                     ),
                     const SizedBox(height: 15),
                     MyTextfieldLabeled(
+                      key: addItemName,
                       color: Colors.grey.shade400,
                       controller: _nameController,
                       label: "Item Name:",
@@ -300,6 +391,7 @@ class _AdditemPageState extends State<AdditemPage> {
                     ),
                     const SizedBox(height: 8),
                     MyTextfieldLabeled(
+                      key: addItemRegularPrice,
                       color: Colors.grey.shade400,
                       controller: _regularPriceController,
                       label: "Regular Price:",
@@ -308,6 +400,7 @@ class _AdditemPageState extends State<AdditemPage> {
                     ),
                     const SizedBox(height: 8),
                     MyTextfieldLabeled(
+                      key: addItemUnpaidPrice,
                       color: Colors.grey.shade400,
                       controller: _unpaidPriceController,
                       label: "Unpaid Price:",
@@ -316,6 +409,7 @@ class _AdditemPageState extends State<AdditemPage> {
                     ),
                     const SizedBox(height: 8),
                     MyDropdown(
+                      key: addItemCategory,
                       text: 'Category:',
                       color: Colors.grey.shade400,
                       choices: categories,
@@ -334,6 +428,7 @@ class _AdditemPageState extends State<AdditemPage> {
                     ),
                     const SizedBox(height: 8),
                     MyDropdown(
+                      key: addItemUnit,
                       text: "Unit:",
                       color: Colors.grey.shade400,
                       choices: units,
@@ -343,6 +438,7 @@ class _AdditemPageState extends State<AdditemPage> {
                     ),
                     const SizedBox(height: 8),
                     Row(
+                      key: addItemBarcode,
                       children: [
                         Expanded(
                           child: MyTextfieldLabeled(
@@ -391,6 +487,7 @@ class _AdditemPageState extends State<AdditemPage> {
                         ? const CircularProgressIndicator(
                             color: Color(0xFF14AE5C))
                         : MyButton(
+                            key: addItemSaveButton,
                             text: "Add Item",
                             color: const Color(0xFF14AE5C),
                             onTap: _addItem,

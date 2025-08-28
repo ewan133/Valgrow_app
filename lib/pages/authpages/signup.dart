@@ -1,6 +1,7 @@
 import 'dart:developer';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:valgrow_ui/components/general_components/autocompleteTextfield.dart';
 import 'package:valgrow_ui/components/general_components/button.dart';
 import 'package:valgrow_ui/components/general_components/logo.dart';
 import 'package:valgrow_ui/components/general_components/text.dart';
@@ -28,20 +29,49 @@ class _SignupPageState extends State<SignupPage> {
   final _barangayController = TextEditingController();
   final _cityController = TextEditingController();
   final _storeNameController = TextEditingController();
+  final _streetController = TextEditingController();
 
   String selectedStreet = "2nd Street";
+  String selectedBarangay = "Arkong Bato";
   String selectedItem = "Store Owner"; // Default role
   int _currentStep = 0;
 
-  final List<String> dropdownItems = [
-    "2nd Street",
-    "A. Blanco Street",
-    "Balubaran",
-    "Bayabas Street",
-    "Villanueva Street",
-    "Antonio Subdivision",
-    "San Simon Subdivision",
-    "Manolo Compound"
+  List<String> streetItems = [];
+
+  final List<String> barangayDropdownItems = [
+    "Arkong Bato",
+    "Balangkas",
+    "Bignay",
+    "Bisig",
+    "Canumay East",
+    "Canumay West",
+    "Coloong",
+    "Dalandanan",
+    "Isla",
+    "Lawang Bato",
+    "Lingunan",
+    "Mabolo",
+    "Malanday",
+    "Malinta",
+    "Palasan",
+    "Pariancillo Villa",
+    "Pasolo",
+    "Poblacion",
+    "Polo",
+    "Punturin",
+    "Rincon",
+    "Tagalag",
+    "Veinte Reales",
+    "Wawang Pulo",
+    "Bagbaguin",
+    "Gen. T. de Leon",
+    "Karuhatan",
+    "Mapulang Lupa",
+    "Marulas",
+    "Maysan",
+    "Parada",
+    "Paso de Blas",
+    "Ugong"
   ];
 
   @override
@@ -62,8 +92,15 @@ class _SignupPageState extends State<SignupPage> {
   @override
   void initState() {
     super.initState();
-    _barangayController.text = "Dalandanan"; // default value for barangay
     _cityController.text = "Valenzuela City"; // default value for city
+    _loadStreets(); // fetch streets asynchronously
+  }
+
+  Future<void> _loadStreets() async {
+    final streets = await _db.getAllUniqueStreets();
+    setState(() {
+      streetItems = streets;
+    });
   }
 
   void goLogin() {
@@ -98,7 +135,8 @@ class _SignupPageState extends State<SignupPage> {
     String houseNumber = _houseNumberController.text.trim();
     String street = selectedStreet;
     String role = selectedItem;
-    String storename = _storeNameController.text.trim();;
+    String storename = _storeNameController.text.trim();
+    String barangay = selectedBarangay;
 
     if (name.isEmpty ||
         number.isEmpty ||
@@ -136,8 +174,8 @@ class _SignupPageState extends State<SignupPage> {
       if (user == null) return;
 
       if (role == "Store Owner") {
-        await _db.createStoreOwnerProfile(
-            email, name, number, houseNumber, selectedStreet , storename);
+        await _db.createStoreOwnerProfile(email, name, number, houseNumber,
+            selectedStreet, storename, barangay);
       } else {
         await _db.createEmployeeProfile(email, name, number, storecode);
       }
@@ -207,24 +245,25 @@ class _SignupPageState extends State<SignupPage> {
 
           MyTextfieldLabeled(
             color: Colors.black,
-            controller: _houseNumberController,
-            label: "House Number:",
+            controller: _cityController,
+            label: "City:",
             hint: "",
+            isReadOnly: true, // Make the field uneditable
           ),
           const SizedBox(height: 8),
 
+          //Barangay Dropdown Label
           Align(
             alignment: Alignment.centerLeft,
             child: Text(
-              "Street:",
+              "Barangay:",
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
           ),
-
           // Street Dropdown
           DropdownButtonFormField<String>(
-            value: selectedStreet,
-            items: dropdownItems.map((item) {
+            value: selectedBarangay,
+            items: barangayDropdownItems.map((item) {
               return DropdownMenuItem<String>(
                 value: item,
                 child: Text(item),
@@ -232,7 +271,7 @@ class _SignupPageState extends State<SignupPage> {
             }).toList(),
             onChanged: (value) {
               setState(() {
-                selectedStreet = value!;
+                selectedBarangay = value!;
               });
             },
             decoration: InputDecoration(
@@ -244,29 +283,64 @@ class _SignupPageState extends State<SignupPage> {
               ),
             ),
           ),
-
-          const SizedBox(height: 8),
-          MyTextfieldLabeled(
-            color: Colors.black,
-            controller: _barangayController,
-            label: "Barangay:",
-            hint: "",
-            isReadOnly: true, // Make the field uneditable
-          ),
           const SizedBox(height: 8),
 
+          // MyTextfieldLabeled(
+          //   color: Colors.black,
+          //   controller: _barangayController,
+          //   label: "Barangay:",
+          //   hint: "",
+          //   isReadOnly: true, // Make the field uneditable
+          // ),
+          // const SizedBox(height: 8),
+
+          // Align(
+          //   alignment: Alignment.centerLeft,
+          //   child: Text(
+          //     "Street:",
+          //     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          //   ),
+          // ),
+
+          // // Street Dropdown
+          // DropdownButtonFormField<String>(
+          //   value: selectedStreet,
+          //   items: dropdownItems.map((item) {
+          //     return DropdownMenuItem<String>(
+          //       value: item,
+          //       child: Text(item),
+          //     );
+          //   }).toList(),
+          //   onChanged: (value) {
+          //     setState(() {
+          //       selectedStreet = value!;
+          //     });
+          //   },
+          //   decoration: InputDecoration(
+          //     filled: true,
+          //     fillColor: Color(0xFFF6F6F6),
+          //     border: OutlineInputBorder(
+          //       borderRadius: BorderRadius.circular(8),
+          //       borderSide: BorderSide(color: Colors.black),
+          //     ),
+          //   ),
+          // ),
+          // const SizedBox(height: 8),
+
+          MyAutoCompleteTextField(
+              label: "Streets",
+              hint: "",
+              suggestions: streetItems,
+              controller: _streetController,
+              color: Colors.black),
+
           MyTextfieldLabeled(
             color: Colors.black,
-            controller: _cityController,
-            label: "City:",
+            controller: _houseNumberController,
+            label: "House Number:",
             hint: "",
-            isReadOnly: true, // Make the field uneditable
           ),
-         // const SizedBox(height: 8),
-
           const SizedBox(height: 20),
-
-          // Barangay Dropdown
 
           MyButton(
             onTap: _nextStep,
@@ -285,8 +359,6 @@ class _SignupPageState extends State<SignupPage> {
     return SingleChildScrollView(
       child: Column(
         children: [
-
-          
           const SizedBox(height: 15),
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 50),
@@ -441,6 +513,4 @@ class _SignupPageState extends State<SignupPage> {
       ],
     );
   }
-
-
 }

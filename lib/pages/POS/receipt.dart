@@ -1,7 +1,11 @@
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:valgrow_ui/services/database/database_provider.dart';
+import 'package:screenshot/screenshot.dart';
+import 'package:path_provider/path_provider.dart';
 
 class ReceiptPage extends StatefulWidget {
   final String transactionId;
@@ -13,6 +17,8 @@ class ReceiptPage extends StatefulWidget {
 }
 
 class _ReceiptPageState extends State<ReceiptPage> {
+  final ScreenshotController _screenshotController = ScreenshotController();
+
   @override
   void initState() {
     super.initState();
@@ -20,6 +26,32 @@ class _ReceiptPageState extends State<ReceiptPage> {
       Provider.of<DatabaseProvider>(context, listen: false)
           .fetchTransactionDetails(widget.transactionId);
     });
+  }
+
+  Future<void> _downloadReceipt() async {
+    final Uint8List? image = await _screenshotController.capture();
+
+    if (image != null) {
+      // get the Pictures directory
+      final directory = await getExternalStorageDirectory();
+
+      // build path inside "Pictures/Receipts"
+      final picturesDir = Directory("/storage/emulated/0/Pictures/Receipts");
+
+      // create the folder if it doesn’t exist
+      if (!await picturesDir.exists()) {
+        await picturesDir.create(recursive: true);
+      }
+
+      final filePath =
+          '${picturesDir.path}/receipt_${widget.transactionId}.png';
+      final file = File(filePath);
+      await file.writeAsBytes(image);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("✅ Receipt saved in Pictures/Receipts")),
+      );
+    }
   }
 
   @override
@@ -31,25 +63,34 @@ class _ReceiptPageState extends State<ReceiptPage> {
     final user = provider.user;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFF5DB075),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFF5DB075),
         elevation: 0,
         centerTitle: true,
-        title: const Text(
-          "Receipt",
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-        ),
+        title: const Text("Receipt",
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.black),
+          icon: const Icon(Icons.close, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.download, color: Colors.white),
+            onPressed: _downloadReceipt,
+          ),
+        ],
       ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator()) // 🔄 Loading
+          ? const Center(child: CircularProgressIndicator(color: Colors.white))
           : transactionDetails == null
-              ? const Center(child: Text("❌ Transaction not found"))
-              : _buildReceipt(transactionDetails, store, user),
+              ? const Center(
+                  child: Text("❌ Transaction not found",
+                      style: TextStyle(color: Colors.white)))
+              : Screenshot(
+                  controller: _screenshotController,
+                  child: _buildReceipt(transactionDetails, store, user),
+                ),
     );
   }
 
@@ -63,176 +104,239 @@ class _ReceiptPageState extends State<ReceiptPage> {
     final debtPayments = transactionDetails["debt_payments"];
 
     final storeName = store?.name ?? "Unknown Store";
+    final storeAddress = store?.address ?? "No Address Provided";
     final cashierName = user?.name ?? "Unknown Cashier";
-    final isDebtPayment = debtPayments != null; // ✅ Detect if it is a debt payment
+    final isDebtPayment = debtPayments != null;
 
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // 🏪 Store Details
-          Text(
-            storeName,
-            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            "Date: ${DateFormat.yMMMd().format(transaction["created_at"].toDate())} ${DateFormat.jm().format(transaction["created_at"].toDate())}",
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
-          ),
-          Text(
-            "Cashier: $cashierName",
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
-          ),
-          if (customer != null)
-            Text(
-              "Customer: ${customer["name"]}",
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
-            ),
-          const SizedBox(height: 10),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(12),
+      child: Center(
+        child: Container(
+          width: 320, // ✅ narrow like receipt
+          color: Colors.white,
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              /// 🏪 Store Header
+              Center(
+                child: Column(
+                  children: [
+                    Text(
+                      storeName.toUpperCase(),
+                      style: const TextStyle(
+                        fontFamily: "Courier", // ✅ receipt font
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      storeAddress,
+                      textAlign: TextAlign.center, // ✅ Center align
+                      style: const TextStyle(
+                        fontFamily: "Courier",
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
 
-          // 📜 Transaction Items
-          Expanded(
-            child: ListView(
-              children: [
-                const Divider(thickness: 1),
-                for (var item in items)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            "${item['item_name']} x${item['quantity']}",
-                            style: const TextStyle(fontSize: 16),
-                          ),
-                        ),
-                        Text(
-                          "₱${(item['quantity'] * item['unit_price']).toStringAsFixed(2)}",
-                          style: const TextStyle(fontSize: 16),
-                        ),
-                      ],
+              const SizedBox(height: 6),
+              Center(child: _dashedLine()),
+
+              /// 📅 Info
+              Text("DATE: ${DateFormat.yMMMd().format(DateTime.now())}",
+                  style: const TextStyle(fontFamily: "Courier", fontSize: 11)),
+              Text("TIME: ${DateFormat.jm().format(DateTime.now())}",
+                  style: const TextStyle(fontFamily: "Courier", fontSize: 11)),
+              Text("CASHIER: $cashierName",
+                  style: const TextStyle(fontFamily: "Courier", fontSize: 11)),
+              if (customer != null)
+                Text("CUSTOMER: ${customer["name"]}",
+                    style:
+                        const TextStyle(fontFamily: "Courier", fontSize: 11)),
+              Text("REF: ${widget.transactionId}",
+                  style: const TextStyle(fontFamily: "Courier", fontSize: 11)),
+
+              const SizedBox(height: 6),
+              Center(child: _dashedLine()),
+
+              /// 📜 Table Header
+              Row(
+                children: const [
+                  Expanded(
+                    flex: 2,
+                    child: Text("QTY",
+                        style: TextStyle(
+                            fontFamily: "Courier",
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold)),
+                  ),
+                  Expanded(
+                    flex: 5,
+                    child: Text("DESCRIPTION",
+                        style: TextStyle(
+                            fontFamily: "Courier",
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold)),
+                  ),
+                  Expanded(
+                    flex: 3,
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Text("TOTAL",
+                          style: TextStyle(
+                              fontFamily: "Courier",
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold)),
                     ),
                   ),
-                const Divider(thickness: 1),
-              ],
-            ),
-          ),
+                ],
+              ),
+              Center(child: _dashedLine()),
 
-          // 💰 Payment Summary
-          Column(
-            children: [
-              _paymentRow(
-                  "Subtotal:", "₱${transaction["total_amount"].toStringAsFixed(2)}"),
-              
-              // ✅ Hide Payment Method, Amount Paid, and Change for Debt Payments
-              if (!isDebtPayment) ...[
-                _paymentRow(
-                    "Payment Method:", transaction["payment_method"].toUpperCase()),
-                _paymentRow(
-                    "Amount Paid:", "₱${transaction["amount_paid"].toStringAsFixed(2)}"),
-                _paymentRow("Change:", "₱${transaction["change"].toStringAsFixed(2)}"),
-              ],
-
-              // 🔥 Display Remaining Balance if it is a **Debt Transaction**
-              if (debt != null)
-                Column(
+              /// 🛒 Items
+              for (var item in items)
+                Row(
                   children: [
-                    const SizedBox(height: 10),
-                    const Divider(thickness: 1),
-                    const Text(
-                      "DEBT TRANSACTION",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.red,
-                      ),
+                    Expanded(
+                      flex: 2,
+                      child: Text("${item['quantity']}",
+                          style: const TextStyle(
+                              fontFamily: "Courier", fontSize: 11)),
                     ),
-                    _paymentRow(
-                      "Remaining Balance:",
-                      "₱${debt["balance"].toStringAsFixed(2)}",
+                    Expanded(
+                      flex: 5,
+                      child: Text(item['item_name'],
+                          style: const TextStyle(
+                              fontFamily: "Courier", fontSize: 11)),
                     ),
-                    _paymentRow(
-                      "Due Date:",
-                      DateFormat.yMMMd().format(debt["due_date"].toDate()),
-                    ),
-                  ],
-                ),
-
-              // 🔥 Display Debt Payments if applicable
-              if (debtPayments != null)
-                Column(
-                  children: [
-                    const SizedBox(height: 10),
-                    const Divider(thickness: 1),
-                    const Text(
-                      "DEBT PAYMENTS",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue,
-                      ),
-                    ),
-                    for (var payment in debtPayments)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              DateFormat.yMMMd()
-                                  .format(payment["payment_date"].toDate()),
-                              style: const TextStyle(fontSize: 14),
-                            ),
-                            Text(
-                              "₱${payment["amount_paid"].toStringAsFixed(2)}",
-                              style: const TextStyle(
-                                  fontSize: 14, fontWeight: FontWeight.bold),
-                            ),
-                            Text(
-                              payment["payment_method"].toUpperCase(),
-                              style: TextStyle(
-                                  fontSize: 14, color: Colors.grey.shade700),
-                            ),
-                          ],
+                    Expanded(
+                      flex: 3,
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          "₱${(item['quantity'] * item['unit_price']).toStringAsFixed(2)}",
+                          style: const TextStyle(
+                              fontFamily: "Courier", fontSize: 11),
                         ),
                       ),
+                    ),
                   ],
                 ),
 
-              const SizedBox(height: 10),
-              const Divider(thickness: 1),
+              Center(child: _dashedLine()),
 
-              // ✅ Thank You Message
-              const Text(
-                "Thank you for shopping with us!",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              /// 💰 Totals
+              _receiptTotal("TOTAL",
+                  "₱${transaction["total_amount"].toStringAsFixed(2)}"),
+              if (!isDebtPayment) ...[
+                _receiptTotal("CASH",
+                    "₱${transaction["amount_paid"].toStringAsFixed(2)}"),
+                _receiptTotal(
+                    "CHANGE", "₱${transaction["change"].toStringAsFixed(2)}"),
+              ],
+
+              /// 🔥 Debt Section
+              if (debt != null) ...[
+                const SizedBox(height: 6),
+                Center(child: _dashedLine()),
+                const Center(
+                  child: Text(
+                    "DEBT TRANSACTION",
+                    style: TextStyle(
+                        fontFamily: "Courier",
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold),
+                  ),
+                ),
+                _receiptTotal(
+                    "BALANCE", "₱${debt["balance"].toStringAsFixed(2)}"),
+                _receiptTotal("DUE",
+                    DateFormat.yMMMd().format(debt["due_date"].toDate())),
+              ],
+
+              /// 🔥 Debt Payments Section
+              if (debtPayments != null) ...[
+                const SizedBox(height: 6),
+                Center(child: _dashedLine()),
+                const Center(
+                  child: Text(
+                    "DEBT PAYMENTS",
+                    style: TextStyle(
+                        fontFamily: "Courier",
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold),
+                  ),
+                ),
+                for (var payment in debtPayments)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                          DateFormat.yMMMd()
+                              .format(payment["payment_date"].toDate()),
+                          style: const TextStyle(
+                              fontFamily: "Courier", fontSize: 11)),
+                      Text("₱${payment["amount_paid"].toStringAsFixed(2)}",
+                          style: const TextStyle(
+                              fontFamily: "Courier",
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold)),
+                      Text(payment["payment_method"].toUpperCase(),
+                          style: const TextStyle(
+                              fontFamily: "Courier", fontSize: 11)),
+                    ],
+                  ),
+              ],
+
+              const SizedBox(height: 6),
+              Center(child: _dashedLine()),
+
+              /// 🙏 Footer
+              const Center(
+                child: Text("THANK YOU!",
+                    style: TextStyle(
+                        fontFamily: "Courier",
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold)),
               ),
-              const Text(
-                "Have a great day!",
-                style: TextStyle(fontSize: 14, color: Colors.grey),
+              const Center(
+                child: Text("PLEASE COME AGAIN",
+                    style: TextStyle(fontFamily: "Courier", fontSize: 11)),
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
+}
 
-  /// ✅ **Helper: Payment Row**
-  Widget _paymentRow(String title, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(title, style: const TextStyle(fontSize: 16)),
-          Text(value,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        ],
-      ),
-    );
-  }
+/// ✅ Dashed Line
+Widget _dashedLine() {
+  return const Text(
+    "----------------------------------------",
+    style: TextStyle(fontFamily: "Courier", fontSize: 11),
+  );
+}
+
+/// ✅ Total Row
+Widget _receiptTotal(String label, String value) {
+  return Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      Text(label,
+          style: const TextStyle(
+              fontFamily: "Courier",
+              fontSize: 12,
+              fontWeight: FontWeight.bold)),
+      Text(value,
+          style: const TextStyle(
+              fontFamily: "Courier",
+              fontSize: 12,
+              fontWeight: FontWeight.bold)),
+    ],
+  );
 }

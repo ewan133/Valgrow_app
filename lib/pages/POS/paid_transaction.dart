@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:valgrow_ui/pages/POS/receipt.dart';
 import 'package:valgrow_ui/pages/POS/sucess_page.dart';
 import 'package:valgrow_ui/services/database/database_provider.dart';
+import 'package:valgrow_ui/components/global_keys.dart';
 
 class PaidTransaction extends StatefulWidget {
   const PaidTransaction({super.key});
@@ -13,6 +16,132 @@ class PaidTransaction extends StatefulWidget {
 }
 
 class _PaidTransactionState extends State<PaidTransaction> {
+  TutorialCoachMark? tutorialCoachMark;
+  List<TargetFocus> myTargets = [];
+
+  void initState() {
+    super.initState();
+    _checkAndStartTutorial();
+  }
+
+  nowStart(_) {
+    Future.delayed(Duration(seconds: 1));
+    tutorialCoachMark = TutorialCoachMark(targets: myTargets)
+      ..show(context: context);
+  }
+
+  void _checkAndStartTutorial() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasShownTutorial = prefs.getBool('hasShownPaidTutorial') ?? false;
+
+    if (!hasShownTutorial) {
+      // Add your targets
+      addMyTargets(unpaidTabKey, "myUnpaidTab", ContentAlign.bottom,
+          "Go to this tab if you are processing unpaid transactions (utang).");
+
+      addMyTargets(paidTabKey, "myUnpaidTab", ContentAlign.bottom,
+          "Go to this tab if you are processing paid transaction.");
+
+      addMyTargets(totalAmountKey, "myTotalAmmount", ContentAlign.bottom,
+          "Displays the total amount for the items in the cart.");
+
+      addMyTargets(receivedAmountKey, "myReceivedAmount", ContentAlign.bottom,
+          "Enter the amount of money given by the customer here.");
+
+      addMyTargets(changeAmountKey, "myChangeAmount", ContentAlign.top,
+          "Automatically calculates and displays the change for the customer.");
+
+      addMyTargets(paymentMethodKey, "myPaymentMethod", ContentAlign.top,
+          "Select the payment method, such as Cash or GCash.");
+
+      addMyTargets(confirmButtonKey, "myConfirmButton", ContentAlign.top,
+          "Press this button to confirm and process the transaction.");
+
+      // Delay and start the tutorial
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Future.delayed(const Duration(seconds: 1), () {
+          tutorialCoachMark = TutorialCoachMark(targets: myTargets)
+            ..show(context: context);
+
+          // Set the flag so it won't show again
+          prefs.setBool('hasShownPaidTutorial', true);
+        });
+      });
+    }
+  }
+
+  addMyTargets(GlobalKey target, String identifier, ContentAlign alignment,
+      String content) {
+    myTargets.add(TargetFocus(
+      shape: ShapeLightFocus.RRect,
+      radius: 10,
+      keyTarget: target,
+      identify: identifier,
+      contents: [
+        TargetContent(
+          align: alignment,
+          padding: EdgeInsets.only(top: 20, bottom: 20, left: 20, right: 20),
+          builder: (context, controller) {
+            return Center(
+              child: Container(
+                margin: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(20.0),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 6,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      content,
+                      style: const TextStyle(
+                        color: Colors.black, // Black text
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.left,
+                    ),
+                    const SizedBox(height: 20),
+                    Align(
+                      alignment: Alignment.bottomRight,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          controller.next();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.black,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Text(
+                          "Next",
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        )
+      ],
+    ));
+  }
+
   final TextEditingController _receivingAmountController =
       TextEditingController();
 
@@ -52,6 +181,7 @@ class _PaidTransactionState extends State<PaidTransaction> {
 
                 // Total Amount (Dynamic)
                 _buildSummaryCard(
+                  key: totalAmountKey,
                   title: "Total Amount",
                   value: "₱${totalAmount.toStringAsFixed(2)}",
                 ),
@@ -60,6 +190,7 @@ class _PaidTransactionState extends State<PaidTransaction> {
 
                 // Receiving Amount (User Input)
                 _buildInputField(
+                  key: receivedAmountKey,
                   label: "Enter Received Amount",
                   controller: _receivingAmountController,
                   onChanged: (value) => _calculateChange(value, totalAmount),
@@ -78,6 +209,7 @@ class _PaidTransactionState extends State<PaidTransaction> {
 
                 // Change (Read-Only)
                 _buildSummaryCard(
+                  key: changeAmountKey,
                   title: "Change",
                   value: "₱${_change.toStringAsFixed(2)}",
                 ),
@@ -86,6 +218,7 @@ class _PaidTransactionState extends State<PaidTransaction> {
 
                 // Payment Method Dropdown
                 _buildDropdownField(
+                  key: paymentMethodKey,
                   label: "Select Payment Method",
                   items: ["Cash", "Gcash"],
                 ),
@@ -105,6 +238,7 @@ class _PaidTransactionState extends State<PaidTransaction> {
 
                 // Confirm Payment Button (Disabled if amount is insufficient)
                 SizedBox(
+                  key: confirmButtonKey,
                   width: double.infinity,
                   height: 55,
                   child: ElevatedButton(
@@ -146,8 +280,10 @@ class _PaidTransactionState extends State<PaidTransaction> {
   }
 
   // Function to build summary cards for Total Amount & Change
-  Widget _buildSummaryCard({required String title, required String value}) {
+  Widget _buildSummaryCard(
+      {required String title, required String value, Key? key}) {
     return Container(
+      key: key,
       width: double.infinity,
       padding: const EdgeInsets.all(15),
       decoration: BoxDecoration(
@@ -181,9 +317,11 @@ class _PaidTransactionState extends State<PaidTransaction> {
     required TextEditingController controller,
     String? hint,
     int? maxLength,
+    Key? key,
     Function(String)? onChanged,
   }) {
     return Column(
+      key: key,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
@@ -217,9 +355,11 @@ class _PaidTransactionState extends State<PaidTransaction> {
   Widget _buildDropdownField({
     required String label,
     required List<String> items,
+    Key? key,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      key: key,
       children: [
         Text(
           label,

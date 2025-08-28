@@ -377,7 +377,7 @@ class MyTable extends StatelessWidget {
 
             /// Complete Transaction Button
             MyButton(
-              text: "Complete Transaction",
+              text: "Proceed",
               color: const Color(0xFF14AE5C),
               width: double.infinity,
               borderRadius: 100,

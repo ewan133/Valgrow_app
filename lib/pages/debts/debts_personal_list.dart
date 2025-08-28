@@ -2,6 +2,10 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
+import 'package:valgrow_ui/components/global_keys.dart';
+import 'package:valgrow_ui/components/target.dart';
 import 'package:valgrow_ui/pages/debts/debt_payment.dart';
 import 'package:valgrow_ui/components/debts_components/personal_debts_card.dart';
 import 'package:valgrow_ui/components/general_components/appbar.dart';
@@ -34,6 +38,8 @@ class _DebtsPersonalListState extends State<DebtsPersonalList> {
       provider.updateSelectedCustomer(_customerDetails);
       provider.fetchDebtsForCustomer(_customerDetails.customerId);
     });
+
+    // _checkAndStartTutorial();
   }
 
   @override
@@ -75,7 +81,7 @@ class _DebtsPersonalListState extends State<DebtsPersonalList> {
     final storePhone = provider.store?.contact ?? "N/A";
     final userId = provider.user?.uid;
 
-final reason = '''
+    final reason = '''
 📄 Customer Overdue Report
 
 This report concerns an overdue debt from ${widget.customerDetails.name}, who can be contacted at ${widget.customerDetails.phone}. The debt in question has the ID ${overdueDebt.debtId}, with an outstanding balance of ₱${overdueDebt.balance.toStringAsFixed(2)}. The due date for this debt was ${overdueDebt.dueDate.toLocal().toString().split(' ')[0]}.
@@ -84,7 +90,6 @@ The report was submitted by $storeName, which can be reached at $storePhone. The
 
 This complaint is filed due to unpaid and overdue debts beyond the agreed due date.
 ''';
-
 
     final controller = TextEditingController(text: reason);
 
@@ -183,6 +188,61 @@ This complaint is filed due to unpaid and overdue debts beyond the agreed due da
     }
   }
 
+//Needed Intances
+  TutorialCoachMark? tutorialCoachMark;
+  List<TargetFocus> myTargets = [];
+  Target target = Target();
+
+  //Needed method
+  void _checkAndStartTutorial() async {
+    final prefs = await SharedPreferences.getInstance();
+    myTargets.clear();
+    final hasShownTutorial =
+        prefs.getBool('hasShownAddProductTutorial') ?? false;
+
+    if (!hasShownTutorial) {
+      // Add your targets
+      target.addMyTargets(
+          DebtsPersonalEdit,
+          "DebtsPersonalEdit",
+          ContentAlign.bottom,
+          "Edit the customer's personal and debt details here.",
+          myTargets);
+
+      target.addMyTargets(
+          DebtsPersonalDetails,
+          "DebtsPersonalDetails",
+          ContentAlign.bottom,
+          "View the customer's complete profile, including contact information and debt history.",
+          myTargets);
+
+      target.addMyTargets(
+          DebtsPersonalListKey,
+          "DebtsPersonalList",
+          ContentAlign.top,
+          "Browse the list of debts for this customer.",
+          myTargets);
+
+      target.addMyTargets(
+          DebtsPersonalReport,
+          "DebtsPersonalReport",
+          ContentAlign.bottom,
+          "Report issues related to this customer's debts, such as overdue balances or disputes.",
+          myTargets);
+
+      // Delay and start the tutorial
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Future.delayed(const Duration(seconds: 1), () {
+          tutorialCoachMark = TutorialCoachMark(targets: myTargets)
+            ..show(context: context);
+
+          // Set the flag so it won't show again
+          prefs.setBool('hasShownAddProductTutorial', false);
+        });
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<DatabaseProvider>(context);
@@ -195,6 +255,7 @@ This complaint is filed due to unpaid and overdue debts beyond the agreed due da
         actionWidget: Row(
           children: [
             IconButton(
+              key: DebtsPersonalEdit,
               icon: _isUpdating
                   ? SizedBox(
                       width: 24,
@@ -211,6 +272,7 @@ This complaint is filed due to unpaid and overdue debts beyond the agreed due da
             if (debts.any((debt) =>
                 debt.status != 'paid' && debt.dueDate.isBefore(DateTime.now())))
               IconButton(
+                key: DebtsPersonalReport,
                 icon: const Icon(Icons.report, color: Colors.red),
                 tooltip: "Report Overdue",
                 onPressed: () => handleReportOverdue(context),
@@ -225,6 +287,7 @@ This complaint is filed due to unpaid and overdue debts beyond the agreed due da
             buildCustomerHeader(),
             const SizedBox(height: 10),
             Expanded(
+              key: DebtsPersonalListKey,
               child: isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : debts.isEmpty
@@ -269,6 +332,7 @@ This complaint is filed due to unpaid and overdue debts beyond the agreed due da
     }
 
     return Container(
+      key: DebtsPersonalDetails,
       padding: const EdgeInsets.symmetric(vertical: 20),
       width: double.infinity,
       child: Row(

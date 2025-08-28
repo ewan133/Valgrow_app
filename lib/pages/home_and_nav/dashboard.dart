@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:valgrow_ui/components/general_components/button_home.dart';
 import 'package:valgrow_ui/components/general_components/logo.dart';
 import 'package:valgrow_ui/components/general_components/text.dart';
@@ -13,6 +15,19 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
+  GlobalKey myNotification = GlobalKey();
+  GlobalKey mySummary = GlobalKey();
+  GlobalKey myViewSummaryIcon = GlobalKey();
+  GlobalKey myPOSICon = GlobalKey();
+  GlobalKey myDebtsIcon = GlobalKey();
+  GlobalKey myInventoryIcon = GlobalKey();
+  GlobalKey myReportsIcon = GlobalKey();
+  GlobalKey myJournalIcon = GlobalKey();
+  GlobalKey myManagementIcon = GlobalKey();
+
+  TutorialCoachMark? tutorialCoachMark;
+  List<TargetFocus> myTargets = [];
+
   @override
   void initState() {
     super.initState();
@@ -20,6 +35,119 @@ class _DashboardPageState extends State<DashboardPage> {
     if (storeId != null) {
       context.read<DatabaseProvider>().loadTodaySummary(storeId);
     }
+    _checkAndStartTutorial();
+  }
+
+  nowStart(_) {
+    Future.delayed(Duration(seconds: 1));
+    tutorialCoachMark = TutorialCoachMark(targets: myTargets)
+      ..show(context: context);
+  }
+
+  void _checkAndStartTutorial() async {
+    final prefs = await SharedPreferences.getInstance();
+    final hasShownTutorial = prefs.getBool('hasShownHomeTutorial') ?? false;
+
+    if (!hasShownTutorial) {
+      // Add your targets
+      addMyTargets(myNotification, "myNotification", ContentAlign.bottom,
+          "View recent notifications and alerts here.");
+      addMyTargets(mySummary, "mySummary", ContentAlign.bottom,
+          "Displays a quick overview of today's sales and activities.");
+      addMyTargets(myViewSummaryIcon, "myViewSummaryIcon", ContentAlign.bottom,
+          "Tap to view the detailed summary for today.");
+      addMyTargets(myPOSICon, "myPOSICon", ContentAlign.top,
+          "Opens the Point of Sale (POS) for processing transactions.");
+      addMyTargets(myDebtsIcon, "myDebtsIcon", ContentAlign.top,
+          "Manage customer debts (utang) and payment records.");
+      addMyTargets(myInventoryIcon, "myInventoryIcon", ContentAlign.top,
+          "Track, update, and organize your store's inventory.");
+      addMyTargets(myReportsIcon, "myReportsIcon", ContentAlign.top,
+          "Access sales, expenses, and performance reports.");
+      addMyTargets(myJournalIcon, "myJournalIcon", ContentAlign.top,
+          "Open the store journal to log important notes and activities.");
+      addMyTargets(myManagementIcon, "myManagementIcon", ContentAlign.top,
+          "Manage employees, roles, and store permissions.");
+
+      // Delay and start the tutorial
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Future.delayed(const Duration(seconds: 1), () {
+          tutorialCoachMark = TutorialCoachMark(targets: myTargets)
+            ..show(context: context);
+
+          // Set the flag so it won't show again
+          prefs.setBool('hasShownHomeTutorial', true);
+        });
+      });
+    }
+  }
+
+  addMyTargets(GlobalKey target, String identifier, ContentAlign alignment,
+      String content) {
+    myTargets.add(TargetFocus(
+      shape: ShapeLightFocus.RRect,
+      radius: 10,
+      keyTarget: target,
+      identify: identifier,
+      contents: [
+        TargetContent(
+          align: alignment,
+          builder: (context, controller) {
+            return Center(
+              child: Container(
+                margin: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(20.0),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200, // Light grey background
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 6,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      content,
+                      style: const TextStyle(
+                        color: Colors.black, // Black text
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.left,
+                    ),
+                    const SizedBox(height: 20),
+                    Align(
+                      alignment: Alignment.bottomRight,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          controller.next();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.black,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 20, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text("Next"),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        )
+      ],
+    ));
   }
 
   @override
@@ -47,6 +175,7 @@ class _DashboardPageState extends State<DashboardPage> {
           Stack(
             children: [
               IconButton(
+                key: myNotification,
                 onPressed: () {
                   Navigator.pushNamed(context, "/notifications");
                 },
@@ -94,6 +223,7 @@ class _DashboardPageState extends State<DashboardPage> {
           child: Column(
             children: [
               Container(
+                key: mySummary,
                 width: double.infinity,
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -139,7 +269,7 @@ class _DashboardPageState extends State<DashboardPage> {
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                          child: const Text("View"),
+                          child: Text(key: myViewSummaryIcon, "View"),
                         ),
                       ],
                     ),
@@ -187,6 +317,7 @@ class _DashboardPageState extends State<DashboardPage> {
                       children: [
                         if (user?.pos == true)
                           MyHomeButton(
+                            key: myPOSICon,
                             text: "POS",
                             onPressed: () =>
                                 Navigator.pushNamed(context, '/POS'),
@@ -195,6 +326,7 @@ class _DashboardPageState extends State<DashboardPage> {
                           ),
                         if (user?.debts == true)
                           MyHomeButton(
+                            key: myDebtsIcon,
                             text: "Debts",
                             onPressed: () =>
                                 Navigator.pushNamed(context, '/debts'),
@@ -203,6 +335,7 @@ class _DashboardPageState extends State<DashboardPage> {
                           ),
                         if (user?.ims == true)
                           MyHomeButton(
+                            key: myInventoryIcon,
                             text: "Inventory",
                             onPressed: () =>
                                 Navigator.pushNamed(context, '/inventory'),
@@ -211,6 +344,7 @@ class _DashboardPageState extends State<DashboardPage> {
                           ),
                         if (user?.reports == true)
                           MyHomeButton(
+                            key: myReportsIcon,
                             text: "Reports",
                             onPressed: () =>
                                 Navigator.pushNamed(context, '/reports'),
@@ -219,6 +353,7 @@ class _DashboardPageState extends State<DashboardPage> {
                           ),
                         if (user?.expenses == true)
                           MyHomeButton(
+                            key: myJournalIcon,
                             text: "Store Journal",
                             onPressed: () =>
                                 Navigator.pushNamed(context, '/expenses'),
@@ -227,6 +362,7 @@ class _DashboardPageState extends State<DashboardPage> {
                           ),
                         if (user?.role != "Employee")
                           MyHomeButton(
+                            key: myManagementIcon,
                             text: "Management",
                             onPressed: () =>
                                 Navigator.pushNamed(context, '/management'),

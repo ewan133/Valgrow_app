@@ -219,8 +219,8 @@ Please settle your balance before the due date. Thank you!
       _fetchApiKeys();
     });
 
-    _payingAmountController.text = widget.debtDetails.balance.toString();
-    _payingAmountController.addListener(_validatePayingAmount);
+    //_payingAmountController.text = widget.debtDetails.balance.toString();
+    //_payingAmountController.addListener(_validatePayingAmount);
     _customerMoneyController.addListener(_calculateChange);
   }
 
@@ -247,14 +247,14 @@ Please settle your balance before the due date. Thank you!
 
   // ✅ Calculates change dynamically
   void _calculateChange() {
-    double payingAmount = double.tryParse(_payingAmountController.text) ?? 0.0;
+    //double payingAmount = double.tryParse(_payingAmountController.text) ?? 0.0;
     double customerMoney =
         double.tryParse(_customerMoneyController.text) ?? 0.0;
 
     setState(() {
-      _change = (customerMoney - payingAmount) < 0
+      _change = ( customerMoney - widget.debtDetails.balance ) < 0
           ? 0.0
-          : (customerMoney - payingAmount);
+          : (customerMoney - widget.debtDetails.balance );
     });
   }
 
@@ -319,7 +319,7 @@ Please settle your balance before the due date. Thank you!
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
               const SizedBox(height: 5),
               SizedBox(
-                height: 150,
+                height: 200,
                 child: isLoading
                     ? const Center(child: CircularProgressIndicator())
                     : transactionItems.isEmpty
@@ -347,8 +347,8 @@ Please settle your balance before the due date. Thank you!
 
               if (widget.debtDetails.balance > 0) ...[
                 // ✅ Payment Section
-                _buildPaymentField("Amount to Pay:", _payingAmountController,
-                    true, "00.00", 100000),
+                // _buildPaymentField("Amount to Pay:", _payingAmountController,
+                //     true, "00.00", 100000),
                 const SizedBox(height: 10),
                 Row(
                   children: [
@@ -434,17 +434,32 @@ Please settle your balance before the due date. Thank you!
                                 _isProcessing = true); // ✅ Start processing
 
                             double payingAmount =
-                                double.tryParse(_payingAmountController.text) ??
+                                double.tryParse(_customerMoneyController.text) ??
                                     0.0;
                             double receivedAmount = double.tryParse(
                                     _customerMoneyController.text) ??
                                 0.0;
 
-                            // ✅ Validate payment amount
-                            if (payingAmount <= 0 ||
-                                payingAmount > widget.debtDetails.balance) {
+                            // // ✅ Validate payment amount
+                            // if (payingAmount <= 0 ||
+                            //     payingAmount > widget.debtDetails.balance) {
+                            //   Fluttertoast.showToast(
+                            //     msg: "Invalid payment amount!",
+                            //     toastLength: Toast.LENGTH_SHORT,
+                            //     gravity: ToastGravity.BOTTOM,
+                            //     backgroundColor: Colors.red,
+                            //     textColor: Colors.white,
+                            //     fontSize: 16.0,
+                            //   );
+                            //   setState(() => _isProcessing = false);
+                            //   return;
+                            // }
+
+                            // ✅ Ensure received amount is not less than paying amount
+                            if (receivedAmount <= 0) {
                               Fluttertoast.showToast(
-                                msg: "Invalid payment amount!",
+                                msg:
+                                    "Invalid payment amount!",
                                 toastLength: Toast.LENGTH_SHORT,
                                 gravity: ToastGravity.BOTTOM,
                                 backgroundColor: Colors.red,
@@ -455,34 +470,21 @@ Please settle your balance before the due date. Thank you!
                               return;
                             }
 
-                            // ✅ Ensure received amount is not less than paying amount
-                            if (receivedAmount < payingAmount) {
-                              Fluttertoast.showToast(
-                                msg:
-                                    "Received amount cannot be less than paying amount!",
-                                toastLength: Toast.LENGTH_SHORT,
-                                gravity: ToastGravity.BOTTOM,
-                                backgroundColor: Colors.red,
-                                textColor: Colors.white,
-                                fontSize: 16.0,
-                              );
-                              setState(() => _isProcessing = false);
-                              return;
-                            }
-                            // ✅ Ensure received amount is not less than paying amount
-                            if (payingAmount < widget.debtDetails.balance && receivedAmount > payingAmount) {
-                              Fluttertoast.showToast(
-                                msg:
-                                    "Partial payments cannot have change!",
-                                toastLength: Toast.LENGTH_SHORT,
-                                gravity: ToastGravity.BOTTOM,
-                                backgroundColor: Colors.red,
-                                textColor: Colors.white,
-                                fontSize: 16.0,
-                              );
-                              setState(() => _isProcessing = false);
-                              return;
-                            }
+                            
+                            // // ✅ Ensure received amount is not less than paying amount
+                            // if (payingAmount < widget.debtDetails.balance && receivedAmount > payingAmount) {
+                            //   Fluttertoast.showToast(
+                            //     msg:
+                            //         "Partial payments cannot have change!",
+                            //     toastLength: Toast.LENGTH_SHORT,
+                            //     gravity: ToastGravity.BOTTOM,
+                            //     backgroundColor: Colors.red,
+                            //     textColor: Colors.white,
+                            //     fontSize: 16.0,
+                            //   );
+                            //   setState(() => _isProcessing = false);
+                            //   return;
+                            // }
 
                             // ✅ Ensure payment method is selected
                             if (_selectedPaymentMethod.isEmpty) {
@@ -512,7 +514,6 @@ Please settle your balance before the due date. Thank you!
                               return;
                             }
 
-
                             if (_selectedPaymentMethod == "Gcash" &&
                                 _referenceController.text.isNotEmpty && _referenceController.text.length < 4) {
                               Fluttertoast.showToast(
@@ -534,13 +535,13 @@ Please settle your balance before the due date. Thank you!
                               listen: false,
                             ).processDebtPayment(
                               debtId: widget.debtDetails.debtId,
-                              amountPaid: payingAmount,
+                              amountPaid: receivedAmount,
                               paymentMethod: _selectedPaymentMethod,
                               storeId: widget.debtDetails.storeId,
                               customerId: widget.customerDetails.customerId,
                               customerName: widget.customerDetails.name,
                               remainingBalance:
-                                  widget.debtDetails.balance - payingAmount, reference_number: _referenceController.text,
+                                  widget.debtDetails.balance - receivedAmount, reference_number: _referenceController.text,
                             );
 
                             if (transactionId != null) {
@@ -564,7 +565,7 @@ Please settle your balance before the due date. Thank you!
                               );
                             } else {
                               Fluttertoast.showToast(
-                                msg: "Payment Failed!",
+                                msg: "Payment Failed! Please try again.",
                                 toastLength: Toast.LENGTH_SHORT,
                                 gravity: ToastGravity.BOTTOM,
                                 backgroundColor: Colors.red,
