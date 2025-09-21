@@ -29,7 +29,7 @@ class _DebtsPageState extends State<DebtsPage> {
       Provider.of<DatabaseProvider>(context, listen: false)
           .fetchDebtsWithCustomerInfo();
     });
-    _checkAndStartTutorial();
+    //_checkAndStartTutorial();
     
   }
 

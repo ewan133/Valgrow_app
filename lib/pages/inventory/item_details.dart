@@ -33,7 +33,7 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
       Provider.of<DatabaseProvider>(context, listen: false)
           .fetchBatchByItemId(widget.item.itemId);
     });
-    _checkAndStartTutorial();
+    //_checkAndStartTutorial();
   }
 
   /// 🔹 Generate a unique batch name

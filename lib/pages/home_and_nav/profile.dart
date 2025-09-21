@@ -37,6 +37,13 @@ class _ProfilePageState extends State<ProfilePage> {
 
   bool _isLoading = true;
 
+  // Color palette constants
+  static const Color primaryGreen = Color(0xFF14AE5C);
+  static const Color backgroundColor = Color(0xFFF6F6F6);
+  static const Color textPrimary = Colors.black;
+  static const Color textSecondary = Color(0xFF666666);
+  static const Color cardBackground = Colors.white;
+
   @override
   void initState() {
     super.initState();
@@ -46,8 +53,6 @@ class _ProfilePageState extends State<ProfilePage> {
       _isLoading = false;
     });
   }
-
-  // load user profile
 
   // show edit profile dialog
   void showPhoneEdittingBox() {
@@ -60,7 +65,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
             // If user is null, show a loading state or handle accordingly
             if (user == null) {
-              return Center(child: CircularProgressIndicator());
+              return Center(child: CircularProgressIndicator(color: primaryGreen));
             }
 
             return MySingelTextAlert(
@@ -86,7 +91,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
             // If store is null, show a loading state or handle accordingly
             if (store == null) {
-              return Center(child: CircularProgressIndicator());
+              return Center(child: CircularProgressIndicator(color: primaryGreen));
             }
 
             return MySingelTextAlert(
@@ -108,11 +113,9 @@ class _ProfilePageState extends State<ProfilePage> {
     final phone = _phoneEditController.text;
     final phoneRegExp = RegExp(r'^0\d{10}$');
     if (!phoneRegExp.hasMatch(phone)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content:
-              Text('Please enter an 11-digit phone number starting with 09'),
-        ),
+      _showSnackBar(
+        'Please enter an 11-digit phone number starting with 09',
+        isError: true,
       );
       return;
     }
@@ -124,15 +127,30 @@ class _ProfilePageState extends State<ProfilePage> {
     // Validate that the store name is at least 8 characters long
     final storeName = _storeNameEditController.text;
     if (storeName.length < 3) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Store name must be at least 8 characters long'),
-        ),
+      _showSnackBar(
+        'Store name must be at least 3 characters long',
+        isError: true,
       );
       return;
     }
 
     await databaseProvider.updateStoreName(storeName);
+  }
+
+  void _showSnackBar(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: TextStyle(color: cardBackground),
+        ),
+        backgroundColor: isError ? Colors.red : primaryGreen,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+    );
   }
 
   Future<void> resetPassWithEmail() async {
@@ -174,26 +192,134 @@ class _ProfilePageState extends State<ProfilePage> {
     await _auth.signout();
   }
 
-  Future<bool> _showConfirmationDialog({required String title, required String content}) async {
+  Future<bool> _showConfirmationDialog(
+      {required String title, required String content}) async {
     return await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: Text(title),
-            content: Text(content),
+            backgroundColor: cardBackground,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
+            ),
+            title: Text(
+              title,
+              style: TextStyle(
+                color: textPrimary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            content: Text(
+              content,
+              style: TextStyle(color: textSecondary),
+            ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancel")),
-              TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Confirm")),
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(
+                  "Cancel",
+                  style: TextStyle(color: textSecondary),
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(
+                  "Confirm",
+                  style: TextStyle(color: primaryGreen, fontWeight: FontWeight.w600),
+                ),
+              ),
             ],
           ),
         ) ??
         false;
   }
 
+  Widget _buildProfileDetail({
+    required String label,
+    required String value,
+    VoidCallback? onTap,
+    bool editable = false,
+  }) {
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 0),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 4),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      value,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: textPrimary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (editable)
+                Icon(
+                  Icons.edit_outlined,
+                  color: primaryGreen,
+                  size: 18,
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required String text,
+    required VoidCallback onPressed,
+    Color? backgroundColor,
+    Color? textColor,
+  }) {
+    return SizedBox(
+      height: 48,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: backgroundColor ?? primaryGreen,
+          foregroundColor: textColor ?? cardBackground,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.primary,
-      appBar: MyAppbar(title: "User Profile"),
+      backgroundColor: backgroundColor,
+      
       body: Consumer<DatabaseProvider>(
         builder: (context, databaseProvider, child) {
           // Access the user and store data from the provider
@@ -201,224 +327,190 @@ class _ProfilePageState extends State<ProfilePage> {
           final store = databaseProvider.store;
 
           if (user == null || store == null) {
-            // You can show a loading state or error message if user or store data is null
-            return Center(child: CircularProgressIndicator());
+            return Center(
+              child: CircularProgressIndicator(color: primaryGreen),
+            );
           }
 
-          return LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: IntrinsicHeight(
+          return SingleChildScrollView(
+            child: Column(
+              children: [
+                SizedBox(height: 40),
+                // Profile Header Section
+                Container(
+                  width: double.infinity,
+                  color: backgroundColor,
+                  padding: EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: primaryGreen.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          Icons.person_outline_rounded,
+                          size: 40,
+                          color: primaryGreen,
+                        ),
+                      ),
+                      SizedBox(height: 12),
+                      Text(
+                        _isLoading ? "Loading..." : user.name,
+                        style: TextStyle(
+                          fontSize: 20,
+                          color: textPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        _isLoading ? "Loading..." : user.role,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: textSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Details Section
+                Container(
+                  width: double.infinity,
+                  margin: EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: cardBackground,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: backgroundColor,
+                      width: 1,
+                    ),
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.all(16),
                     child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Center(
-                          child: Column(
-                            children: [
-                              CircleAvatar(
-                                radius: 60, // Adjust size as needed
-                                backgroundColor: Colors
-                                    .white, // Background color for the circle
-                                child: Icon(
-                                  Icons.person_outline_rounded,
-                                  size:
-                                      80, // Adjust icon size within the circle
-                                  color: Colors.black54, // Icon color
-                                ),
-                              ),
-                              MyText(
-                                text: _isLoading ? "Loading..." : user.name,
-                                fontSize: 28,
-                                color: Colors.black87,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ],
+                        Text(
+                          'Profile Details',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: textPrimary,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                        SizedBox(height: 15),
-                        // Expanded Details Container takes all remaining space
-                        Expanded(
-                          child: Container(
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(30),
-                                topRight: Radius.circular(30),
-                              ),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Colors.black12,
-                                  blurRadius: 10,
-                                  spreadRadius: 2,
-                                ),
-                              ],
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(20),
-                              child: Column(
-                                children: [
-                                  SizedBox(height: 20),
-                                  MyProfileDetails(
-                                    label: "Email",
-                                    value:
-                                        _isLoading ? "Loading..." : user.email,
-                                    onTap: () {},
-                                  ),
-                                  Divider(),
-                                  MyProfileDetails(
-                                    label: "Phone number",
-                                    value:
-                                        _isLoading ? "Loading..." : user.phone,
-                                    onTap: showPhoneEdittingBox,
-                                    editable: true,
-                                  ),
-                                  Divider(),
-                                  MyProfileDetails(
-                                    label: "Affiliated Store",
-                                    value:
-                                        _isLoading ? "Loading..." : store.name,
-                                    onTap: (!_isLoading &&
-                                            user.role == "Store Owner")
-                                        ? showStoreNameEdittingBox
-                                        : null,
-                                    editable: !_isLoading &&
-                                        user.role == "Store Owner",
-                                  ),
-                                  Divider(),
-                                  MyProfileDetails(
-                                    label: "Role",
-                                    value:
-                                        _isLoading ? "Loading..." : user.role,
-                                    onTap: () {},
-                                  ),
-                                  Divider(),
-                                  // if (!_isLoading && user.role == "Store Owner")
-                                  //   Row(
-                                  //     mainAxisAlignment:
-                                  //         MainAxisAlignment.spaceBetween,
-                                  //     children: [
-                                  //       // Store Code Text
-                                  //       Expanded(
-                                  //         child: MyProfileDetails(
-                                  //           label: "Store Code",
-                                  //           value: store.storeCode,
-                                  //           onTap:
-                                  //               () {}, // No need for tap action
-                                  //         ),
-                                  //       ),
-
-                                  //       // Copy Button
-                                  //       IconButton(
-                                  //         onPressed: () {
-                                  //           Clipboard.setData(ClipboardData(
-                                  //               text: store.storeCode));
-                                  //           ScaffoldMessenger.of(context)
-                                  //               .showSnackBar(
-                                  //             SnackBar(
-                                  //                 content: Text(
-                                  //                     "Store Code Copied!")),
-                                  //           );
-                                  //         },
-                                  //         icon: Icon(Icons.copy,
-                                  //             color: Colors.blueAccent),
-                                  //         tooltip: "Copy Store Code",
-                                  //       ),
-
-                                  //       // Regenerate Button
-
-                                  //       IconButton(
-                                  //         onPressed: () async {
-                                  //           bool confirm = await showDialog(
-                                  //             context: context,
-                                  //             builder: (BuildContext context) {
-                                  //               return AlertDialog(
-                                  //                 title: Text(
-                                  //                     "Regenerate Store Code"),
-                                  //                 content: Text(
-                                  //                     "Are you sure you want to generate a new store code?"),
-                                  //                 actions: [
-                                  //                   TextButton(
-                                  //                     onPressed: () =>
-                                  //                         Navigator.of(context)
-                                  //                             .pop(false),
-                                  //                     child: Text("Cancel"),
-                                  //                   ),
-                                  //                   TextButton(
-                                  //                     onPressed: () =>
-                                  //                         Navigator.of(context)
-                                  //                             .pop(true),
-                                  //                     child: Text("Confirm",
-                                  //                         style: TextStyle(
-                                  //                             color:
-                                  //                                 Colors.red)),
-                                  //                   ),
-                                  //                 ],
-                                  //               );
-                                  //             },
-                                  //           );
-
-                                  //           if (confirm == true) {
-                                  //             await databaseProvider
-                                  //                 .updateStoreCode();
-                                  //             Fluttertoast.showToast(
-                                  //               msg:
-                                  //                   "New Store Code Generated!",
-                                  //               toastLength: Toast.LENGTH_SHORT,
-                                  //               gravity: ToastGravity.CENTER,
-                                  //               backgroundColor: Colors.green,
-                                  //               textColor: Colors.white,
-                                  //             );
-                                  //           }
-                                  //         },
-                                  //         icon: Icon(Icons.refresh,
-                                  //             color: Colors.green),
-                                  //         tooltip: "Regenerate Store Code",
-                                  //       ),
-                                  //     ],
-                                  //   ),
-                                  SizedBox(
-                                    height: 30,
-                                  ),
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceEvenly,
-                                    children: [
-                                      Expanded(
-                                        child: MyButton(
-                                          text: "Change Password",
-                                          color: Colors.blueAccent,
-                                          borderRadius: 25,
-                                          onTap: resetPassWithEmail,
-                                          width: double.infinity,
-                                        ),
-                                      ),
-                                      SizedBox(width: 20),
-                                      Expanded(
-                                        child: MyButton(
-                                          width: double.infinity,
-                                          text: "Logout",
-                                          color: Colors.redAccent,
-                                          borderRadius: 25,
-                                          onTap: () async {
-                                            _logout();
-                                          },
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
+                        SizedBox(height: 12),
+                        
+                        _buildProfileDetail(
+                          label: "Email",
+                          value: _isLoading ? "Loading..." : user.email,
+                        ),
+                        
+                        Container(
+                          height: 1,
+                          color: backgroundColor,
+                          margin: EdgeInsets.symmetric(vertical: 6),
+                        ),
+                        
+                        _buildProfileDetail(
+                          label: "Phone number",
+                          value: _isLoading ? "Loading..." : user.phone,
+                          onTap: showPhoneEdittingBox,
+                          editable: true,
+                        ),
+                        
+                        Container(
+                          height: 1,
+                          color: backgroundColor,
+                          margin: EdgeInsets.symmetric(vertical: 6),
+                        ),
+                        
+                        _buildProfileDetail(
+                          label: "Affiliated Store",
+                          value: _isLoading ? "Loading..." : store.name,
+                          onTap: (!_isLoading && user.role == "Store Owner")
+                              ? showStoreNameEdittingBox
+                              : null,
+                          editable: !_isLoading && user.role == "Store Owner",
                         ),
                       ],
                     ),
                   ),
                 ),
-              );
-            },
+
+                // Actions Section
+                Container(
+                  width: double.infinity,
+                  margin: EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: cardBackground,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: backgroundColor,
+                      width: 1,
+                    ),
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Account Actions',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: textPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        SizedBox(height: 16),
+                        
+                        SizedBox(
+                          width: double.infinity,
+                          child: _buildActionButton(
+                            text: "Store Promotion",
+                            onPressed: () {
+                              Navigator.pushNamed(context, '/store_promotion_list');
+                            },
+                            backgroundColor: primaryGreen,
+                            textColor: cardBackground,
+                          ),
+                        ),
+                        
+                        SizedBox(height: 8),
+                        
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildActionButton(
+                                text: "Change Password",
+                                onPressed: resetPassWithEmail,
+                                backgroundColor: primaryGreen.withOpacity(0.1),
+                                textColor: primaryGreen,
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: _buildActionButton(
+                                text: "Logout",
+                                onPressed: _logout,
+                                backgroundColor: textPrimary,
+                                textColor: cardBackground,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                
+                SizedBox(height: 24),
+              ],
+            ),
           );
         },
       ),

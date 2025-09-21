@@ -54,7 +54,7 @@ class _AdditemPageState extends State<AdditemPage> {
       _isLoading = false;
     });
 
-    _checkAndStartTutorial();
+    //_checkAndStartTutorial();
   }
 
   void scanBarcode(BuildContext context) {

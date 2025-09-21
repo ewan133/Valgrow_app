@@ -424,7 +424,7 @@ class DebtsDatabase {
         'respondentName': customerName,
         'reason': reportReason,
         'timestamp': Timestamp.now(),
-        'status': 'pending',
+        'status': 'Pending',
         'reportCategory': 'Debt Dispute',
         'type': 'Business to Customer',
         'complainant_contact': complainant_contact,

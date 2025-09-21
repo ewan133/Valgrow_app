@@ -32,7 +32,7 @@ class _InventoryPageState extends State<InventoryPage> {
       Provider.of<DatabaseProvider>(context, listen: false)
           .fetchItemsByStoreId();
     });
-    _checkAndStartTutorial();
+    //_checkAndStartTutorial();
   }
 
   //Needed Intances
