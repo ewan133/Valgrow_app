@@ -46,8 +46,9 @@ class _SectionTitle extends StatelessWidget {
       title,
       style: TextStyle(
         fontSize: 22,
-        fontWeight: FontWeight.bold,
-        color: Colors.teal.shade800,
+        fontWeight: FontWeight.w700,
+        color: Colors.black, // 30% black instead of teal
+        letterSpacing: -0.3,
       ),
     );
   }
@@ -89,7 +90,7 @@ class _MonthlyGrowthChart extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.start,
             children: const [
-              _LegendIndicator(color: Colors.teal, text: 'Sales'),
+              _LegendIndicator(color: Color(0xFF14AE5C), text: 'Sales'), // 10% green accent
             ],
           ),
           const SizedBox(height: 15),
@@ -108,9 +109,17 @@ class _MonthlyGrowthChart extends StatelessWidget {
                       spots: List.generate(
                           sales.length, (i) => FlSpot(i.toDouble(), sales[i])),
                       isCurved: true,
-                      color: Colors.teal,
+                      color: const Color(0xFF14AE5C), // 10% green accent
                       barWidth: 3,
-                      dotData: FlDotData(show: true),
+                      dotData: FlDotData(
+                        show: true,
+                        getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+                          radius: 4,
+                          color: const Color(0xFF14AE5C), // 10% green accent
+                          strokeWidth: 2,
+                          strokeColor: Colors.white, // 60% white
+                        ),
+                      ),
                     ),
                   ],
                   titlesData: FlTitlesData(
@@ -126,7 +135,11 @@ class _MonthlyGrowthChart extends StatelessWidget {
                               padding: const EdgeInsets.only(top: 8),
                               child: Text(
                                 weekLabels[index],
-                                style: const TextStyle(fontSize: 10),
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.black.withOpacity(0.7), // 30% black with opacity
+                                  fontWeight: FontWeight.w500,
+                                ),
                                 textAlign: TextAlign.center,
                               ),
                             );
@@ -142,7 +155,11 @@ class _MonthlyGrowthChart extends StatelessWidget {
                         getTitlesWidget: (value, _) {
                           return Text(
                             value.toInt().toString(),
-                            style: const TextStyle(fontSize: 10),
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.black.withOpacity(0.7), // 30% black with opacity
+                              fontWeight: FontWeight.w500,
+                            ),
                             textAlign: TextAlign.right,
                           );
                         },
@@ -153,124 +170,27 @@ class _MonthlyGrowthChart extends StatelessWidget {
                     rightTitles:
                         AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   ),
-                  gridData: FlGridData(show: true),
-                  borderData: FlBorderData(show: true),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ProfitChart extends StatelessWidget {
-  const _ProfitChart();
-
-  List<String> _generateWeekLabels() {
-    final now = DateTime.now();
-    final formatter = DateFormat('MMM d');
-    List<String> labels = [];
-    for (int i = 0; i < 8; i++) {
-      final startOfWeek = now.subtract(Duration(days: i * 7 + 6));
-      final endOfWeek = now.subtract(Duration(days: i * 7));
-      labels.add(
-          '${formatter.format(startOfWeek)}-${formatter.format(endOfWeek)}');
-    }
-    return labels.reversed.toList();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final data = context.watch<DatabaseProvider>().financialInsightsData;
-    final netProfit =
-        List<double>.from(data['weeklyNetProfit'] ?? List.filled(8, 0.0));
-    final weekLabels = _generateWeekLabels();
-
-    final maxProfit =
-        netProfit.isNotEmpty ? netProfit.reduce((a, b) => a > b ? a : b) : 0;
-    final minProfit =
-        netProfit.isNotEmpty ? netProfit.reduce((a, b) => a < b ? a : b) : 0;
-
-    final double maxY = maxProfit * 1.2;
-    final double minY = minProfit * 1.2;
-
-    return _ChartContainer(
-      title: 'Net Profit',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: const [
-              _LegendIndicator(color: Colors.deepPurple, text: 'Net Profit'),
-            ],
-          ),
-          const SizedBox(height: 15),
-          SizedBox(
-            height: 300,
-            child: SizedBox(
-              width: 1000,
-              child: LineChart(
-                LineChartData(
-                  minY: minY,
-                  maxY: maxY,
-                  maxX: 7,
-                  clipData: FlClipData.all(),
-                  lineBarsData: [
-                    LineChartBarData(
-                      spots: List.generate(netProfit.length,
-                          (i) => FlSpot(i.toDouble(), netProfit[i])),
-                      isCurved: true,
-                      color: Colors.deepPurple,
-                      barWidth: 3,
-                      dotData: FlDotData(show: true),
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: true,
+                    drawHorizontalLine: true,
+                    verticalInterval: 1,
+                    getDrawingVerticalLine: (value) => FlLine(
+                      color: Colors.black.withOpacity(0.1), // 30% black with low opacity
+                      strokeWidth: 1,
                     ),
-                  ],
-                  titlesData: FlTitlesData(
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 60,
-                        interval: 1,
-                        getTitlesWidget: (value, _) {
-                          final index = value.toInt();
-                          if (index >= 0 && index < weekLabels.length) {
-                            return Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: Text(
-                                weekLabels[index],
-                                style: const TextStyle(fontSize: 10),
-                                textAlign: TextAlign.center,
-                              ),
-                            );
-                          }
-                          return const SizedBox.shrink();
-                        },
-                      ),
+                    getDrawingHorizontalLine: (value) => FlLine(
+                      color: Colors.black.withOpacity(0.1), // 30% black with low opacity
+                      strokeWidth: 1,
                     ),
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 40,
-                        getTitlesWidget: (value, _) {
-                          return Text(
-                            value.toInt().toString(),
-                            style: const TextStyle(fontSize: 10),
-                            textAlign: TextAlign.right,
-                          );
-                        },
-                      ),
-                    ),
-                    topTitles:
-                        AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    rightTitles:
-                        AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   ),
-                  gridData: FlGridData(show: true),
-                  borderData: FlBorderData(show: true),
+                  borderData: FlBorderData(
+                    show: true,
+                    border: Border.all(
+                      color: Colors.black.withOpacity(0.2), // 30% black border
+                      width: 1,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -288,18 +208,38 @@ class _ChartContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white, // 60% white background
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFF14AE5C).withOpacity(0.2), // 10% green accent border
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06), // Subtle black shadow
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+            spreadRadius: 0,
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title,
-                style:
-                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: Colors.black, // 30% black
+                letterSpacing: -0.2,
+              ),
+            ),
+            const SizedBox(height: 16),
             child,
           ],
         ),

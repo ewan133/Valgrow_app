@@ -43,42 +43,50 @@ class MyDebtsCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.white, Colors.grey.shade100],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        border: Border.all(color: Colors.grey.shade300, width: 1),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black26,
-            offset: const Offset(0, 4),
-            blurRadius: 6,
-          )
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 2),
+          ),
         ],
-        borderRadius: BorderRadius.circular(18),
       ),
       child: Row(
         children: [
           // Profile Image (Use customer image if available)
           Container(
-            width: 80,
-            height: 80,
+            width: 56,
+            height: 56,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.grey.shade400, width: 2),
-              image: DecorationImage(
-                image: customerDetails?.imageUrl != null
-                    ? NetworkImage(customerDetails!.imageUrl)
-                    : const AssetImage("assets/images/sample.jpg")
-                        as ImageProvider,
-                fit: BoxFit.cover,
-              ),
+              color: const Color(0xFFF6F6F6),
+              border: Border.all(color: const Color(0xFFF6F6F6), width: 2),
             ),
+            child: customerDetails?.imageUrl != null
+                ? ClipOval(
+                    child: Image.network(
+                      customerDetails!.imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Icon(
+                          Icons.person,
+                          color: Colors.black.withOpacity(0.5),
+                          size: 24,
+                        );
+                      },
+                    ),
+                  )
+                : Icon(
+                    Icons.person,
+                    color: Colors.black.withOpacity(0.5),
+                    size: 24,
+                  ),
           ),
-          const SizedBox(width: 12), // Spacing
+          const SizedBox(width: 16), // Spacing
 
           // Text Section
           Expanded(
@@ -86,91 +94,78 @@ class MyDebtsCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const SizedBox(height: 5), // Add space from top
-
                 // Customer Name
                 Text(
                   customerDetails?.name ?? "Unknown",
-                  style: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
                     color: Colors.black,
+                    letterSpacing: -0.2,
                   ),
                 ),
+                const SizedBox(height: 2),
 
                 // Phone Number
                 Text(
                   customerDetails?.phone ?? "No Phone",
                   style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    color: Colors.grey.shade700,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black.withOpacity(0.6),
+                    letterSpacing: 0.3,
                   ),
                 ),
 
-                const SizedBox(height: 10), // Spacing
+                const SizedBox(height: 12), // Spacing
 
                 // Balance & Due Date
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Total Balance:",
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.black,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          "₱ ${totalBalance.toStringAsFixed(2)}",
-                          style: const TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.green,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        const Text(
-                          "Next Due Date in:",
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        const SizedBox(height: 5),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: dueDateBackground,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            dueDateText,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Total Balance",
                             style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: dueDateColor,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.black.withOpacity(0.6),
+                              letterSpacing: 0.2,
                             ),
                           ),
+                          const SizedBox(height: 2),
+                          Text(
+                            "₱${totalBalance.toStringAsFixed(2)}",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF14AE5C),
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: dueDateBackground,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        dueDateText,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: dueDateColor,
+                          letterSpacing: 0.2,
                         ),
-                      ],
+                      ),
                     ),
                   ],
                 ),

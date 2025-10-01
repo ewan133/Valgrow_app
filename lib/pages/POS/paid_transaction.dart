@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:valgrow_ui/pages/POS/receipt.dart';
-import 'package:valgrow_ui/pages/POS/sucess_page.dart';
 import 'package:valgrow_ui/services/database/database_provider.dart';
 import 'package:valgrow_ui/components/global_keys.dart';
 
@@ -147,7 +146,6 @@ class _PaidTransactionState extends State<PaidTransaction> {
 
   final TextEditingController _referenceController = TextEditingController();
   double _change = 0.00;
-  double _receivedAmount = 0.00;
   String _selectedPaymentMethod = "Cash"; // Default selection
   bool _isAmountValid = true; // Track if entered amount is valid
 
@@ -157,27 +155,45 @@ class _PaidTransactionState extends State<PaidTransaction> {
 
     // ✅ Calculate total from basket dynamically
     double totalAmount = databaseProvider.basket.fold(0.0, (sum, item) {
-      return sum + (item.total_stock * (item.regular_price ?? 0.0));
+      return sum + (item.total_stock * item.regular_price);
     });
 
     return LayoutBuilder(
       builder: (context, constraints) {
         return SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            padding: const EdgeInsets.all(20.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Header Section
-                const Text(
-                  "Payment Details",
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                Container(
+                  margin: const EdgeInsets.only(bottom: 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Payment Details",
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.black,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "Enter payment information to complete transaction",
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.black.withOpacity(0.6),
+                          fontWeight: FontWeight.w400,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-
-                const SizedBox(height: 15),
 
                 // Total Amount (Dynamic)
                 _buildSummaryCard(
@@ -186,7 +202,7 @@ class _PaidTransactionState extends State<PaidTransaction> {
                   value: "₱${totalAmount.toStringAsFixed(2)}",
                 ),
 
-                const SizedBox(height: 15),
+                const SizedBox(height: 16),
 
                 // Receiving Amount (User Input)
                 _buildInputField(
@@ -197,15 +213,36 @@ class _PaidTransactionState extends State<PaidTransaction> {
                 ),
 
                 if (!_isAmountValid || _receivingAmountController.text.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 5),
-                    child: Text(
-                      "⚠ Please enter a valid amount",
-                      style: TextStyle(color: Colors.red, fontSize: 14),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.warning_amber_rounded,
+                            color: Colors.red,
+                            size: 16,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            "Please enter a valid amount",
+                            style: TextStyle(
+                              color: Colors.red,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
 
-                const SizedBox(height: 15),
+                const SizedBox(height: 16),
 
                 // Change (Read-Only)
                 _buildSummaryCard(
@@ -214,7 +251,7 @@ class _PaidTransactionState extends State<PaidTransaction> {
                   value: "₱${_change.toStringAsFixed(2)}",
                 ),
 
-                const SizedBox(height: 15),
+                const SizedBox(height: 16),
 
                 // Payment Method Dropdown
                 _buildDropdownField(
@@ -223,31 +260,34 @@ class _PaidTransactionState extends State<PaidTransaction> {
                   items: ["Cash", "Gcash"],
                 ),
 
-                const SizedBox(height: 15),
+                const SizedBox(height: 16),
 
                 if (_selectedPaymentMethod == "Gcash")
-                  // Receiving Amount (User Input)
+                  // Reference Number Input
                   _buildInputField(
-                    label: "Enter last 4 digit of Reference No.",
+                    label: "Enter last 4 digits of Reference No.",
                     hint: "Enter reference number",
                     maxLength: 4,
                     controller: _referenceController,
                   ),
 
-                const SizedBox(height: 25),
+                const SizedBox(height: 24),
 
-                // Confirm Payment Button (Disabled if amount is insufficient)
+                // Confirm Payment Button
                 SizedBox(
                   key: confirmButtonKey,
                   width: double.infinity,
-                  height: 55,
+                  height: 48,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _isAmountValid
                           ? const Color(0xFF14AE5C)
-                          : Colors.grey,
+                          : Colors.grey.withOpacity(0.3),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      disabledBackgroundColor: Colors.grey.withOpacity(0.3),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(100),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                     onPressed: _isAmountValid &&
@@ -259,13 +299,12 @@ class _PaidTransactionState extends State<PaidTransaction> {
                         ? () {
                             _confirmPayment(totalAmount);
                           }
-                        : null, // Disable button if amount is empty or invalid
-                    child: const Text(
+                        : null,
+                    child: Text(
                       "Confirm Payment",
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: Colors.white,
                       ),
                     ),
                   ),
@@ -285,25 +324,43 @@ class _PaidTransactionState extends State<PaidTransaction> {
     return Container(
       key: key,
       width: double.infinity,
-      padding: const EdgeInsets.all(15),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF6F6F6),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey.shade400),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: const Color(0xFFF6F6F6),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 2),
+            spreadRadius: 0,
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.black.withOpacity(0.6),
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.2,
+            ),
           ),
-          const SizedBox(height: 5),
+          const SizedBox(height: 4),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w700,
+              color: Colors.black,
+              letterSpacing: -0.2,
             ),
           ),
         ],
@@ -326,9 +383,13 @@ class _PaidTransactionState extends State<PaidTransaction> {
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.black,
+          ),
         ),
-        const SizedBox(height: 5),
+        const SizedBox(height: 8),
         TextField(
           controller: controller,
           keyboardType: TextInputType.number,
@@ -336,14 +397,35 @@ class _PaidTransactionState extends State<PaidTransaction> {
           maxLength: maxLength ?? 100000,
           decoration: InputDecoration(
             hintText: hint ?? "Enter amount",
+            hintStyle: TextStyle(
+              color: Colors.black.withOpacity(0.4),
+              fontSize: 14,
+            ),
             contentPadding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 15),
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             filled: true,
             fillColor: Colors.white,
-            counterText: "", // This hides the character counter
+            counterText: "",
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey.shade400),
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: const Color(0xFFF6F6F6),
+                width: 1,
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: const Color(0xFFF6F6F6),
+                width: 1,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: const Color(0xFF14AE5C),
+                width: 1,
+              ),
             ),
           ),
         ),
@@ -363,16 +445,23 @@ class _PaidTransactionState extends State<PaidTransaction> {
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.black,
+          ),
         ),
-        const SizedBox(height: 5),
+        const SizedBox(height: 8),
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
-            color: const Color(0xFFF6F6F6),
-            border: Border.all(color: Colors.grey.shade400),
-            borderRadius: BorderRadius.circular(8),
+            color: Colors.white,
+            border: Border.all(
+              color: const Color(0xFFF6F6F6),
+              width: 1,
+            ),
+            borderRadius: BorderRadius.circular(12),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
@@ -383,12 +472,25 @@ class _PaidTransactionState extends State<PaidTransaction> {
                   _selectedPaymentMethod = newValue!;
                 });
               },
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.black,
+                fontWeight: FontWeight.w500,
+              ),
+              icon: Icon(
+                Icons.keyboard_arrow_down,
+                color: Colors.black.withOpacity(0.6),
+                size: 20,
+              ),
               items: items.map((String item) {
                 return DropdownMenuItem<String>(
                   value: item,
                   child: Text(
                     item,
-                    style: const TextStyle(fontSize: 16),
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 );
               }).toList(),
@@ -410,7 +512,6 @@ class _PaidTransactionState extends State<PaidTransaction> {
         _isAmountValid = receivedAmount >= totalAmount; // Validate amount
       }
 
-      _receivedAmount = receivedAmount;
       _change = receivedAmount - totalAmount;
     });
   }
@@ -430,48 +531,69 @@ class _PaidTransactionState extends State<PaidTransaction> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
+          backgroundColor: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15), // ✅ Rounded corners
+            borderRadius: BorderRadius.circular(12),
           ),
-          title: const Text(
+          title: Text(
             "Confirm Payment",
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: Colors.black,
+              letterSpacing: -0.2,
+            ),
           ),
           content: Text(
             "Are you sure you want to proceed with this transaction?\n\n"
             "Total Amount: ₱${totalAmount.toStringAsFixed(2)}\n"
             "Received Amount: ₱${receivedAmount.toStringAsFixed(2)}\n"
-            "Change: ₱${(receivedAmount - totalAmount).clamp(0, double.infinity).toStringAsFixed(2)}\n"
+            "Change: ₱${(receivedAmount - totalAmount).clamp(0, double.infinity).toStringAsFixed(2)}\n\n"
             "${isDebt ? "This will be recorded as debt." : "Transaction will be marked as paid."}",
-            style: const TextStyle(fontSize: 16),
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.black,
+              fontWeight: FontWeight.w400,
+              height: 1.4,
+            ),
           ),
           actions: [
-            // ❌ Cancel Button
+            // Cancel Button
             TextButton(
               onPressed: () {
-                Navigator.pop(context); // Close dialog without saving
+                Navigator.pop(context);
               },
-              child: const Text(
+              child: Text(
                 "Cancel",
-                style: TextStyle(color: Colors.red, fontSize: 16),
+                style: TextStyle(
+                  color: Colors.black.withOpacity(0.6),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
 
-            // ✅ Confirm Button
+            // Confirm Button
             ElevatedButton(
               onPressed: () {
-                Navigator.pop(context); // ✅ Close modal
-                _processPayment(
-                    totalAmount, receivedAmount, isDebt); // ✅ Process payment
+                Navigator.pop(context);
+                _processPayment(totalAmount, receivedAmount, isDebt);
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                backgroundColor: const Color(0xFF14AE5C),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
-              child: const Text(
+              child: Text(
                 "Confirm",
-                style: TextStyle(fontSize: 16, color: Colors.white),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],

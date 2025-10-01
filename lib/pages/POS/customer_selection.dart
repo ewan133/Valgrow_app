@@ -158,99 +158,197 @@ class _CustomerSelectionModalState extends State<CustomerSelectionModal> {
 
             return Dialog(
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
               ),
               child: SingleChildScrollView(
                 child: Container(
                   width: MediaQuery.of(context).size.width * 0.8,
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
+                          Text(
                             "Customer Details",
                             style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold),
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.black,
+                              letterSpacing: -0.2,
+                            ),
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.close),
-                            onPressed: () => Navigator.pop(context),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF6F6F6),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: IconButton(
+                              icon: Icon(
+                                Icons.close,
+                                color: Colors.black.withOpacity(0.7),
+                                size: 20,
+                              ),
+                              onPressed: () => Navigator.pop(context),
+                            ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 20),
                       Center(
                         child: GestureDetector(
                           onTap: _showImagePickerOptionsInDialog,
-                          child: CircleAvatar(
-                            radius: 60,
-                            backgroundColor: Colors.grey.shade300,
-                            backgroundImage: _selectedImage != null
-                                ? FileImage(_selectedImage!)
-                                : null,
-                            child: localImage == null
-                                ? const Icon(Icons.camera_alt,
-                                    color: Colors.white, size: 30)
-                                : null,
+                          child: Container(
+                            width: 100,
+                            height: 100,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: const Color(0xFFF6F6F6),
+                              border: Border.all(
+                                color: const Color(0xFFF6F6F6),
+                                width: 2,
+                              ),
+                            ),
+                            child: CircleAvatar(
+                              radius: 48,
+                              backgroundColor: Colors.transparent,
+                              backgroundImage: _selectedImage != null
+                                  ? FileImage(_selectedImage!)
+                                  : null,
+                              child: localImage == null
+                                  ? Icon(
+                                      Icons.camera_alt,
+                                      color: Colors.black.withOpacity(0.5),
+                                      size: 24,
+                                    )
+                                  : null,
+                            ),
                           ),
                         ),
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 24),
                       TextField(
                         controller: _nameController,
                         decoration: InputDecoration(
                           labelText: "Customer Name",
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
+                          labelStyle: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.black.withOpacity(0.7),
                           ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: const Color(0xFFF6F6F6)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: const Color(0xFFF6F6F6)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: const Color(0xFF14AE5C)),
+                          ),
+                          filled: true,
+                          fillColor: const Color(0xFFF6F6F6),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        ),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black,
                         ),
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 16),
                       TextField(
                         controller: _phoneController,
                         keyboardType: TextInputType.phone,
                         maxLength: 11,
                         decoration: InputDecoration(
                           labelText: "Phone Number",
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
+                          labelStyle: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.black.withOpacity(0.7),
                           ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: const Color(0xFFF6F6F6)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: const Color(0xFFF6F6F6)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: const Color(0xFF14AE5C)),
+                          ),
+                          errorBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: Colors.red),
+                          ),
+                          filled: true,
+                          fillColor: const Color(0xFFF6F6F6),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                           errorText: _phoneError,
+                          counterText: "",
+                        ),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black,
                         ),
                         onChanged: (value) {
                           _validatePhoneNumber(value);
                         },
                       ),
-                      const SizedBox(height: 15),
+                      const SizedBox(height: 24),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           TextButton(
                             onPressed: () => Navigator.pop(context),
-                            child: const Text("Cancel"),
+                            child: Text(
+                              "Cancel",
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black.withOpacity(0.6),
+                              ),
+                            ),
                           ),
+                          const SizedBox(width: 12),
                           ElevatedButton(
                             onPressed: _handleAddCustomer,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green,
+                              backgroundColor: const Color(0xFF14AE5C),
                               foregroundColor: Colors.white,
+                              elevation: 0,
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 20, vertical: 12),
+                                  horizontal: 24, vertical: 12),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(12),
                               ),
                             ),
                             child: _isUploading
-                                ? const CircularProgressIndicator(
-                                    color: Colors.white)
-                                : const Text(
+                                ? SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Text(
                                     "Save",
                                     style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w600),
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                           ),
                         ],
@@ -369,34 +467,58 @@ class _CustomerSelectionModalState extends State<CustomerSelectionModal> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF6F6F6),
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+      ),
+      padding: const EdgeInsets.all(20),
       height: 600,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           /// ✅ Header with Close Button
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                "Select or Add a Customer",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              IconButton(
-                icon: const Icon(Icons.close, size: 24),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ],
+          Container(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "Select or Add a Customer",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: IconButton(
+                    icon: Icon(
+                      Icons.close,
+                      size: 20,
+                      color: Colors.black.withOpacity(0.7),
+                    ),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 5),
 
           /// ✅ Search Bar
-          MySearchbar(
-            controller: _searchController,
-            onChanged: _filterCustomers, // ✅ Calls filtering function
-          ),
-          const SizedBox(
-            height: 10,
+          Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            child: MySearchbar(
+              controller: _searchController,
+              onChanged: _filterCustomers, // ✅ Calls filtering function
+            ),
           ),
 
           /// ✅ Customer List (Filtered with Consumer)
@@ -419,38 +541,43 @@ class _CustomerSelectionModalState extends State<CustomerSelectionModal> {
                         itemBuilder: (context, index) {
                           final customer = filteredCustomers[index];
 
-                          return Card(
-                            margin: const EdgeInsets.symmetric(
-                                vertical: 6, horizontal: 10),
-                            elevation: 3, // ✅ Adds subtle shadow effect
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                  12), // ✅ Soft rounded corners
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.06),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
                             ),
                             child: ListTile(
                               contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 10),
+                                  horizontal: 16, vertical: 12),
 
                               // ✅ Profile Picture with Border & Placeholder
                               leading: Container(
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                      color: Colors.black,
-                                      width: 2), // ✅ Border
+                                      color: const Color(0xFFF6F6F6),
+                                      width: 2),
                                 ),
                                 child: CircleAvatar(
-                                  radius: 26,
-                                  backgroundColor: Colors
-                                      .grey.shade300, // Default background
+                                  radius: 24,
+                                  backgroundColor: const Color(0xFFF6F6F6),
                                   backgroundImage: customer.imageUrl.isNotEmpty
-                                      ? NetworkImage(
-                                          customer.imageUrl) // ✅ Load image
+                                      ? NetworkImage(customer.imageUrl)
                                       : null,
                                   child: customer.imageUrl.isEmpty
-                                      ? const Icon(Icons.person,
-                                          color: Colors.white,
-                                          size: 30) // ✅ Placeholder icon
+                                      ? Icon(
+                                          Icons.person,
+                                          color: Colors.black.withOpacity(0.5),
+                                          size: 20,
+                                        )
                                       : null,
                                 ),
                               ),
@@ -458,26 +585,41 @@ class _CustomerSelectionModalState extends State<CustomerSelectionModal> {
                               // ✅ Name & Phone Number (Stylized)
                               title: Text(
                                 customer.name,
-                                style: const TextStyle(
-                                  fontSize: 16,
+                                style: TextStyle(
+                                  fontSize: 14,
                                   fontWeight: FontWeight.w600,
-                                  color: Colors.black87,
+                                  color: Colors.black,
+                                  letterSpacing: 0.3,
                                 ),
                               ),
                               subtitle: Text(
                                 customer.phone,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.black.withOpacity(0.6),
                                 ),
                               ),
 
                               // ✅ Selection Indicator
                               trailing: customer == widget.selectedCustomer
-                                  ? const Icon(Icons.check_circle,
-                                      color: Colors.green, size: 24)
-                                  : const Icon(Icons.chevron_right,
-                                      color: Colors.grey, size: 24),
+                                  ? Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF14AE5C),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Icon(
+                                        Icons.check,
+                                        color: Colors.white,
+                                        size: 16,
+                                      ),
+                                    )
+                                  : Icon(
+                                      Icons.chevron_right,
+                                      color: Colors.black.withOpacity(0.3),
+                                      size: 20,
+                                    ),
 
                               // ✅ Select Customer
                               onTap: () {
@@ -488,10 +630,17 @@ class _CustomerSelectionModalState extends State<CustomerSelectionModal> {
                           );
                         },
                       )
-                    : const Center(
-                        child: Text(
-                          "No customers found.",
-                          style: TextStyle(fontSize: 16, color: Colors.grey),
+                    : Center(
+                        child: Container(
+                          padding: const EdgeInsets.all(20),
+                          child: Text(
+                            "No customers found.",
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.black.withOpacity(0.6),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                         ),
                       );
                 // ✅ Empty state
@@ -500,20 +649,26 @@ class _CustomerSelectionModalState extends State<CustomerSelectionModal> {
           ),
 
           /// ✅ Button to open the alert dialog
-          Padding(
-            padding: const EdgeInsets.only(right: 20, left: 20, top: 15),
-            child: SizedBox(
-              width: double.infinity,
-              height: 55,
-              child: ElevatedButton(
-                onPressed: () => _showCustomerDetailsDialog(context),
-                style: ElevatedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  backgroundColor: Colors.blue, // Set the button color to blue
+          Container(
+            width: double.infinity,
+            height: 56,
+            margin: const EdgeInsets.only(top: 20),
+            child: ElevatedButton(
+              onPressed: () => _showCustomerDetailsDialog(context),
+              style: ElevatedButton.styleFrom(
+                foregroundColor: Colors.white,
+                backgroundColor: const Color(0xFF14AE5C),
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Text(
-                  "Add Customer Details",
-                  style: TextStyle(fontSize: 16), // Set text size to 16
+              ),
+              child: Text(
+                "Add Customer Details",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.3,
                 ),
               ),
             ),

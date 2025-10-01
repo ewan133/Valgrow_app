@@ -250,6 +250,7 @@ This complaint is filed due to unpaid and overdue debts beyond the agreed due da
     final isLoading = provider.isLoading;
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF6F6F6),
       appBar: MyAppbar(
         title: "Debts",
         actionWidget: Row(
@@ -280,45 +281,78 @@ This complaint is filed due to unpaid and overdue debts beyond the agreed due da
           ],
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 15),
-        child: Column(
-          children: [
-            buildCustomerHeader(),
-            const SizedBox(height: 10),
-            Expanded(
-              key: DebtsPersonalListKey,
-              child: isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : debts.isEmpty
-                      ? const Center(child: Text("No debts found."))
-                      : ListView.builder(
-                          itemCount: debts.length,
-                          itemBuilder: (context, index) {
-                            final sortedDebts = List<DebtDetails>.from(debts)
-                              ..sort((a, b) {
-                                const order = {
-                                  "unpaid": 0,
-                                  "partial": 1,
-                                  "paid": 2
-                                };
-                                return order[a.status]!
-                                    .compareTo(order[b.status]!);
-                              });
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              buildCustomerHeader(),
+              const SizedBox(height: 20),
+              Container(
+                key: DebtsPersonalListKey,
+                height: MediaQuery.of(context).size.height - 320,
+                child: isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          color: Color(0xFF14AE5C),
+                        ))
+                    : debts.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.receipt_long_outlined,
+                                  size: 64,
+                                  color: Colors.black.withOpacity(0.3),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  "No debts found",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black.withOpacity(0.6),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  "This customer has no outstanding debts",
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.black.withOpacity(0.5),
+                                  ),
+                                ),
+                              ],
+                            ))
+                        : ListView.builder(
+                            itemCount: debts.length,
+                            itemBuilder: (context, index) {
+                              final sortedDebts = List<DebtDetails>.from(debts)
+                                ..sort((a, b) {
+                                  const order = {
+                                    "unpaid": 0,
+                                    "partial": 1,
+                                    "paid": 2
+                                  };
+                                  return order[a.status]!
+                                      .compareTo(order[b.status]!);
+                                });
 
-                            final debt = sortedDebts[index];
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 5),
-                              child: GestureDetector(
-                                onTap: () =>
-                                    showDebtPaymentDialog(context, debt),
-                                child: MyPersonalDebtsCard(debtDetails: debt),
-                              ),
-                            );
-                          },
-                        ),
-            ),
-          ],
+                              final debt = sortedDebts[index];
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: GestureDetector(
+                                  onTap: () =>
+                                      showDebtPaymentDialog(context, debt),
+                                  child: MyPersonalDebtsCard(debtDetails: debt),
+                                ),
+                              );
+                            },
+                          ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -333,66 +367,106 @@ This complaint is filed due to unpaid and overdue debts beyond the agreed due da
 
     return Container(
       key: DebtsPersonalDetails,
-      padding: const EdgeInsets.symmetric(vertical: 20),
       width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: const Color(0xFFF6F6F6),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 2),
+            spreadRadius: 0,
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(20),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: 90,
-            height: 90,
+            width: 64,
+            height: 64,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: Colors.black),
+              border: Border.all(
+                color: const Color(0xFFF6F6F6),
+                width: 2,
+              ),
               image: DecorationImage(
                 image: customer.imageUrl.isNotEmpty
                     ? NetworkImage(customer.imageUrl)
                     : const AssetImage("assets/images/sample.jpg")
                         as ImageProvider,
                 fit: BoxFit.cover,
+                onError: (exception, stackTrace) {
+                  // Handle image loading error
+                },
               ),
             ),
+            child: customer.imageUrl.isEmpty
+                ? Icon(
+                    Icons.person,
+                    size: 32,
+                    color: Colors.black.withOpacity(0.4),
+                  )
+                : null,
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   customer.name,
                   style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black,
+                    letterSpacing: -0.2,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
+                const SizedBox(height: 4),
                 Text(
                   customer.phone,
-                  style: const TextStyle(fontSize: 14),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black.withOpacity(0.6),
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 6),
-                const Divider(thickness: 1, color: Colors.black),
+                const SizedBox(height: 12),
+                Container(
+                  height: 1,
+                  color: const Color(0xFFF6F6F6),
+                ),
+                const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      "Total Balance:",
+                    Text(
+                      "Total Balance",
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 12,
                         fontWeight: FontWeight.w500,
+                        color: Colors.black.withOpacity(0.6),
+                        letterSpacing: 0.3,
                       ),
                     ),
-                    Flexible(
-                      child: Text(
-                        "₱${customer.totalDebt.toStringAsFixed(2)}",
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+                    Text(
+                      "₱${customer.totalDebt.toStringAsFixed(2)}",
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black,
+                        letterSpacing: -0.2,
                       ),
                     ),
                   ],

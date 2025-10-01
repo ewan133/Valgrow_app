@@ -98,7 +98,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 margin: const EdgeInsets.all(16.0),
                 padding: const EdgeInsets.all(20.0),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade200, // Light grey background
+                  color: Colors.grey.shade200,
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
@@ -115,7 +115,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     Text(
                       content,
                       style: const TextStyle(
-                        color: Colors.black, // Black text
+                        color: Colors.black,
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                       ),
@@ -152,91 +152,138 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    final user = context.watch<DatabaseProvider>().user; // ✅ Fetch user data
+    final user = context.watch<DatabaseProvider>().user;
     final todaySummary = context.watch<DatabaseProvider>().todaySummary;
+    
     return Scaffold(
+      backgroundColor: const Color(0xFFF6F6F6), // Light background instead of grey[50]
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.white, // 60% white
         elevation: 0,
-        toolbarHeight: 70, // Custom height
-        title: Row(
-          children: [
-            MyLogo(logoSize: 50),
-            SizedBox(width: 10),
-            MyText(
-              text: "Hello!",
-              fontSize: 30,
-              color: Colors.black,
-              fontWeight: FontWeight.w600,
-            ),
-          ],
-        ),
-        actions: [
-          Stack(
-            children: [
-              IconButton(
-                key: myNotification,
-                onPressed: () {
-                  Navigator.pushNamed(context, "/notifications");
-                },
-                icon: const Icon(
-                  Icons.notifications_on_outlined,
-                  color: Colors.black,
-                  size: 40,
-                ),
-              ),
-
-              // 🔥 Notification Badge
-              Positioned(
-                right: 6,
-                top: 6,
-                child: Consumer<DatabaseProvider>(
-                  builder: (context, provider, child) {
-                    int unreadCount = provider.unreadNotificationsCount;
-                    return unreadCount > 0
-                        ? Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: const BoxDecoration(
-                              color: Colors.red,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Text(
-                              unreadCount.toString(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          )
-                        : const SizedBox(); // ✅ Hide badge if count is 0
-                  },
-                ),
+        toolbarHeight: 80,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            color: Colors.white, // 60% white
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: Offset(0, 2),
               ),
             ],
           ),
+        ),
+        title: Padding(
+          padding: const EdgeInsets.only(left: 8.0),
+          child: Row(
+            children: [
+              MyLogo(logoSize: 45),
+              SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  MyText(
+                    text: "Hello!",
+                    fontSize: 24,
+                    color: Colors.black, // 30% black
+                    fontWeight: FontWeight.w700,
+                  ),
+                  Text(
+                    "Welcome back",
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.black.withOpacity(0.6), // 30% black with opacity
+                      fontWeight: FontWeight.w400,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: Stack(
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF6F6F6), // Light background
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: IconButton(
+                    key: myNotification,
+                    onPressed: () {
+                      Navigator.pushNamed(context, "/notifications");
+                    },
+                    icon: const Icon(
+                      Icons.notifications_outlined,
+                      color: Colors.black, // 30% black
+                      size: 24,
+                    ),
+                  ),
+                ),
+                // Notification Badge
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Consumer<DatabaseProvider>(
+                    builder: (context, provider, child) {
+                      int unreadCount = provider.unreadNotificationsCount;
+                      return unreadCount > 0
+                          ? Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                              constraints: BoxConstraints(
+                                minWidth: 16,
+                                minHeight: 16,
+                              ),
+                              child: Text(
+                                unreadCount > 99 ? '99+' : unreadCount.toString(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            )
+                          : const SizedBox();
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
-      body: Center(
+      body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(20.0),
           child: Column(
             children: [
+              // Summary Card
               Container(
                 key: mySummary,
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Colors.white, // 60% white
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    width: 3,
-                    color: Theme.of(context).colorScheme.primary,
+                    width: 1,
+                    color: const Color(0xFF14AE5C).withOpacity(0.2), // 10% green accent
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 6,
+                      color: Colors.black.withOpacity(0.06),
+                      blurRadius: 16,
                       offset: Offset(0, 2),
+                      spreadRadius: 0,
                     ),
                   ],
                 ),
@@ -247,133 +294,158 @@ class _DashboardPageState extends State<DashboardPage> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          "Today’s Summary",
+                        Text(
+                          "Today's Summary",
                           style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.black, // 30% black
+                            letterSpacing: -0.2,
                           ),
                         ),
-                        TextButton(
-                          onPressed: user?.role == "Employee"
-                              ? null
-                              : () =>
-                                  Navigator.pushNamed(context, '/dashboard'),
-                          style: TextButton.styleFrom(
-                            foregroundColor: user?.role == "Employee"
-                                ? Colors.grey
-                                : const Color(0xFF15803D),
-                            textStyle: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                            ),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: user?.role == "Employee" 
+                                ? const Color(0xFFF6F6F6) // Light background for disabled
+                                : const Color(0xFF14AE5C).withOpacity(0.1), // 10% green accent
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Text(key: myViewSummaryIcon, "View"),
+                          child: TextButton.icon(
+                            key: myViewSummaryIcon,
+                            onPressed: user?.role == "Employee"
+                                ? null
+                                : () => Navigator.pushNamed(context, '/dashboard'),
+                            style: TextButton.styleFrom(
+                              foregroundColor: user?.role == "Employee"
+                                  ? Colors.black.withOpacity(0.4) // Disabled state
+                                  : const Color(0xFF14AE5C), // 10% green accent
+                              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              textStyle: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                            icon: Icon(
+                              Icons.arrow_forward_ios,
+                              size: 12,
+                            ),
+                            label: Text("Details"),
+                          ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 16),
 
-                    // 🟢 Sales
+                    // Sales
                     _buildSummaryTile(
                       context,
                       title: "Sales",
-                      value:
-                          "₱${(todaySummary['totalSales'] ?? 0).toStringAsFixed(2)}",
-                      backgroundColor: const Color(0xFFF0FDF4),
+                      value: "₱${(todaySummary['totalSales'] ?? 0).toStringAsFixed(2)}",
+                      backgroundColor: Colors.white, // 60% white
+                      icon: Icons.trending_up,
+                      iconColor: const Color(0xFF14AE5C), // 10% green accent
                     ),
 
-                    // 🔴 Debts
+                    // Total Debts
                     _buildSummaryTile(
                       context,
                       title: "Total Debts",
-                      value:
-                          "₱${(todaySummary['totalDebtAmount'] ?? 0).toStringAsFixed(2)}",
-                      backgroundColor: const Color(0xFFFFEAEA),
+                      value: "₱${(todaySummary['totalDebtAmount'] ?? 0).toStringAsFixed(2)}",
+                      backgroundColor: Colors.white, // 60% white
+                      icon: Icons.account_balance_wallet,
+                      iconColor: Colors.black, // 30% black
                     ),
 
-                    // 🟠 Expenses
+                    // Journal
                     _buildSummaryTile(
                       context,
                       title: "Journal",
-                      value:
-                          "₱${(todaySummary['totalExpenses'] ?? 0).toStringAsFixed(2)}",
-                      backgroundColor: const Color(0xFFFFF4E5),
+                      value: "₱${(todaySummary['totalExpenses'] ?? 0).toStringAsFixed(2)}",
+                      backgroundColor: Colors.white, // 60% white
+                      icon: Icons.receipt_long,
+                      iconColor: Colors.black, // 30% black
+                      isLast: true,
                     ),
                   ],
                 ),
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              SizedBox(height: 24),
+              
+              // Quick Actions Section
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4.0),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SizedBox(height: 20),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: Text(
+                        "Quick Actions",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.black, // 30% black
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 16),
                     GridView.count(
                       shrinkWrap: true,
+                      physics: NeverScrollableScrollPhysics(),
                       crossAxisCount: 3,
-                      mainAxisSpacing: 10,
-                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 16,
+                      crossAxisSpacing: 16,
+                      childAspectRatio: 0.85,
                       children: [
                         if (user?.pos == true)
                           MyHomeButton(
                             key: myPOSICon,
                             text: "POS",
-                            onPressed: () =>
-                                Navigator.pushNamed(context, '/POS'),
-                            icon: Icon(Icons.point_of_sale,
-                                size: 32, color: Colors.black),
+                            onPressed: () => Navigator.pushNamed(context, '/POS'),
+                            icon: Icon(Icons.point_of_sale, size: 24),
                           ),
                         if (user?.debts == true)
                           MyHomeButton(
                             key: myDebtsIcon,
                             text: "Debts",
-                            onPressed: () =>
-                                Navigator.pushNamed(context, '/debts'),
-                            icon:
-                                Icon(Icons.note, size: 32, color: Colors.black),
+                            onPressed: () => Navigator.pushNamed(context, '/debts'),
+                            icon: Icon(Icons.note, size: 24),
                           ),
                         if (user?.ims == true)
                           MyHomeButton(
                             key: myInventoryIcon,
                             text: "Inventory",
-                            onPressed: () =>
-                                Navigator.pushNamed(context, '/inventory'),
-                            icon: Icon(Icons.inventory_2,
-                                size: 32, color: Colors.black),
+                            onPressed: () => Navigator.pushNamed(context, '/inventory'),
+                            icon: Icon(Icons.inventory_2, size: 24),
                           ),
                         if (user?.reports == true)
                           MyHomeButton(
                             key: myReportsIcon,
                             text: "Reports",
-                            onPressed: () =>
-                                Navigator.pushNamed(context, '/reports'),
-                            icon: Icon(Icons.summarize,
-                                size: 32, color: Colors.black),
+                            onPressed: () => Navigator.pushNamed(context, '/reports'),
+                            icon: Icon(Icons.summarize, size: 24),
                           ),
                         if (user?.expenses == true)
                           MyHomeButton(
                             key: myJournalIcon,
                             text: "Store Journal",
-                            onPressed: () =>
-                                Navigator.pushNamed(context, '/expenses'),
-                            icon: Icon(Icons.wallet,
-                                size: 32, color: Colors.black),
+                            onPressed: () => Navigator.pushNamed(context, '/expenses'),
+                            icon: Icon(Icons.wallet, size: 24),
                           ),
                         if (user?.role != "Employee")
                           MyHomeButton(
                             key: myManagementIcon,
                             text: "Management",
-                            onPressed: () =>
-                                Navigator.pushNamed(context, '/management'),
-                            icon: Icon(Icons.people,
-                                size: 32, color: Colors.black),
+                            onPressed: () => Navigator.pushNamed(context, '/management'),
+                            icon: Icon(Icons.people, size: 24),
                           ),
                       ],
                     ),
                   ],
                 ),
-              )
+              ),
             ],
           ),
         ),
@@ -387,27 +459,62 @@ Widget _buildSummaryTile(
   required String title,
   required String value,
   required Color backgroundColor,
+  IconData? icon,
+  Color? iconColor,
+  bool isLast = false,
 }) {
   return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-    margin: const EdgeInsets.only(bottom: 12),
+    padding: const EdgeInsets.all(12),
+    margin: EdgeInsets.only(bottom: isLast ? 0 : 8),
     decoration: BoxDecoration(
-      color: backgroundColor,
+      color: backgroundColor, // Should be white (60%)
       borderRadius: BorderRadius.circular(12),
+      border: Border.all(
+        color: const Color(0xFFF6F6F6), // Light border
+        width: 1,
+      ),
     ),
     child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          title,
-          style: const TextStyle(fontSize: 14, color: Colors.black54),
-        ),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: Colors.black87,
+        if (icon != null) ...[
+          Container(
+            padding: EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF6F6F6), // Light background
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              icon,
+              color: iconColor ?? Colors.black, // Default to black (30%)
+              size: 16,
+            ),
+          ),
+          SizedBox(width: 12),
+        ],
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.black.withOpacity(0.6), // 30% black with opacity
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0.2,
+                ),
+              ),
+              SizedBox(height: 2),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.black, // 30% black
+                  letterSpacing: -0.2,
+                ),
+              ),
+            ],
           ),
         ),
       ],

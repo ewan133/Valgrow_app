@@ -3,12 +3,9 @@ import 'package:curved_labeled_navigation_bar/curved_navigation_bar_item.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:valgrow_ui/models/user_profile.dart';
-// import 'package:valgrow_ui/pages/authpages/document_waiting.dart';
-// import 'package:valgrow_ui/pages/authpages/verification.dart';
 import 'package:valgrow_ui/pages/history/history.dart';
 import 'package:valgrow_ui/pages/home_and_nav/dashboard.dart';
 import 'package:valgrow_ui/pages/home_and_nav/profile.dart';
-// import 'package:valgrow_ui/pages/home_and_nav/settings.dart';
 import 'package:valgrow_ui/pages/unknown_user/add_store_code.dart';
 import 'package:valgrow_ui/services/auth/auth_service.dart';
 import 'package:valgrow_ui/services/database/database_provider.dart';
@@ -21,31 +18,78 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // Instance of AuthService
-  final _auth = AuthService();
-
-// Initial index for the bottom navigation bar
-  int _selectedIndex = 1;
-
-// Initialize _pages with default empty pages to prevent late initialization errors
-  late List<Widget> _pages = [
-    Center(child: CircularProgressIndicator()), // Placeholder while loading
-    Center(child: CircularProgressIndicator()), // Placeholder while loading
-    Center(child: CircularProgressIndicator()), // Placeholder while loading
-  ];
-
-// Database provider (moved initialization to initState)
+  // Services and providers
+  final AuthService _auth = AuthService();
   late DatabaseProvider databaseProvider;
 
+  // Navigation state
+  int _selectedIndex = 1;
+
+  // Initialize _pages with professional loading states
+  late List<Widget> _pages = [
+    _buildLoadingPage(), // Professional loading page
+    _buildLoadingPage(), // Professional loading page
+    _buildLoadingPage(), // Professional loading page
+  ];
+
+  // User data
   UserProfile? user;
+
+  // Professional loading page widget
+  Widget _buildLoadingPage() {
+    return Scaffold(
+      backgroundColor: Colors.grey[50],
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 20,
+                    offset: Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF14AE5C)),
+                    strokeWidth: 3,
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'Loading...',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey[700],
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   void initState() {
     super.initState();
-
-    // Initialize database provider correctly
+    // Initialize database provider
     databaseProvider = Provider.of<DatabaseProvider>(context, listen: false);
-
+    
+    // Initialize user data after widget is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeUserData();
     });
@@ -58,11 +102,10 @@ class _HomePageState extends State<HomePage> {
       final String? uid = _auth.getUserUid();
       if (uid == null) throw Exception("User ID not found");
 
-      // Fetch user data using Provider
+      // Fetch all required data using Provider
       final databaseProvider = context.read<DatabaseProvider>();
       await databaseProvider.fetchUserProfile(uid);
       
-
       final user = databaseProvider.user;
       await databaseProvider.fetchStoreProfile(user!.storeId);
       await databaseProvider.fetchItemsByStoreId();
@@ -70,56 +113,18 @@ class _HomePageState extends State<HomePage> {
       await databaseProvider.checkOverdueDebtsForNotifications();
       await databaseProvider.fetchUserNotifications();
 
-      if (user.storeId == null || user.storeId.isEmpty) {
+      // Navigate to store code page if no store is associated
+      if (user.storeId.isEmpty) {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (context) => AddStoreCodePage(),
           ),
         );
+        return;
       }
 
-      
-
-      // ✅ Handle navigation based on user verification status
-      // if (user.status == 'Unverified' && user.document.isEmpty) {
-      //   print('User not verified');
-
-      //   // Close any existing loading dialogs before navigating
-      //   if (mounted) {
-      //     Navigator.of(context, rootNavigator: true)
-      //         .popUntil((route) => route.isFirst);
-      //   }
-
-      //   // Delay navigation to avoid black screen issues
-      //   WidgetsBinding.instance.addPostFrameCallback((_) {
-      //     if (mounted) {
-      //       Navigator.pushReplacement(
-      //         context,
-      //         MaterialPageRoute(
-      //           builder: (context) => ImageSubmissionPage(uid: uid),
-      //         ),
-      //       );
-      //     }
-      //   });
-
-      //   return; // Stop further execution
-      // } else if (user.status == 'Pending') {
-      //   WidgetsBinding.instance.addPostFrameCallback((_) {
-      //     if (mounted) {
-      //       Navigator.pushReplacement(
-      //         context,
-      //         MaterialPageRoute(
-      //           builder: (context) => DocumentVerificationPage(),
-      //         ),
-      //       );
-      //     }
-      //   });
-
-      //   return; // Stop further execution
-      // }
-
-      // ✅ Set pages for navigation
+      // Set pages for navigation
       if (mounted) {
         setState(() {
           _pages = [
@@ -135,57 +140,85 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _onNavBarTapped(int index) {
-    setState(() {
-      _selectedIndex = index; // Change the displayed page
-    });
+    if (mounted) {
+      setState(() {
+        _selectedIndex = index;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _pages[_selectedIndex], // Display the selected page
-      // bottom nav bar
-      bottomNavigationBar: CurvedNavigationBar(
-        index: _selectedIndex,
-        backgroundColor: Colors.white,
-        color: Color(0xFF14AE5C),
-        height: 70,
-        items: [
-          CurvedNavigationBarItem(
+      backgroundColor: Colors.grey[50],
+      body: _pages[_selectedIndex],
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: Offset(0, -2),
+            ),
+          ],
+        ),
+        child: CurvedNavigationBar(
+          index: _selectedIndex,
+          backgroundColor: Colors.transparent,
+          color: Color(0xFF14AE5C),
+          buttonBackgroundColor: Color(0xFF14AE5C),
+          height: 65,
+          animationCurve: Curves.easeInOut,
+          animationDuration: Duration(milliseconds: 300),
+          items: [
+            CurvedNavigationBarItem(
               child: Icon(
-                Icons.person,
-                size: 35,
+                Icons.person_outline,
+                size: 28,
+                color: Colors.white,
               ),
               label: 'Profile',
               labelStyle: TextStyle(
                 fontFamily: 'Inter',
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              )),
-          CurvedNavigationBarItem(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+                letterSpacing: 0.5,
+              ),
+            ),
+            CurvedNavigationBarItem(
               child: Icon(
-                Icons.home,
-                size: 35,
+                Icons.home_outlined,
+                size: 28,
+                color: Colors.white,
               ),
               label: 'Home',
               labelStyle: TextStyle(
                 fontFamily: 'Inter',
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              )),
-          CurvedNavigationBarItem(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+                letterSpacing: 0.5,
+              ),
+            ),
+            CurvedNavigationBarItem(
               child: Icon(
-                Icons.history,
-                size: 35,
+                Icons.history_outlined,
+                size: 28,
+                color: Colors.white,
               ),
               label: 'History',
               labelStyle: TextStyle(
                 fontFamily: 'Inter',
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              )),
-        ],
-        onTap: _onNavBarTapped, // Handle button tap
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+          onTap: _onNavBarTapped,
+        ),
       ),
     );
   }

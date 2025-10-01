@@ -167,7 +167,7 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
           Provider.of<DatabaseProvider>(context, listen: false);
       setState(() {
         totalAmount = databaseProvider.basket.fold(0.0, (sum, item) {
-          return sum + (item.total_stock * (item.unpaid_price ?? 0.0));
+          return sum + (item.total_stock * item.unpaid_price);
         });
         _balance = totalAmount; // ✅ Set _balance to totalAmount
       });
@@ -262,11 +262,16 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
       builder: (BuildContext context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(15), // ✅ Rounded corners
+            borderRadius: BorderRadius.circular(12), // ✅ Rounded corners
           ),
-          title: const Text(
+          title: Text(
             "Confirm Transaction",
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: Colors.black,
+              letterSpacing: -0.2,
+            ),
           ),
           content: Text(
             "Are you sure you want to save this transaction?\n\n"
@@ -274,7 +279,11 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
             "Total Amount: ₱${totalAmount.toStringAsFixed(2)}\n"
             "Received Amount: ₱${_receivedAmount.toStringAsFixed(2)}\n"
             "Balance: ₱${_balance.toStringAsFixed(2)}",
-            style: const TextStyle(fontSize: 16),
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Colors.black.withOpacity(0.8),
+            ),
           ),
           actions: [
             // ❌ Cancel Button
@@ -282,9 +291,13 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
               onPressed: () {
                 Navigator.pop(context); // ✅ Close modal without saving
               },
-              child: const Text(
+              child: Text(
                 "Cancel",
-                style: TextStyle(color: Colors.red, fontSize: 16),
+                style: TextStyle(
+                  color: Colors.red,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
 
@@ -295,13 +308,20 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
                 _processPayment(); // ✅ Call function to process payment
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                backgroundColor: const Color(0xFF14AE5C),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 0,
               ),
-              child: const Text(
+              child: Text(
                 "Confirm",
-                style: TextStyle(fontSize: 16, color: Colors.white),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
               ),
             ),
           ],
@@ -319,7 +339,7 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
       print("✅ Processing Payment...");
       String? transactionId = await databaseProvider.processPOS(
           totalAmount: totalAmount,
-          amountPaid: _receivedAmount.toDouble() ?? 0.00,
+          amountPaid: _receivedAmount,
           paymentMethod: "debt",
           customerId: _selectedCustomer!.customerId,
           isDebt: true,
@@ -362,27 +382,59 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
 
     // ✅ Calculate total from basket dynamically
     totalAmount = databaseProvider.basket.fold(0.0, (sum, item) {
-      return sum + (item.total_stock * (item.unpaid_price ?? 0.0));
+      return sum + (item.total_stock * item.unpaid_price);
     });
 
     return LayoutBuilder(
       builder: (context, constraints) {
         return SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            padding: const EdgeInsets.all(20.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header
-                const Text(
-                  "Unpaid Transaction Details",
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                // Header Section
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.06),
+                        blurRadius: 16,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Unpaid Transaction",
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.black,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "Configure partial payment details",
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.black.withOpacity(0.6),
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
 
-                const SizedBox(height: 15),
+                const SizedBox(height: 20),
 
                 // Total Amount (Read-Only)
                 _buildSummaryCard(
@@ -470,23 +522,25 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
                 SizedBox(
                   key: unpaidSaveButtonKey,
                   width: double.infinity,
-                  height: 50,
+                  height: 56,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF14AE5C),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(100),
+                        borderRadius: BorderRadius.circular(12),
                       ),
+                      elevation: 0,
                     ),
                     onPressed: () {
                       _confirmPayment();
                     },
-                    child: const Text(
+                    child: Text(
                       "Save Transaction",
                       style: TextStyle(
                         fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
                         color: Colors.white,
+                        letterSpacing: -0.2,
                       ),
                     ),
                   ),
@@ -507,15 +561,15 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
     return Container(
       key: key,
       width: double.infinity,
-      padding: const EdgeInsets.only(top: 15, left: 15, right: 15, bottom: 15),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFFF6F6F6),
-        borderRadius: BorderRadius.circular(10),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.shade400, // ✅ Softer shadow instead of border
-            blurRadius: 4,
-            offset: const Offset(0, 2), // ✅ Moves shadow downward
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -524,14 +578,21 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
         children: [
           Text(
             title,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.black.withOpacity(0.7),
+              letterSpacing: 0.3,
+            ),
           ),
-          const SizedBox(height: 5),
+          const SizedBox(height: 8),
           Text(
             value,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
+              color: Colors.black,
+              letterSpacing: -0.2,
             ),
           ),
         ],
@@ -565,59 +626,94 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
     required BuildContext context,
     Key? key,
   }) {
-    return Column(
+    return Container(
       key: key,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-        ),
-        const SizedBox(height: 5),
-        Row(
-          children: [
-            /// ✅ Non-typable Text Field
-            Expanded(
-              child: TextField(
-                controller: TextEditingController(text: selectedValue),
-                readOnly: true,
-                decoration: InputDecoration(
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Colors.grey.shade400),
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.black,
+              letterSpacing: 0.3,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              /// ✅ Non-typable Text Field
+              Expanded(
+                child: TextField(
+                  controller: TextEditingController(text: selectedValue),
+                  readOnly: true,
+                  decoration: InputDecoration(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: const Color(0xFFF6F6F6)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: const Color(0xFFF6F6F6)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: const Color(0xFF14AE5C)),
+                    ),
+                    filled: true,
+                    fillColor: const Color(0xFFF6F6F6),
                   ),
-                  filled: true,
-                  fillColor: Colors.white,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: 10),
+              const SizedBox(width: 16),
 
-            /// ✅ "Choose" Button to Open Selection Modal
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                backgroundColor: Colors.blue,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+              /// ✅ "Choose" Button to Open Selection Modal
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  backgroundColor: const Color(0xFF14AE5C),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () => _showSelectionModal(
+                  context: context,
+                  selectedValue: selectedValue,
+                  onItemSelected: onItemSelected,
+                ),
+                child: Text(
+                  "Choose",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
-              onPressed: () => _showSelectionModal(
-                context: context,
-                selectedValue: selectedValue,
-                onItemSelected: onItemSelected,
-              ),
-              child: const Text(
-                "Choose",
-                style: TextStyle(color: Colors.white, fontSize: 14),
-              ),
-            ),
-          ],
-        ),
-      ],
+            ],
+          ),
+        ],
+      ),
     );
   }
 
@@ -648,45 +744,74 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
     required List<String> items,
     Key? key,
   }) {
-    return Column(
+    return Container(
       key: key,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-        ),
-        const SizedBox(height: 5),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF6F6F6),
-            border: Border.all(color: Colors.grey.shade400),
-            borderRadius: BorderRadius.circular(8),
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 16,
+            offset: const Offset(0, 2),
           ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: _selectedPaymentMethod,
-              isExpanded: true,
-              onChanged: (newValue) {
-                setState(() {
-                  _selectedPaymentMethod = newValue!;
-                });
-              },
-              items: items.map((String item) {
-                return DropdownMenuItem<String>(
-                  value: item,
-                  child: Text(
-                    item,
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                );
-              }).toList(),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.black,
+              letterSpacing: 0.3,
             ),
           ),
-        ),
-      ],
+          const SizedBox(height: 16),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF6F6F6),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFF6F6F6)),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                value: _selectedPaymentMethod,
+                isExpanded: true,
+                onChanged: (newValue) {
+                  setState(() {
+                    _selectedPaymentMethod = newValue!;
+                  });
+                },
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black,
+                ),
+                items: items.map((String item) {
+                  return DropdownMenuItem<String>(
+                    value: item,
+                    child: Text(
+                      item,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black,
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -701,34 +826,71 @@ Widget _buildInputField({
   int? maxLength,
   Function(String)? onChanged,
 }) {
-  return Column(
+  return Container(
     key: key,
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        label,
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-      ),
-      const SizedBox(height: 5),
-      TextField(
-        controller: controller,
-        keyboardType: TextInputType.number,
-        onChanged: onChanged,
-        maxLength: maxLength ?? 100000,
-        decoration: InputDecoration(
-          hintText: hint ?? "Enter amount",
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 12, vertical: 15),
-          filled: true,
-          fillColor: Colors.white,
-          counterText: "", // This hides the character counter
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: Colors.grey.shade400),
+    width: double.infinity,
+    padding: const EdgeInsets.all(20),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.06),
+          blurRadius: 16,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.black,
+            letterSpacing: 0.3,
           ),
         ),
-      ),
-    ],
+        const SizedBox(height: 16),
+        TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          onChanged: onChanged,
+          maxLength: maxLength ?? 100000,
+          decoration: InputDecoration(
+            hintText: hint ?? "Enter amount",
+            hintStyle: TextStyle(
+              color: Colors.black.withOpacity(0.5),
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            filled: true,
+            fillColor: const Color(0xFFF6F6F6),
+            counterText: "", // This hides the character counter
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: const Color(0xFFF6F6F6)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: const Color(0xFFF6F6F6)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: const Color(0xFF14AE5C)),
+            ),
+          ),
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: Colors.black,
+          ),
+        ),
+      ],
+    ),
   );
 }
 
@@ -739,63 +901,76 @@ Widget _buildDatePickerField({
   required DateTime? value, // Accepts DateTime? instead of String
   required Function(DateTime) onDatePicked, // Pass DateTime instead of String
 }) {
-  return Column(
+  return Container(
     key: key,
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        label,
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-      ),
-      const SizedBox(height: 5),
-
-      /// ✅ Date Picker Field with Box Shadow Instead of Border
-      GestureDetector(
-        onTap: () async {
-          DateTime? pickedDate = await showDatePicker(
-            context: context,
-            initialDate: value ?? DateTime.now(),
-            firstDate: DateTime.now(),
-            lastDate: DateTime(2101),
-          );
-          if (pickedDate != null) {
-            onDatePicked(
-                pickedDate); // Return DateTime instead of formatted string
-          }
-        },
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF6F6F6),
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black,
-                blurRadius: 0,
-                offset: const Offset(0, 0),
-                spreadRadius: 1,
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                value != null
-                    ? "${value.month}/${value.day}/${value.year}" // Properly formatted date
-                    : "Select Due Date", // Placeholder if no date is selected
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black,
-                ),
-              ),
-              const Icon(Icons.calendar_today, color: Colors.black),
-            ],
+    width: double.infinity,
+    padding: const EdgeInsets.all(20),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.06),
+          blurRadius: 16,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: Colors.black,
+            letterSpacing: 0.3,
           ),
         ),
-      ),
-    ],
+        const SizedBox(height: 16),
+
+        /// ✅ Date Picker Field with Box Shadow Instead of Border
+        GestureDetector(
+          onTap: () async {
+            DateTime? pickedDate = await showDatePicker(
+              context: context,
+              initialDate: value ?? DateTime.now(),
+              firstDate: DateTime.now(),
+              lastDate: DateTime(2101),
+            );
+            if (pickedDate != null) {
+              onDatePicked(
+                  pickedDate); // Return DateTime instead of formatted string
+            }
+          },
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF6F6F6),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFF6F6F6)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  value != null
+                      ? "${value.month}/${value.day}/${value.year}" // Properly formatted date
+                      : "Select Due Date", // Placeholder if no date is selected
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black,
+                  ),
+                ),
+                Icon(Icons.calendar_today, color: Colors.black.withOpacity(0.7), size: 20),
+              ],
+            ),
+          ),
+        ),
+      ],
+    ),
   );
 }

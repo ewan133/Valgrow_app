@@ -19,104 +19,102 @@ class _TransactionPageState extends State<TransactionPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF6F6F6),
       appBar: MyAppbar(title: "Transaction"),
       body: Column(
         children: [
           // Toggle Button
-          Padding(
-            padding: const EdgeInsets.only(top: 20, left: 20, right: 20, bottom: 10),
-            child: Container(
-              width: double.infinity, // ✅ Full-width container
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-                border:
-                    Border.all(color: Colors.black, width: 1), // ✅ Black border
-              ),
-              child: Row(
-                children: [
-                  // Paid Button (50%)
-                  Expanded(
-                    child: TextButton(
-                      key: paidTabKey,
-                      onPressed: () {
-                        setState(() {
-                          _isPaidTransaction = true;
-                        });
-                      },
-                      style: TextButton.styleFrom(
-                        backgroundColor: _isPaidTransaction
-                            ? Theme.of(context).colorScheme.primary
-                            : Colors.white,
-                        foregroundColor:
-                            _isPaidTransaction ? Colors.white : Colors.black,
-                        shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(8),
-                            bottomLeft: Radius.circular(8),
-                          ),
-                        ),
-                        minimumSize:
-                            const Size(double.infinity, 55), // ✅ Reduced height
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 8), // ✅ Less padding
+          Container(
+            margin: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.06),
+                  blurRadius: 16,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                // Paid Button (50%)
+                Expanded(
+                  child: TextButton(
+                    key: paidTabKey,
+                    onPressed: () {
+                      setState(() {
+                        _isPaidTransaction = true;
+                      });
+                    },
+                    style: TextButton.styleFrom(
+                      backgroundColor: _isPaidTransaction
+                          ? const Color(0xFF14AE5C)
+                          : Colors.transparent,
+                      foregroundColor:
+                          _isPaidTransaction ? Colors.white : Colors.black,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      child:  Text(
-                        "Paid",
-                        style: TextStyle(
-                            fontSize: 18,
-                            fontWeight:
-                                FontWeight.w600), // ✅ Slightly smaller text
+                      minimumSize: const Size(double.infinity, 48),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      elevation: 0,
+                    ),
+                    child: Text(
+                      "Paid",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.3,
                       ),
                     ),
                   ),
+                ),
 
-                  // Unpaid Button (50%)
-                  Expanded(
-                    child: TextButton(
-                      key: unpaidTabKey,
-                      onPressed: () {
-                        setState(() {
-                          _isPaidTransaction = false;
-                        });
-                      },
-                      style: TextButton.styleFrom(
-                        backgroundColor: !_isPaidTransaction
-                            ? Theme.of(context).colorScheme.primary
-                            : Colors.white,
-                        foregroundColor:
-                            !_isPaidTransaction ? Colors.white : Colors.black,
-                        shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.only(
-                            topRight: Radius.circular(8),
-                            bottomRight: Radius.circular(8),
-                          ),
-                        ),
-                        minimumSize:
-                            const Size(double.infinity, 55), // ✅ Reduced height
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 8), // ✅ Less padding
+                const SizedBox(width: 4),
+
+                // Unpaid Button (50%)
+                Expanded(
+                  child: TextButton(
+                    key: unpaidTabKey,
+                    onPressed: () {
+                      setState(() {
+                        _isPaidTransaction = false;
+                      });
+                    },
+                    style: TextButton.styleFrom(
+                      backgroundColor: !_isPaidTransaction
+                          ? const Color(0xFF14AE5C)
+                          : Colors.transparent,
+                      foregroundColor:
+                          !_isPaidTransaction ? Colors.white : Colors.black,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      child:  Text(
-                        
-                        "Utang",
-                        style: TextStyle(
-                            fontSize: 18,
-                            fontWeight:
-                                FontWeight.w600), // ✅ Slightly smaller text
+                      minimumSize: const Size(double.infinity, 48),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      elevation: 0,
+                    ),
+                    child: Text(
+                      "Utang",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.3,
                       ),
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
-
-          const SizedBox(height: 10),
 
           // Transaction Page Display
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.only(left: 20, right: 20,),
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: _isPaidTransaction
                   ? const PaidTransaction()
                   : const UnpaidTransaction(),

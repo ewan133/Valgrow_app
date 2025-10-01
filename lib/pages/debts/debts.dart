@@ -102,73 +102,139 @@ class _DebtsPageState extends State<DebtsPage> {
     });
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF6F6F6),
       appBar: MyAppbar(title: "Debts"),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
-            child: MySearchbar(
-              key: mainDebtsSearch,
-              controller: _searchController,
-              onChanged: (value) => setState(() {}), // Refresh list on search
+          // Search Section
+          Container(
+            padding: const EdgeInsets.all(20),
+            color: Colors.white,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "Customer Debts",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "Search and manage customer debt records",
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.black.withOpacity(0.6),
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                MySearchbar(
+                  key: mainDebtsSearch,
+                  controller: _searchController,
+                  onChanged: (value) => setState(() {}), // Refresh list on search
+                ),
+              ],
             ),
           ),
           Expanded(
-            child: isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : filteredCustomers.isEmpty
-                    ? const Center(child: Text("No debts found."))
-                    : ListView.builder(
-                        itemCount: filteredCustomers.length,
-                        itemBuilder: (context, index) {
-                          final debtEntry = filteredCustomers[index];
-                          final CustomerDetails? customer =
-                              debtEntry["customer"] as CustomerDetails?;
-                          final double totalBalance =
-                              debtEntry["totalBalance"] ?? 0.0;
-                          final DateTime? nearestDueDate =
-                              debtEntry["nearestDueDate"];
-
-                          return Padding(
-                            padding: const EdgeInsets.only(
-                                bottom: 10.0, left: 10, right: 10),
-                            child: GestureDetector(
-                              onTap: () async {
-                                final provider = Provider.of<DatabaseProvider>(
-                                    context,
-                                    listen: false);
-                                provider.updateSelectedCustomer(customer!);
-                                final result = await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => DebtsPersonalList(
-                                        customerDetails: customer),
-                                  ),
-                                );
-
-                                // ✅ Only update debts if payment was made
-                                if (result == true && mounted) {
-                                  Future.delayed(Duration.zero, () {
-                                    if (mounted) {
-                                      Provider.of<DatabaseProvider>(context,
-                                              listen: false)
-                                          .fetchDebtsWithCustomerInfo();
-                                    }
-                                  });
-                                }
-                              },
-                              child: MyDebtsCard(
-                                customerDetails:
-                                    customer, // ✅ Pass customer info
-                                totalBalance:
-                                    totalBalance, // ✅ Pass total debt balance
-                                nearestDueDate:
-                                    nearestDueDate, // ✅ Pass nearest due date
-                              ),
-                            ),
-                          );
-                        },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: isLoading
+                  ? Center(
+                      child: CircularProgressIndicator(
+                        color: const Color(0xFF14AE5C),
                       ),
+                    )
+                  : filteredCustomers.isEmpty
+                      ? Center(
+                          child: Container(
+                            padding: const EdgeInsets.all(24),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.receipt_long_outlined,
+                                  size: 48,
+                                  color: Colors.black.withOpacity(0.3),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  "No debts found",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black.withOpacity(0.7),
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  "Customer debt records will appear here",
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.black.withOpacity(0.5),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      : ListView.builder(
+                          itemCount: filteredCustomers.length,
+                          itemBuilder: (context, index) {
+                            final debtEntry = filteredCustomers[index];
+                            final CustomerDetails? customer =
+                                debtEntry["customer"] as CustomerDetails?;
+                            final double totalBalance =
+                                debtEntry["totalBalance"] ?? 0.0;
+                            final DateTime? nearestDueDate =
+                                debtEntry["nearestDueDate"];
+
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              child: GestureDetector(
+                                onTap: () async {
+                                  final provider = Provider.of<DatabaseProvider>(
+                                      context,
+                                      listen: false);
+                                  provider.updateSelectedCustomer(customer!);
+                                  final result = await Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => DebtsPersonalList(
+                                          customerDetails: customer),
+                                    ),
+                                  );
+
+                                  // ✅ Only update debts if payment was made
+                                  if (result == true && mounted) {
+                                    Future.delayed(Duration.zero, () {
+                                      if (mounted) {
+                                        Provider.of<DatabaseProvider>(context,
+                                                listen: false)
+                                            .fetchDebtsWithCustomerInfo();
+                                      }
+                                    });
+                                  }
+                                },
+                                child: MyDebtsCard(
+                                  customerDetails:
+                                      customer, // ✅ Pass customer info
+                                  totalBalance:
+                                      totalBalance, // ✅ Pass total debt balance
+                                  nearestDueDate:
+                                      nearestDueDate, // ✅ Pass nearest due date
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+            ),
           ),
         ],
       ),

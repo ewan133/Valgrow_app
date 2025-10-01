@@ -5,9 +5,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:valgrow_ui/components/general_components/appbar.dart';
-import 'package:valgrow_ui/components/general_components/button.dart';
 import 'package:valgrow_ui/components/POS_components/table_pos.dart';
-import 'package:valgrow_ui/components/general_components/text.dart';
 import 'package:valgrow_ui/pages/POS/items_modal.dart';
 import 'package:valgrow_ui/services/database/database_provider.dart';
 import 'package:valgrow_ui/models/item_details.dart';
@@ -272,6 +270,7 @@ class _POSPageState extends State<POSPage> {
     final databaseProvider = Provider.of<DatabaseProvider>(context);
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF6F6F6), // Match dashboard background
       appBar: MyAppbar(
         title: "Point of Sale",
         actionWidget: TextButton(
@@ -281,30 +280,60 @@ class _POSPageState extends State<POSPage> {
               context: context,
               builder: (BuildContext context) {
                 return AlertDialog(
-                  title: Text("Clear Basket"),
-                  content: Text("Are you sure you want to clear the basket?"),
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  title: Text(
+                    "Clear Basket",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                    ),
+                  ),
+                  content: Text(
+                    "Are you sure you want to clear the basket?",
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.black.withOpacity(0.6),
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
                   actions: [
                     TextButton(
                       onPressed: () {
-                        Navigator.of(context).pop(); // Close the dialog
+                        Navigator.of(context).pop();
                       },
-                      child: Text("Cancel"),
+                      child: Text(
+                        "Cancel",
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.black.withOpacity(0.6),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                     ),
                     ElevatedButton(
                       onPressed: () {
                         Provider.of<DatabaseProvider>(context, listen: false)
                             .clearBasket();
-                        Navigator.of(context)
-                            .pop(); // Close the dialog after action
+                        Navigator.of(context).pop();
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            Colors.green, // Set background color to green
+                        backgroundColor: const Color(0xFF14AE5C),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
                       child: Text(
                         "Confirm",
                         style: TextStyle(
-                            color: Colors.white), // Ensure text is readable
+                          fontSize: 14,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ],
@@ -314,58 +343,152 @@ class _POSPageState extends State<POSPage> {
           },
           child: const Text(
             "Clear",
-            style: TextStyle(color: Colors.black, fontSize: 16),
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(10.0),
+          padding: const EdgeInsets.all(20.0), // Match dashboard padding
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  MyButton(
-                    key: myAddButton,
-                    text: "Add",
-                    color: const Color(0xFF14AE5C),
-                    onTap: () {
-                      showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        shape: const RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.vertical(top: Radius.circular(20)),
+              // Page Header
+              Container(
+                margin: const EdgeInsets.only(bottom: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Point of Sale",
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      "Scan or add items to create transactions",
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.black.withOpacity(0.6),
+                        fontWeight: FontWeight.w400,
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Action Buttons Section
+              Container(
+                margin: const EdgeInsets.only(bottom: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: Text(
+                        "Quick Actions",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.black,
+                          letterSpacing: -0.2,
                         ),
-                        builder: (context) => const ItemsModal(),
-                      );
-                    },
-                    borderRadius: 8,
-                    width: 110,
-                  ),
-                  const SizedBox(width: 20),
-                  MyButton(
-                    key: myScanButton,
-                    text: "Scan",
-                    color: const Color(0xFF38B6FF),
-                    onTap: () => scanBarcode(context), // ✅ Call scan function
-                    borderRadius: 8,
-                    width: 110,
-                  ),
-                ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            height: 48,
+                            child: ElevatedButton.icon(
+                              key: myAddButton,
+                              onPressed: () {
+                                showModalBottomSheet(
+                                  context: context,
+                                  isScrollControlled: true,
+                                  shape: const RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                                  ),
+                                  builder: (context) => const ItemsModal(),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF14AE5C),
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              icon: Icon(Icons.add, size: 18),
+                              label: Text(
+                                "Add Item",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Container(
+                            height: 48,
+                            child: ElevatedButton.icon(
+                              key: myScanButton,
+                              onPressed: () => scanBarcode(context),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF38B6FF),
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              icon: Icon(Icons.qr_code_scanner, size: 18),
+                              label: Text(
+                                "Scan Item",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 10),
-              MyText(
-                text: "POS Product Item",
-                fontSize: 18,
-                color: Colors.black,
-                fontWeight: FontWeight.w500,
+
+              // Cart Section
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: Text(
+                  "Shopping Cart",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.black,
+                    letterSpacing: -0.2,
+                  ),
+                ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 16),
               databaseProvider.isLoading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? const Center(child: CircularProgressIndicator(color: Color(0xFF14AE5C)))
                   : MyTable(
                       key: myCartSummary,
                       products: databaseProvider.basket

@@ -24,45 +24,83 @@ class _ItemsModalState extends State<ItemsModal> {
 
     overlayEntry = OverlayEntry(
       builder: (context) => Positioned(
-        top: 50, // Adjust position
+        top: 50,
         left: MediaQuery.of(context).size.width * 0.1,
         width: MediaQuery.of(context).size.width * 0.8,
         child: Material(
           color: Colors.transparent,
           child: Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isError ? Colors.red : Colors.green,
-              borderRadius: BorderRadius.circular(10),
+              color: isError ? Colors.red : const Color(0xFF14AE5C),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFFF6F6F6),
+                width: 1,
+              ),
               boxShadow: [
                 BoxShadow(
-                    color: Colors.black26, blurRadius: 10, spreadRadius: 2),
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 20,
+                  offset: const Offset(0, 4),
+                  spreadRadius: 0,
+                ),
               ],
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                Container(
+                  padding: EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Icon(
+                    isError ? Icons.error_outline : Icons.check_circle_outline,
+                    color: Colors.white,
+                    size: 16,
+                  ),
+                ),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     message,
-                    style: const TextStyle(color: Colors.white, fontSize: 16),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.2,
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                if (onUndo != null)
+                if (onUndo != null) ...[
+                  const SizedBox(width: 12),
                   TextButton(
                     onPressed: () {
                       if (overlayEntry.mounted) {
-                        overlayEntry.remove(); // ✅ Remove notification
+                        overlayEntry.remove();
                       }
-                      onUndo(); // ✅ Call undo function
+                      onUndo();
                     },
-                    child: const Text(
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(6),
+                        side: BorderSide(color: Colors.white.withOpacity(0.3)),
+                      ),
+                    ),
+                    child: Text(
                       "UNDO",
                       style: TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.bold),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                      ),
                     ),
                   ),
+                ],
               ],
             ),
           ),
@@ -73,8 +111,8 @@ class _ItemsModalState extends State<ItemsModal> {
     // ✅ Insert overlay
     overlay.insert(overlayEntry);
 
-    // ✅ Automatically remove after 2 seconds
-    Future.delayed(const Duration(seconds: 2), () {
+    // ✅ Automatically remove after 3 seconds
+    Future.delayed(const Duration(seconds: 3), () {
       if (overlayEntry.mounted) {
         overlayEntry.remove();
       }
@@ -93,14 +131,14 @@ class _ItemsModalState extends State<ItemsModal> {
     // Apply search filter (Searches both `item_name` and `barcode`)
     final filteredItems = sortedItems.where((item) {
       final itemName = item.item_name.toLowerCase();
-      final barcode = item.barcode?.toLowerCase() ?? '';
+      final barcode = item.barcode.toLowerCase();
       final query = _searchQuery.toLowerCase();
 
       return itemName.contains(query) || barcode.contains(query);
     }).toList();
 
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(20),
       height: MediaQuery.of(context).size.height * 0.9,
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -113,20 +151,55 @@ class _ItemsModalState extends State<ItemsModal> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                "Select Item",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Select Item",
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.black,
+                      letterSpacing: -0.2,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    "Choose items to add to your cart",
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.black.withOpacity(0.6),
+                      fontWeight: FontWeight.w400,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ],
               ),
-              IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: () => Navigator.pop(context),
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF6F6F6),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: IconButton(
+                  icon: Icon(
+                    Icons.close,
+                    color: Colors.black.withOpacity(0.6),
+                    size: 20,
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                  padding: EdgeInsets.zero,
+                ),
               ),
             ],
           ),
 
+          const SizedBox(height: 24),
+
           // Search Bar
-          Padding(
-            padding: const EdgeInsets.only(bottom: 10.0),
+          Container(
+            margin: const EdgeInsets.only(bottom: 16),
             child: MySearchbar(
               controller: _searchController,
               onChanged: (value) {
@@ -137,11 +210,65 @@ class _ItemsModalState extends State<ItemsModal> {
             ),
           ),
 
+          // Items Count
+          if (filteredItems.isNotEmpty) ...[
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Text(
+                "${filteredItems.length} item${filteredItems.length != 1 ? 's' : ''} available",
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.black.withOpacity(0.6),
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ),
+          ],
+
           // List View of Sorted & Filtered Items
           Expanded(
             child: filteredItems.isEmpty
-                ? const Center(child: Text("No items found"))
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF14AE5C).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            Icons.search_off,
+                            color: const Color(0xFF14AE5C),
+                            size: 32,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          "No items found",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          "Try adjusting your search",
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.black.withOpacity(0.6),
+                            fontWeight: FontWeight.w400,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
                 : ListView.builder(
+                    padding: const EdgeInsets.only(bottom: 16),
                     itemCount: filteredItems.length,
                     itemBuilder: (context, index) {
                       final item = filteredItems[index];
