@@ -99,7 +99,11 @@ class AuthService {
       await FirebaseAuth.instance.sendPasswordResetEmail(
         email: email,
       );
-    } catch (e) {}
+      print("✅ Password reset email sent to: $email");
+    } catch (e) {
+      print("❌ Error sending password reset email: $e");
+      throw e; // Re-throw the error so it can be handled in the UI
+    }
   }
 
   // get user uid

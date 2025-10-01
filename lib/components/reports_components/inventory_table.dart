@@ -100,9 +100,9 @@ class _MyInventoryTableState extends State<MyInventoryTable> {
               children: [
                 MyText(
                   text: "Inventory Report",
-                  fontSize: 20,
+                  fontSize: 18,
                   color: Colors.black,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w600,
                 ),
                 OutlinedButton.icon(
                   onPressed: () => _exportToExcel(filteredItems),
@@ -131,7 +131,7 @@ class _MyInventoryTableState extends State<MyInventoryTable> {
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade300, width: 1),
+                  border: Border.all(color: Colors.grey.shade200, width: 1),
                 ),
                 clipBehavior: Clip.antiAlias,
                 child: DataTable2(
@@ -214,6 +214,6 @@ class _MyInventoryTableState extends State<MyInventoryTable> {
     return Text(text,
         textAlign: TextAlign.left,
         style:
-            const TextStyle(fontWeight: FontWeight.bold, color: Colors.white));
+            const TextStyle(fontWeight: FontWeight.w600, color: Colors.white, fontSize: 13));
   }
 }

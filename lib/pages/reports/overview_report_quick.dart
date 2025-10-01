@@ -17,48 +17,66 @@ class OverviewReportQuickSummary extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Quick Summary',
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Colors.teal.shade800,
-          ),
-        ),
-        const SizedBox(height: 12),
         Row(
           children: [
-            Expanded(
-              child: _SummaryCard(
-                title: 'In Stock',
-                value: inStock,
-                icon: Icons.inventory_2_rounded,
-                backgroundColor: Colors.green.shade50,
-                iconColor: Colors.green,
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.teal.shade50,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.dashboard_outlined,
+                color: Colors.teal.shade800,
+                size: 20,
               ),
             ),
             const SizedBox(width: 12),
-            Expanded(
-              child: _SummaryCard(
-                title: 'Out of Stock',
-                value: outOfStock,
-                icon: Icons.warning_amber_rounded,
-                backgroundColor: Colors.red.shade50,
-                iconColor: Colors.red,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _SummaryCard(
-                title: 'Customers w/ Balance',
-                value: customers,
-                icon: Icons.account_balance_wallet_rounded,
-                backgroundColor: Colors.orange.shade50,
-                iconColor: Colors.orange,
+            Text(
+              'Quick Summary',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.teal.shade800,
+                letterSpacing: 0.5,
               ),
             ),
           ],
         ),
+        const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: _SummaryCard(
+                  title: 'In Stock',
+                  value: inStock,
+                  icon: Icons.inventory_2_rounded,
+                  backgroundColor: Colors.green.shade50,
+                  iconColor: Colors.green,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _SummaryCard(
+                  title: 'Out of Stock',
+                  value: outOfStock,
+                  icon: Icons.warning_amber_rounded,
+                  backgroundColor: Colors.red.shade50,
+                  iconColor: Colors.red,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _SummaryCard(
+                  title: 'Customers w/ Balance',
+                  value: customers,
+                  icon: Icons.account_balance_wallet_rounded,
+                  backgroundColor: Colors.orange.shade50,
+                  iconColor: Colors.orange,
+                ),
+              ),
+            ],
+          ),
       ],
     );
   }
@@ -81,31 +99,61 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      color: backgroundColor,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 2, // lighter minimalist shadow
-      child: Container(
-        height: 150, // fix all cards to same height
-        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 16.0),
+    return Container(
+      height: 160,
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Icon(icon, size: 32, color: iconColor),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.8),
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
+                  ),
+                ],
+              ),
+              child: Icon(icon, size: 32, color: iconColor),
+            ),
             Text(
               value,
               style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: Colors.black87,
+                letterSpacing: 0.5,
+                height: 1.0,
               ),
             ),
             Text(
               title,
               textAlign: TextAlign.center,
+              maxLines: 2,
               style: const TextStyle(
-                fontSize: 13,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
                 color: Colors.black54,
+                letterSpacing: 0.3,
+                height: 1.2,
               ),
             ),
           ],

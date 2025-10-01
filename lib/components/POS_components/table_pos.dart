@@ -1,4 +1,3 @@
-import 'package:data_table_2/data_table_2.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
@@ -138,6 +137,145 @@ class MyTable extends StatelessWidget {
     );
   }
 
+  /// ✅ Show dialog to edit quantity manually
+  void _showQuantityDialog(
+      BuildContext context,
+      DatabaseProvider databaseProvider,
+      Map<String, dynamic> product,
+      int currentStock,
+      int maxStock) {
+    final TextEditingController quantityController = 
+        TextEditingController(text: currentStock.toString());
+    
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Edit Quantity"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                product["item_name"].toString(),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                "Available stock: $maxStock",
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: quantityController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: "Quantity",
+                  border: OutlineInputBorder(),
+                  hintText: "Enter quantity",
+                ),
+                autofocus: true,
+                onSubmitted: (value) {
+                  _updateQuantity(context, databaseProvider, product, value, maxStock);
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                _updateQuantity(context, databaseProvider, product, 
+                    quantityController.text, maxStock);
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+              child: const Text("Update", style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// ✅ Update quantity based on user input
+  void _updateQuantity(
+      BuildContext context,
+      DatabaseProvider databaseProvider,
+      Map<String, dynamic> product,
+      String quantityText,
+      int maxStock) {
+    final int? newQuantity = int.tryParse(quantityText);
+    
+    if (newQuantity == null || newQuantity <= 0) {
+      Fluttertoast.showToast(
+        msg: "Please enter a valid quantity",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.TOP,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+      return;
+    }
+
+    if (newQuantity > maxStock) {
+      Fluttertoast.showToast(
+        msg: "Quantity cannot exceed available stock ($maxStock)",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.TOP,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+      return;
+    }
+
+    try {
+      // First, completely remove the item from basket
+      databaseProvider.complteRemoveFromBasket(product["itemId"].toString());
+      
+      // Then add the item with the new quantity
+      final item = databaseProvider.items.firstWhere(
+        (i) => i.itemId == product["itemId"],
+      );
+      
+      // Add the item multiple times to reach the desired quantity
+      for (int i = 0; i < newQuantity; i++) {
+        databaseProvider.addToBasket(item);
+      }
+      
+      Navigator.pop(context);
+      
+      Fluttertoast.showToast(
+        msg: "Quantity updated to $newQuantity",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.TOP,
+        backgroundColor: Colors.green,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+    } catch (e) {
+      print("❌ Error updating quantity: $e");
+      Fluttertoast.showToast(
+        msg: "Error updating quantity",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.TOP,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<DatabaseProvider>(
@@ -155,183 +293,323 @@ class MyTable extends StatelessWidget {
 
         return Column(
           children: [
-            /// Data Table
-            SizedBox(
+            /// Mobile-Friendly Card List
+            Container(
               height: 440,
-              child: ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  topRight: Radius.circular(12),
-                ),
-                child: DataTable2(
-                  headingRowColor:
-                      WidgetStateProperty.all(const Color(0xFF14AE5C)),
-                  columnSpacing: 20,
-                  horizontalMargin: 12,
-                  minWidth: 850,
-                  columns: [
-                    DataColumn2(
-                      label: const Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text('Product',
-                            style: TextStyle(fontWeight: FontWeight.bold)),
-                      ),
-                      fixedWidth: 150,
-                    ),
-                    DataColumn2(
-                      label: const Align(
-                        alignment: Alignment.centerRight,
-                        child: Text('Price',
-                            style: TextStyle(fontWeight: FontWeight.bold)),
-                      ),
-                      numeric: true,
-                      fixedWidth: 100,
-                    ),
-                    DataColumn2(
-                      label: const Align(
-                        alignment: Alignment.center,
-                        child: Text('Quantity',
-                            style: TextStyle(fontWeight: FontWeight.bold)),
-                      ),
-                      numeric: true,
-                      fixedWidth: 150,
-                    ),
-                    DataColumn2(
-                      label: const Align(
-                        alignment: Alignment.centerRight,
-                        child: Text('Subtotal',
-                            style: TextStyle(fontWeight: FontWeight.bold)),
-                      ),
-                      numeric: true,
-                      fixedWidth: 120,
-                    ),
-                    DataColumn2(
-                      label: const Align(
-                        alignment: Alignment.center,
-                        child: Text('Action',
-                            style: TextStyle(fontWeight: FontWeight.bold)),
-                      ),
-                      fixedWidth: 100,
-                    ),
-                  ],
-                  rows: List.generate(basket.length, (index) {
-                    var product = basket[index];
-                    final int currentStock = product["total_stock"] as int;
-                    final int maxStock = databaseProvider.items
-                        .firstWhere((i) => i.itemId == product["itemId"])
-                        .total_stock;
-
-                    return DataRow(
-                      cells: [
-                        DataCell(SizedBox(
-                          width: 160,
-                          child: Text(
-                            product["item_name"].toString(),
-                            style: const TextStyle(fontSize: 14),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        )),
-                        DataCell(
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: Text("₱${product["regular_price"]}",
-                                style: const TextStyle(fontSize: 14)),
-                          ),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: basket.isEmpty
+                  ? const Center(
+                      child: Text(
+                        "No items in basket",
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w500,
                         ),
-                        DataCell(
-                          SizedBox(
-                            width: 140,
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                // 🔻 Remove Quantity
-                                IconButton(
-                                  icon: const Icon(Icons.remove,
-                                      size: 18, color: Colors.red),
-                                  onPressed: currentStock > 1
-                                      ? () {
-                                          databaseProvider.removeFromBasket(
-                                              product["itemId"].toString());
-                                        }
-                                      : null,
-                                ),
+                      ),
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.all(6),
+                      itemCount: basket.length,
+                      separatorBuilder: (context, index) => const SizedBox(height: 6),
+                      itemBuilder: (context, index) {
+                        var product = basket[index];
+                        final int currentStock = product["total_stock"] as int;
+                        final int maxStock = databaseProvider.items
+                            .firstWhere((i) => i.itemId == product["itemId"])
+                            .total_stock;
 
-                                // 🔢 Current Quantity
-                                Padding(
+                        return Card(
+                          elevation: 3,
+                          shadowColor: Colors.black.withOpacity(0.1),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(
+                              color: Colors.grey.shade200,
+                              width: 0.5,
+                            ),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Product Name and Delete Button Row
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        product["item_name"].toString(),
+                                        style: const TextStyle(
+                                          fontSize: 17,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.black87,
+                                          letterSpacing: 0.2,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        color: Colors.red.shade50,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: IconButton(
+                                        icon: Icon(Icons.delete_outline, 
+                                            color: Colors.red.shade600, size: 20),
+                                        onPressed: () {
+                                          databaseProvider.complteRemoveFromBasket(
+                                            product["itemId"].toString(),
+                                          );
+                                        },
+                                        splashRadius: 20,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                
+                                const SizedBox(height: 8),
+                                
+                                // Price and Subtotal Row
+                                Container(
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 6.0),
-                                  child: Text(
-                                    "$currentStock",
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
+                                      horizontal: 10, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade50,
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: Colors.grey.shade200,
+                                      width: 0.5,
                                     ),
                                   ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            "Unit Price",
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: Colors.grey.shade600,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                          Text(
+                                            "₱${product["regular_price"]}",
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.black87,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.end,
+                                        children: [
+                                          Text(
+                                            "Subtotal",
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: Colors.grey.shade600,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                          Text(
+                                            "₱${calculateSubtotal(product).toStringAsFixed(2)}",
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFF14AE5C),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
-
-                                // 🔼 Add Quantity
-                                IconButton(
-                                  icon: const Icon(Icons.add,
-                                      size: 18, color: Colors.green),
-                                  onPressed: currentStock < maxStock
-                                      ? () {
-                                          try {
-                                            final item = databaseProvider.items
-                                                .firstWhere(
-                                              (i) =>
-                                                  i.itemId == product["itemId"],
-                                            );
-                                            databaseProvider.addToBasket(item);
-                                          } catch (e) {
-                                            print(
-                                                "❌ Item with ID ${product["item_id"]} not found.");
-                                          }
-                                        }
-                                      : null,
+                                
+                                const SizedBox(height: 10),
+                                
+                                // Quantity Control Row
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      "Quantity",
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.grey.shade700,
+                                        letterSpacing: 0.2,
+                                      ),
+                                    ),
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                          color: Colors.grey.shade300,
+                                          width: 1,
+                                        ),
+                                        borderRadius: BorderRadius.circular(10),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withOpacity(0.03),
+                                            blurRadius: 4,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          // Remove Quantity Button
+                                          Material(
+                                            color: Colors.transparent,
+                                            child: InkWell(
+                                              borderRadius: const BorderRadius.only(
+                                                topLeft: Radius.circular(10),
+                                                bottomLeft: Radius.circular(10),
+                                              ),
+                                              onTap: currentStock > 1
+                                                  ? () {
+                                                      databaseProvider.removeFromBasket(
+                                                          product["itemId"].toString());
+                                                    }
+                                                  : null,
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(
+                                                    horizontal: 14, vertical: 10),
+                                                child: Icon(
+                                                  Icons.remove_circle_outline,
+                                                  size: 18,
+                                                  color: currentStock > 1 
+                                                      ? Colors.red.shade600 
+                                                      : Colors.grey.shade400,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          
+                                          // Editable Quantity
+                                          Material(
+                                            color: Colors.white,
+                                            child: InkWell(
+                                              onTap: () {
+                                                _showQuantityDialog(
+                                                  context, 
+                                                  databaseProvider, 
+                                                  product, 
+                                                  currentStock, 
+                                                  maxStock
+                                                );
+                                              },
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(
+                                                    horizontal: 14, vertical: 8),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.white,
+                                                  border: Border.symmetric(
+                                                    vertical: BorderSide(
+                                                        color: Colors.grey.shade300),
+                                                  ),
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Text(
+                                                      "$currentStock",
+                                                      style: const TextStyle(
+                                                        fontSize: 15,
+                                                        fontWeight: FontWeight.w700,
+                                                        color: Colors.black87,
+                                                        letterSpacing: 0.5,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(width: 4),
+                                                    Icon(
+                                                      Icons.edit_outlined,
+                                                      size: 14,
+                                                      color: Colors.grey.shade500,
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          
+                                          // Add Quantity Button
+                                          Material(
+                                            color: Colors.transparent,
+                                            child: InkWell(
+                                              borderRadius: const BorderRadius.only(
+                                                topRight: Radius.circular(10),
+                                                bottomRight: Radius.circular(10),
+                                              ),
+                                              onTap: currentStock < maxStock
+                                                  ? () {
+                                                      try {
+                                                        final item = databaseProvider.items
+                                                            .firstWhere(
+                                                          (i) => i.itemId == product["itemId"],
+                                                        );
+                                                        databaseProvider.addToBasket(item);
+                                                      } catch (e) {
+                                                        print(
+                                                            "❌ Item with ID ${product["itemId"]} not found.");
+                                                      }
+                                                    }
+                                                  : null,
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(
+                                                    horizontal: 10, vertical: 8),
+                                                child: Icon(
+                                                  Icons.add_circle_outline,
+                                                  size: 18,
+                                                  color: currentStock < maxStock 
+                                                      ? Colors.green.shade600 
+                                                      : Colors.grey.shade400,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
                           ),
-                        ),
-                        DataCell(
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: Text(
-                                "₱${calculateSubtotal(product).toStringAsFixed(2)}",
-                                style: const TextStyle(
-                                    fontSize: 14, fontWeight: FontWeight.bold)),
-                          ),
-                        ),
-                        DataCell(
-                          Align(
-                            alignment: Alignment.center,
-                            child: IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () {
-                                databaseProvider.complteRemoveFromBasket(
-                                  product["itemId"]
-                                      .toString(), // ✅ Use itemId instead of barcode
-                                );
-                              },
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  }),
-                ),
-              ),
+                        );
+                      },
+                    ),
             ),
 
             /// Total & Item Summary
             Container(
-              margin: const EdgeInsets.symmetric(vertical: 10),
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
+              margin: const EdgeInsets.symmetric(vertical: 8),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.black, width: 0),
-                borderRadius: BorderRadius.circular(15),
+                color: Colors.grey.shade50,
+                border: Border.all(
+                  color: Colors.grey.shade200,
+                  width: 1,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -340,16 +618,23 @@ class MyTable extends StatelessWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        "Item:",
+                      Text(
+                        "Total Items",
                         style: TextStyle(
-                            fontWeight: FontWeight.w500, fontSize: 14),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color: Colors.grey.shade600,
+                          letterSpacing: 0.3,
+                        ),
                       ),
-                      const SizedBox(height: 5),
+                      const SizedBox(height: 4),
                       Text(
                         "${calculateTotalItems(basket)}",
                         style: const TextStyle(
-                            fontWeight: FontWeight.w500, fontSize: 14),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 18,
+                          color: Colors.black87,
+                        ),
                       ),
                     ],
                   ),
@@ -358,16 +643,23 @@ class MyTable extends StatelessWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      const Text(
-                        "Total:",
+                      Text(
+                        "Total Amount",
                         style: TextStyle(
-                            fontWeight: FontWeight.w500, fontSize: 14),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color: Colors.grey.shade600,
+                          letterSpacing: 0.3,
+                        ),
                       ),
-                      const SizedBox(height: 5),
+                      const SizedBox(height: 4),
                       Text(
                         "₱${calculateTotal(basket).toStringAsFixed(2)}",
                         style: const TextStyle(
-                            fontWeight: FontWeight.w500, fontSize: 14),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 18,
+                          color: Color(0xFF14AE5C),
+                        ),
                       ),
                     ],
                   ),

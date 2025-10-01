@@ -82,13 +82,29 @@ class _DebtsPersonalListState extends State<DebtsPersonalList> {
     final userId = provider.user?.uid;
 
     final reason = '''
-📄 Customer Overdue Report
+📄 Customer Default Report
 
-This report concerns an overdue debt from ${widget.customerDetails.name}, who can be contacted at ${widget.customerDetails.phone}. The debt in question has the ID ${overdueDebt.debtId}, with an outstanding balance of ₱${overdueDebt.balance.toStringAsFixed(2)}. The due date for this debt was ${overdueDebt.dueDate.toLocal().toString().split(' ')[0]}.
+This report is filed by "$storeName" against a customer with overdue debt obligations.
 
-The report was submitted by $storeName, which can be reached at $storePhone. The store's ID is $storeId.
+Business Information:
+• Store Name : $storeName
+• Store ID : $storeId
+• Contact : $storePhone
 
-This complaint is filed due to unpaid and overdue debts beyond the agreed due date.
+Customer Information:
+• Name : ${widget.customerDetails.name}
+• Contact : ${widget.customerDetails.phone}
+• Customer ID : ${widget.customerDetails.customerId}
+
+Report Details:
+• Report Type : Debt Default
+• Debt ID : ${overdueDebt.debtId}
+• Outstanding Balance : ₱${overdueDebt.balance.toStringAsFixed(2)}
+• Original Due Date : ${overdueDebt.dueDate.toLocal().toString().split(' ')[0]}
+• Days Overdue : ${DateTime.now().difference(overdueDebt.dueDate).inDays} days
+
+Reason for Report:
+This customer has failed to meet their debt obligations despite the agreed-upon due date. The outstanding amount remains unpaid beyond the contractual terms, resulting in this formal report for debt collection or dispute resolution purposes.
 ''';
 
     final controller = TextEditingController(text: reason);

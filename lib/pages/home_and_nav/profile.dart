@@ -164,17 +164,17 @@ class _ProfilePageState extends State<ProfilePage> {
     try {
       await _auth.sendPasswordResetEmail(user!.email);
       Fluttertoast.showToast(
-        msg: "Password reset email sent!",
+        msg: "Password reset email sent to ${user!.email}!",
         toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.CENTER,
+        gravity: ToastGravity.BOTTOM,
         backgroundColor: Colors.green,
         textColor: Colors.white,
       );
     } catch (e) {
       Fluttertoast.showToast(
-        msg: "Error: ${e.toString()}",
+        msg: "Failed to send reset email: ${e.toString()}",
         toastLength: Toast.LENGTH_LONG,
-        gravity: ToastGravity.CENTER,
+        gravity: ToastGravity.BOTTOM,
         backgroundColor: Colors.red,
         textColor: Colors.white,
       );
@@ -256,7 +256,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     Text(
                       label,
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 14,
                         color: textSecondary,
                         fontWeight: FontWeight.w500,
                       ),
@@ -265,7 +265,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     Text(
                       value,
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 16,
                         color: textPrimary,
                         fontWeight: FontWeight.w500,
                       ),
@@ -307,7 +307,7 @@ class _ProfilePageState extends State<ProfilePage> {
         child: Text(
           text,
           style: TextStyle(
-            fontSize: 14,
+            fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -359,7 +359,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       Text(
                         _isLoading ? "Loading..." : user.name,
                         style: TextStyle(
-                          fontSize: 20,
+                          fontSize: 24,
                           color: textPrimary,
                           fontWeight: FontWeight.w600,
                         ),
@@ -368,7 +368,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       Text(
                         _isLoading ? "Loading..." : user.role,
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: 16,
                           color: textSecondary,
                           fontWeight: FontWeight.w500,
                         ),
@@ -397,7 +397,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         Text(
                           'Profile Details',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: 18,
                             color: textPrimary,
                             fontWeight: FontWeight.w600,
                           ),
@@ -461,7 +461,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         Text(
                           'Account Actions',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: 18,
                             color: textPrimary,
                             fontWeight: FontWeight.w600,
                           ),

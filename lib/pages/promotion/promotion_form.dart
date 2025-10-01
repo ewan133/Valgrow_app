@@ -1,7 +1,9 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:valgrow_ui/components/general_components/appbar.dart';
 import 'package:valgrow_ui/services/database/database_provider.dart';
 import 'package:valgrow_ui/services/database/promotion_database.dart';
 import 'package:valgrow_ui/services/storage/storage_service.dart';
@@ -66,18 +68,23 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
         _pricePerDay = config['price_per_day']?.toDouble() ?? PromotionConfig.DEFAULT_PRICE_PER_DAY;
         _minDays = config['min_days'] ?? PromotionConfig.DEFAULT_MIN_DAYS;
         
-        // Extract payment methods
+        // Extract payment methods with index-based approach
         final methods = config['payment_methods'] as List<dynamic>? ?? [];
-        _paymentMethods = methods.map((m) => m['type'].toString()).toList();
-        
-        // Build payment method details map
+        _paymentMethods = [];
         _paymentMethodDetails = {};
-        for (var method in methods) {
-          _paymentMethodDetails[method['type']] = {
+        
+        // Build payment method details map with index-based keys
+        for (int i = 0; i < methods.length; i++) {
+          final method = methods[i];
+          final methodKey = '${method['type']}_$i'; // Use index to make unique
+          _paymentMethods.add(methodKey);
+          _paymentMethodDetails[methodKey] = {
+            'type': method['type'], // Store original type name
             'qr_code': method['qrCode'] ?? '',
             'account_name': method['accountName'] ?? '',
             'account_number': method['accountNumber'] ?? '',
             'bank_name': method['bankName'] ?? '',
+            'index': i,
           };
         }
         
@@ -107,7 +114,13 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
       
       // Check minimum days requirement
       if (days < _minDays) {
-        _showErrorSnackBar('Minimum promotion period is $_minDays days');
+        Fluttertoast.showToast(
+          msg: 'Minimum promotion period is $_minDays days',
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+        );
         return;
       }
       
@@ -162,7 +175,13 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
           curve: Curves.easeInOut,
         );
       } else {
-        _showErrorSnackBar('Please fill in all required fields in Part 1');
+        Fluttertoast.showToast(
+          msg: 'Please fill in all required fields in Part 1',
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+        );
       }
     }
   }
@@ -183,12 +202,24 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
     if (!_part2FormKey.currentState!.validate()) return;
     
     if (_receiptImage == null) {
-      _showErrorSnackBar('Please upload payment receipt');
+      Fluttertoast.showToast(
+        msg: 'Please upload payment receipt',
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+      );
       return;
     }
     
     if (_selectedPaymentMethod.isEmpty) {
-      _showErrorSnackBar('Please select a payment method');
+      Fluttertoast.showToast(
+        msg: 'Please select a payment method',
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+      );
       return;
     }
 
@@ -198,7 +229,13 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
       final store = Provider.of<DatabaseProvider>(context, listen: false).store;
       if (store == null) {
         Navigator.pop(context);
-        _showErrorSnackBar('Store information not found');
+        Fluttertoast.showToast(
+          msg: 'Store information not found',
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+        );
         return;
       }
 
@@ -222,7 +259,13 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
 
       if (receiptUrl.isEmpty || storeImageUrl.isEmpty) {
         Navigator.pop(context);
-        _showErrorSnackBar('Failed to upload images');
+        Fluttertoast.showToast(
+          msg: 'Failed to upload images',
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+        );
         return;
       }
 
@@ -240,12 +283,24 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
       );
 
       Navigator.pop(context);
-      _showSuccessSnackBar('Promotion submitted successfully!');
+      Fluttertoast.showToast(
+        msg: 'Promotion submitted successfully!',
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.green,
+        textColor: Colors.white,
+      );
       _resetForm();
       
     } catch (e) {
       Navigator.pop(context);
-      _showErrorSnackBar('Error submitting promotion: $e');
+      Fluttertoast.showToast(
+        msg: 'Error submitting promotion: $e',
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+      );
     }
   }
 
@@ -307,30 +362,6 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message, style: TextStyle(color: primaryWhite)),
-        backgroundColor: Colors.red.shade600,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: EdgeInsets.all(16),
-      ),
-    );
-  }
-
-  void _showSuccessSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message, style: TextStyle(color: primaryWhite)),
-        backgroundColor: accentGreen,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: EdgeInsets.all(16),
       ),
     );
   }
@@ -439,7 +470,13 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
         });
       }
     } catch (e) {
-      _showErrorSnackBar("Failed to pick image");
+      Fluttertoast.showToast(
+        msg: 'Failed to pick image',
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+      );
     }
   }
 
@@ -921,13 +958,18 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
     );
   }
 
-  Widget _buildPaymentMethodCard(String method) {
-    final isSelected = _selectedPaymentMethod == method;
+  Widget _buildPaymentMethodCard(String methodKey) {
+    final isSelected = _selectedPaymentMethod == methodKey;
     
     // Get payment method details from database config
-    final methodDetails = _paymentMethodDetails[method] ?? {};
+    final methodDetails = _paymentMethodDetails[methodKey] ?? {};
+    final methodType = methodDetails['type'] ?? methodKey; // Display name
+    final methodIndex = methodDetails['index'] ?? 0;
     final qrUrl = methodDetails['qr_code'] ?? '';
     final accountNumber = methodDetails['account_number'] ?? 'N/A';
+    
+    // Create unique key for each payment method to ensure different images
+    final uniqueKey = '${methodKey}_${qrUrl}_${accountNumber}';
     
     return Container(
       margin: EdgeInsets.only(bottom: 12),
@@ -951,7 +993,7 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
         child: InkWell(
           onTap: () {
             setState(() {
-              _selectedPaymentMethod = method;
+              _selectedPaymentMethod = methodKey;
             });
           },
           borderRadius: BorderRadius.circular(12),
@@ -978,12 +1020,34 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
                           : null,
                     ),
                     SizedBox(width: 12),
-                    Text(
-                      method,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: primaryBlack,
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Text(
+                            methodType,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: primaryBlack,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: accentGreen.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              '#${methodIndex + 1}',
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: accentGreen,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -1023,6 +1087,7 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
                                       borderRadius: BorderRadius.circular(8),
                                       child: Image.network(
                                         qrUrl,
+                                        key: ValueKey(uniqueKey), // Unique key for each image
                                         fit: BoxFit.cover,
                                         errorBuilder: (context, error, stackTrace) {
                                           return Center(
@@ -1032,6 +1097,27 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
                                                 Icon(Icons.error, size: 40, color: subtleGray),
                                                 SizedBox(height: 8),
                                                 Text('QR Failed', style: TextStyle(fontSize: 12, color: subtleGray)),
+                                                SizedBox(height: 4),
+                                                Text('${methodType} #${methodIndex + 1}', style: TextStyle(fontSize: 10, color: subtleGray)),
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                        loadingBuilder: (context, child, loadingProgress) {
+                                          if (loadingProgress == null) return child;
+                                          return Center(
+                                            child: Column(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                CircularProgressIndicator(
+                                                  color: accentGreen,
+                                                  value: loadingProgress.expectedTotalBytes != null
+                                                      ? loadingProgress.cumulativeBytesLoaded / 
+                                                        loadingProgress.expectedTotalBytes!
+                                                      : null,
+                                                ),
+                                                SizedBox(height: 8),
+                                                Text('Loading QR...', style: TextStyle(fontSize: 12, color: subtleGray)),
                                               ],
                                             ),
                                           );
@@ -1045,6 +1131,8 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
                                           Icon(Icons.qr_code, size: 60, color: subtleGray),
                                           SizedBox(height: 8),
                                           Text('QR Code', style: TextStyle(fontSize: 12, color: subtleGray)),
+                                          SizedBox(height: 4),
+                                          Text('${methodType} #${methodIndex + 1}', style: TextStyle(fontSize: 10, color: subtleGray)),
                                         ],
                                       ),
                                     ),
@@ -1391,22 +1479,8 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: primaryWhite,
-      appBar: AppBar(
-        title: Text(
-          'Store Promotion',
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: primaryWhite,
-            fontSize: 18,
-          ),
-        ),
-        backgroundColor: accentGreen,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: primaryWhite),
-          onPressed: () => Navigator.pop(context),
-        ),
+      appBar: MyAppbar(
+        title: 'Promotion',
       ),
       body: Column(
         children: [

@@ -595,6 +595,8 @@ Please settle your balance before the due date. Thank you!
                           ),
                   ),
                 ),
+                
+                const SizedBox(height: 20), // Added space under the Pay Debt button
               ],
             ],
           ),

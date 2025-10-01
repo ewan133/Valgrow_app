@@ -192,7 +192,7 @@ class _ItemsModalState extends State<ItemsModal> {
                             "${newItem.item_name} added to basket!",
                             onUndo: () {
                               databaseProvider.removeFromBasket(
-                                  newItem.barcode); // ✅ Undo action
+                                  newItem.itemId); // ✅ Undo action
                             },
                           );
                         },

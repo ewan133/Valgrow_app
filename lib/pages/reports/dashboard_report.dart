@@ -79,40 +79,30 @@ class _DashboardReportPageState extends State<DashboardReportPage> {
             const Text("Today’s Summary",
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
-            AspectRatio(
-              aspectRatio: 1.3,
-              child: PieChart(
-                PieChartData(
-                  sections: [
-                    PieChartSectionData(
-                      value: (today['paidTransactions'] ?? 0).toDouble(),
-                      title: '',
-                      color: primaryGreen,
-                      radius: 60,
-                    ),
-                    PieChartSectionData(
-                      value: (today['debtTransactions'] ?? 0).toDouble(),
-                      title: '',
-                      color: Colors.redAccent,
-                      radius: 60,
-                    ),
-                  ],
-                ),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200, width: 1),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.circle,
-                    size: 14, color: Color(0xFF14AE5C)), // primaryGreen
-                const SizedBox(width: 6),
-                Text("Paid (${today['paidTransactions'] ?? 0})"),
-                const SizedBox(width: 20),
-                const Icon(Icons.circle, size: 14, color: Colors.redAccent),
-                const SizedBox(width: 6),
-                Text("Unpaid (${today['debtTransactions'] ?? 0})"),
-              ],
+              child: Column(
+                children: [
+                  AspectRatio(
+                    aspectRatio: 1.3,
+                    child: _buildPieChart(today, primaryGreen),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildChartLegend(today, primaryGreen),
+                ],
+              ),
             ),
 
             const SizedBox(height: 32),
@@ -125,32 +115,65 @@ class _DashboardReportPageState extends State<DashboardReportPage> {
             Row(
               children: [
                 Expanded(
-                  child: _buildTotalCard(
-                    title: "Total Sales",
-                    value:
-                        "₱${(dateRange['totalSalesExcludingDebt'] ?? 0).toStringAsFixed(2)}",
-                    color: primaryGreen.withOpacity(0.1),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: _buildTotalCard(
+                      title: "Total Sales",
+                      value:
+                          "₱${(dateRange['totalSalesExcludingDebt'] ?? 0).toStringAsFixed(2)}",
+                      color: primaryGreen.withOpacity(0.1),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _buildTotalCard(
-                    title: "Journal Total",
-                    value:
-                        "₱${(todaySummary['totalExpenses'] ?? 0).toStringAsFixed(2)}",
-                    color: Colors.red.withOpacity(0.1),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: _buildTotalCard(
+                      title: "Journal Total",
+                      value:
+                          "₱${(todaySummary['totalExpenses'] ?? 0).toStringAsFixed(2)}",
+                      color: Colors.red.withOpacity(0.1),
+                    ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: _buildTotalCard(
-                title: "Total Unpaid Debts\n(as of today)",
-                value:
-                    "₱${(dateRange['totalUnpaidDebts'] ?? 0).toStringAsFixed(2)}",
-                color: Colors.orange.withOpacity(0.1),
+            Container(
+              decoration: BoxDecoration(
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                child: _buildTotalCard(
+                  title: "Total Unpaid Debts\n(as of today)",
+                  value:
+                      "₱${(dateRange['totalUnpaidDebts'] ?? 0).toStringAsFixed(2)}",
+                  color: Colors.orange.withOpacity(0.1),
+                ),
               ),
             ),
 
@@ -163,8 +186,15 @@ class _DashboardReportPageState extends State<DashboardReportPage> {
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200, width: 1),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Column(
                 children: overview['customersWithOutstandingDebts'] != null
@@ -173,6 +203,8 @@ class _DashboardReportPageState extends State<DashboardReportPage> {
                         return Column(
                           children: [
                             ListTile(
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 4),
                               title: Text(entry['name']),
                               subtitle: Text(
                                 "₱${entry['balance'].toStringAsFixed(2)} – ${entry['status']}",
@@ -184,25 +216,50 @@ class _DashboardReportPageState extends State<DashboardReportPage> {
                                       : Colors.black87,
                                 ),
                               ),
-                              trailing: Icon(
-                                entry['status'].toString().contains("Overdue")
-                                    ? Icons.warning
-                                    : Icons.access_time,
-                                color: entry['status']
-                                        .toString()
-                                        .contains("Overdue")
-                                    ? Colors.red
-                                    : Colors.orange,
+                              trailing: Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: entry['status']
+                                          .toString()
+                                          .contains("Overdue")
+                                      ? Colors.red.withOpacity(0.1)
+                                      : Colors.orange.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Icon(
+                                  entry['status'].toString().contains("Overdue")
+                                      ? Icons.warning
+                                      : Icons.access_time,
+                                  color: entry['status']
+                                          .toString()
+                                          .contains("Overdue")
+                                      ? Colors.red
+                                      : Colors.orange,
+                                  size: 18,
+                                ),
                               ),
                             ),
-                            const Divider(
-                                height: 0,
-                                thickness: 1,
-                                color: Color(0xFFE0E0E0)),
+                            if ((overview['customersWithOutstandingDebts'] as List)
+                                    .indexOf(entry) !=
+                                (overview['customersWithOutstandingDebts'] as List)
+                                        .length -
+                                    1)
+                              Divider(
+                                  height: 1,
+                                  thickness: 0.5,
+                                  color: Colors.grey.shade200,
+                                  indent: 16,
+                                  endIndent: 16),
                           ],
                         );
                       }).toList()
-                    : [const ListTile(title: Text("No outstanding debts"))],
+                    : [
+                        const Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Text("No outstanding debts",
+                              style: TextStyle(color: Colors.grey)),
+                        )
+                      ],
               ),
             ),
 
@@ -215,8 +272,16 @@ class _DashboardReportPageState extends State<DashboardReportPage> {
             Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.white,
+                  border: Border.all(color: Colors.grey.shade200, width: 1),
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -232,14 +297,43 @@ class _DashboardReportPageState extends State<DashboardReportPage> {
                       ),
                     ),
                     ...((overview['mostSoldItems'] as List?) ?? [])
-                        .map<Widget>((item) => ListTile(
-                              title: Text(item),
-                              leading: const Icon(Icons.trending_up,
-                                  color: Colors.green),
+                        .map<Widget>((item) => Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              child: Column(
+                                children: [
+                                  ListTile(
+                                    contentPadding: EdgeInsets.zero,
+                                    title: Text(item),
+                                    leading: Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.green.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: const Icon(Icons.trending_up,
+                                          color: Colors.green, size: 18),
+                                    ),
+                                  ),
+                                  if (((overview['mostSoldItems'] as List?) ?? [])
+                                          .indexOf(item) !=
+                                      ((overview['mostSoldItems'] as List?) ?? [])
+                                              .length -
+                                          1)
+                                    Divider(
+                                        height: 1,
+                                        thickness: 0.5,
+                                        color: Colors.grey.shade200),
+                                ],
+                              ),
                             ))
                         .toList(),
-                    const Divider(
-                        height: 32, thickness: 1, color: Color(0xFFE0E0E0)),
+                    const SizedBox(height: 16),
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 16),
+                      height: 0.5,
+                      color: Colors.grey.shade300,
+                    ),
+                    const SizedBox(height: 16),
                     const Padding(
                       padding: EdgeInsets.symmetric(horizontal: 16.0),
                       child: Text(
@@ -252,12 +346,37 @@ class _DashboardReportPageState extends State<DashboardReportPage> {
                     ),
                     const SizedBox(height: 8),
                     ...((overview['outOfStockItems'] as List?) ?? [])
-                        .map<Widget>((item) => ListTile(
-                              title: Text(item),
-                              leading:
-                                  const Icon(Icons.warning, color: Colors.red),
+                        .map<Widget>((item) => Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              child: Column(
+                                children: [
+                                  ListTile(
+                                    contentPadding: EdgeInsets.zero,
+                                    title: Text(item),
+                                    leading: Container(
+                                      padding: const EdgeInsets.all(6),
+                                      decoration: BoxDecoration(
+                                        color: Colors.red.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: const Icon(Icons.warning,
+                                          color: Colors.red, size: 18),
+                                    ),
+                                  ),
+                                  if (((overview['outOfStockItems'] as List?) ?? [])
+                                          .indexOf(item) !=
+                                      ((overview['outOfStockItems'] as List?) ?? [])
+                                              .length -
+                                          1)
+                                    Divider(
+                                        height: 1,
+                                        thickness: 0.5,
+                                        color: Colors.grey.shade200),
+                                ],
+                              ),
                             ))
                         .toList(),
+                    const SizedBox(height: 16),
                   ],
                 ))
           ],
@@ -276,6 +395,7 @@ class _DashboardReportPageState extends State<DashboardReportPage> {
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200, width: 1),
       ),
       child: Column(
         children: [
@@ -288,6 +408,152 @@ class _DashboardReportPageState extends State<DashboardReportPage> {
                   const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         ],
       ),
+    );
+  }
+
+  Widget _buildPieChart(Map<String, dynamic> today, Color primaryGreen) {
+    final int paidTransactions = today['paidTransactions'] ?? 0;
+    final int debtTransactions = today['debtTransactions'] ?? 0;
+    final bool hasData = paidTransactions > 0 || debtTransactions > 0;
+
+    if (!hasData) {
+      // Show placeholder chart when no data
+      return Stack(
+        alignment: Alignment.center,
+        children: [
+          PieChart(
+            PieChartData(
+              sections: [
+                PieChartSectionData(
+                  value: 1,
+                  title: '',
+                  color: Colors.grey.shade200,
+                  radius: 60,
+                ),
+              ],
+              sectionsSpace: 0,
+              centerSpaceRadius: 40,
+            ),
+          ),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.pie_chart_outline,
+                size: 32,
+                color: Colors.grey.shade400,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'No data today',
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ],
+      );
+    }
+
+    // Show actual data chart
+    return PieChart(
+      PieChartData(
+        sections: [
+          PieChartSectionData(
+            value: paidTransactions.toDouble(),
+            title: '',
+            color: primaryGreen,
+            radius: 60,
+          ),
+          PieChartSectionData(
+            value: debtTransactions.toDouble(),
+            title: '',
+            color: Colors.redAccent,
+            radius: 60,
+          ),
+        ],
+        sectionsSpace: 2,
+        centerSpaceRadius: 40,
+      ),
+    );
+  }
+
+  Widget _buildChartLegend(Map<String, dynamic> today, Color primaryGreen) {
+    final int paidTransactions = today['paidTransactions'] ?? 0;
+    final int debtTransactions = today['debtTransactions'] ?? 0;
+    final bool hasData = paidTransactions > 0 || debtTransactions > 0;
+
+    if (!hasData) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade200, width: 1),
+        ),
+        child: Text(
+          'Start making transactions to see data',
+          style: TextStyle(
+            color: Colors.grey.shade600,
+            fontSize: 13,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      );
+    }
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: primaryGreen.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF14AE5C),
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text("Paid ($paidTransactions)"),
+            ],
+          ),
+        ),
+        const SizedBox(width: 16),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.redAccent.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: const BoxDecoration(
+                  color: Colors.redAccent,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text("Unpaid ($debtTransactions)"),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

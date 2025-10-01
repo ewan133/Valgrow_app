@@ -11,9 +11,26 @@ class OverviewReportFinancialInsights extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: const [
-        _SectionTitle('Financial Insights'),
-        SizedBox(height: 16),
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.teal.shade50,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.trending_up,
+                color: Colors.teal.shade800,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const _SectionTitle('Financial Insights'),
+          ],
+        ),
+        const SizedBox(height: 20),
         _ScrollableChart(child: _MonthlyGrowthChart()),
         // SizedBox(height: 24),
         // _ScrollableChart(child: _ProfitChart()),
@@ -45,9 +62,10 @@ class _SectionTitle extends StatelessWidget {
     return Text(
       title,
       style: TextStyle(
-        fontSize: 22,
+        fontSize: 20,
         fontWeight: FontWeight.bold,
         color: Colors.teal.shade800,
+        letterSpacing: 0.5,
       ),
     );
   }
@@ -85,14 +103,14 @@ class _MonthlyGrowthChart extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.start,
             children: const [
               _LegendIndicator(color: Colors.teal, text: 'Sales'),
             ],
           ),
-          const SizedBox(height: 15),
+          const SizedBox(height: 20),
           SizedBox(
             height: 300,
             child: SizedBox(
@@ -288,18 +306,48 @@ class _ChartContainer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title,
-                style:
-                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.teal.shade50,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Icon(
+                    Icons.show_chart,
+                    color: Colors.teal.shade700,
+                    size: 16,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(title,
+                    style: const TextStyle(
+                        fontSize: 16, 
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.3)),
+              ],
+            ),
+            const SizedBox(height: 16),
             child,
           ],
         ),
@@ -315,17 +363,28 @@ class _LegendIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 14,
-          height: 14,
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        const SizedBox(width: 6),
-        Text(text, style: const TextStyle(fontSize: 13)),
-      ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.3), width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 8),
+          Text(text, 
+              style: const TextStyle(
+                fontSize: 12, 
+                fontWeight: FontWeight.w500)),
+        ],
+      ),
     );
   }
 }

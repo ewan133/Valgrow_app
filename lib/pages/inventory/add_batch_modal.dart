@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 class AddBatchModal extends StatefulWidget {
   final Function(double, int, DateTime?) onAddBatch;
@@ -147,11 +147,13 @@ class _AddBatchModalState extends State<AddBatchModal> {
                         double.tryParse(_purchasePriceController.text) ==
                             null ||
                         int.tryParse(_quantityController.text) == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Please enter valid values"),
-                          backgroundColor: Colors.red,
-                        ),
+                      Fluttertoast.showToast(
+                        msg: "Please enter valid values",
+                        toastLength: Toast.LENGTH_SHORT,
+                        gravity: ToastGravity.BOTTOM,
+                        backgroundColor: Colors.red,
+                        textColor: Colors.white,
+                        fontSize: 16.0,
                       );
                       return;
                     }

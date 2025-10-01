@@ -134,11 +134,22 @@ class _MyDebtPaymentsTableState extends State<MyDebtPaymentsTable> {
                       WidgetStateProperty.all(const Color(0xFF14AE5C)),
                   columnSpacing: 12,
                   horizontalMargin: 12,
-                  minWidth: 1000,
+                  minWidth: 1200,
+                  dataRowHeight: 65,
+                  headingRowHeight: 56,
                   columns: [
                     DataColumn2(
-                        label: _headerText("Payment ID"), fixedWidth: 170),
-                    DataColumn2(label: _headerText("Date"), fixedWidth: 120),
+                        label: Padding(
+                          padding: const EdgeInsets.only(right: 20.0),
+                          child: _headerText("Payment ID"),
+                        ), 
+                        fixedWidth: 170),
+                    DataColumn2(
+                        label: Padding(
+                          padding: const EdgeInsets.only(right: 20.0),
+                          child: _headerText("Date"),
+                        ), 
+                        fixedWidth: 120),
                     DataColumn2(
                         label: _headerText("Customer"), fixedWidth: 150),
                     DataColumn2(
@@ -160,8 +171,14 @@ class _MyDebtPaymentsTableState extends State<MyDebtPaymentsTable> {
                     final remaining = (item['Remaining Balance'] ?? 0.0) as num;
                     return DataRow(
                       cells: [
-                        DataCell(Text(item['Payment ID'] ?? '')),
-                        DataCell(Text(item['Date'] ?? '')),
+                        DataCell(Padding(
+                          padding: const EdgeInsets.only(right: 20.0),
+                          child: Text(item['Payment ID'] ?? ''),
+                        )),
+                        DataCell(Padding(
+                          padding: const EdgeInsets.only(right: 20.0),
+                          child: Text(item['Date'] ?? ''),
+                        )),
                         DataCell(Text(item['Customer'] ?? '')),
                         DataCell(Text("₱${amountPaid.toStringAsFixed(2)}")),
                         DataCell(Text("₱${remaining.toStringAsFixed(2)}")),

@@ -101,8 +101,13 @@ class _AdditemPageState extends State<AdditemPage> {
         categories = [...categorySet.toList()]; // Keep "All" first
       });
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error loading categories: $e")),
+      Fluttertoast.showToast(
+        msg: "Error loading categories: $e",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
       );
     }
   }
@@ -145,8 +150,13 @@ class _AdditemPageState extends State<AdditemPage> {
         setState(() => _image = File(pickedFile.path));
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Failed to pick image")),
+      Fluttertoast.showToast(
+        msg: "Failed to pick image",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
       );
     }
   }
@@ -160,8 +170,13 @@ class _AdditemPageState extends State<AdditemPage> {
         _unpaidPriceController.text.trim().isEmpty ||
         unitValue == null ||
         categoryValue == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please fill in all required fields")),
+      Fluttertoast.showToast(
+        msg: "Please fill in all required fields",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.orange,
+        textColor: Colors.white,
+        fontSize: 16.0,
       );
       return;
     }
@@ -228,8 +243,13 @@ class _AdditemPageState extends State<AdditemPage> {
       await Provider.of<DatabaseProvider>(context, listen: false)
           .addNewItem(newItem);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Item Successfully Saved")),
+      Fluttertoast.showToast(
+        msg: "Item Successfully Saved",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.green,
+        textColor: Colors.white,
+        fontSize: 16.0,
       );
 
       // Clear form after success
@@ -245,8 +265,13 @@ class _AdditemPageState extends State<AdditemPage> {
 
       Navigator.pop(context);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error saving item: ${e.toString()}")),
+      Fluttertoast.showToast(
+        msg: "Error saving item: ${e.toString()}",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
       );
     } finally {
       setState(() => _isUploading = false);

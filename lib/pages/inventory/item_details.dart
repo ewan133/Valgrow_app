@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -98,6 +99,16 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
     final databaseProvider = context.read<DatabaseProvider>();
     await databaseProvider.addNewBatch(newBatch);
     await databaseProvider.fetchBatchByItemId(widget.item.itemId);
+
+    // ✅ Show success toast notification
+    Fluttertoast.showToast(
+      msg: "Stock successfully added!",
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      backgroundColor: Colors.green,
+      textColor: Colors.white,
+      fontSize: 16.0,
+    );
 
     print(
         "✅ Added Batch: ${newBatch.batchName}, Quantity: $quantity, Expiration: $expirationDate");

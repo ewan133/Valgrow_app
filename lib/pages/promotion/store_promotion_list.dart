@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
+import 'package:valgrow_ui/components/general_components/appbar.dart';
 import 'package:valgrow_ui/services/database/database_provider.dart';
 import 'package:valgrow_ui/services/database/promotion_database.dart';
 
@@ -119,32 +120,18 @@ class _StorePromotionListState extends State<StorePromotionList>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: primaryWhite,
-      appBar: AppBar(
-        backgroundColor: accentGreen,
-        elevation: 0,
-        centerTitle: true,
-        title: Text(
-          'Store Promotions',
-          style: TextStyle(
-            color: primaryWhite,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
+      appBar: MyAppbar(
+        title: 'Promotions',
+        actionWidget: IconButton(
+          icon: Icon(Icons.refresh, color: Colors.black),
+          onPressed: _loadPromotions,
         ),
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: primaryWhite),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.refresh, color: primaryWhite),
-            onPressed: _loadPromotions,
-          ),
-        ],
-        bottom: PreferredSize(
-          preferredSize: Size.fromHeight(60),
-          child: Container(
-            margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      ),
+      body: Column(
+        children: [
+          // Tabs container moved outside AppBar
+          Container(
+            margin: EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: lightGray,
               borderRadius: BorderRadius.circular(12),
@@ -185,20 +172,23 @@ class _StorePromotionListState extends State<StorePromotionList>
               ],
             ),
           ),
-        ),
+          // TabBarView content
+          Expanded(
+            child: isLoading
+                ? _buildLoadingState()
+                : error != null
+                    ? _buildErrorState()
+                    : TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _buildPromotionList(_getPromotionsByStatus('active'), 'active'),
+                          _buildPromotionList(_getPromotionsByStatus('pending'), 'pending'),
+                          _buildPromotionList(_getPromotionsByStatus('inactive'), 'inactive'),
+                        ],
+                      ),
+          ),
+        ],
       ),
-      body: isLoading
-          ? _buildLoadingState()
-          : error != null
-              ? _buildErrorState()
-              : TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildPromotionList(_getPromotionsByStatus('active'), 'active'),
-                    _buildPromotionList(_getPromotionsByStatus('pending'), 'pending'),
-                    _buildPromotionList(_getPromotionsByStatus('inactive'), 'inactive'),
-                  ],
-                ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           _showAddPromotionDialog();
@@ -637,6 +627,11 @@ class _StorePromotionListState extends State<StorePromotionList>
             ),
             SizedBox(height: 8),
             Text(
+              'Payment Method: ${promotion['payment_method'] ?? 'Not specified'}',
+              style: TextStyle(color: primaryBlack),
+            ),
+            SizedBox(height: 8),
+            Text(
               'Start Date: ${promotion['start_date'] != null ? _formatDate(promotion['start_date']) : 'Not set'}',
               style: TextStyle(color: primaryBlack),
             ),
@@ -650,6 +645,60 @@ class _StorePromotionListState extends State<StorePromotionList>
               'Status: ${promotion['status']}',
               style: TextStyle(color: primaryBlack),
             ),
+            // Show rejection reason if the promotion is rejected
+            if (promotion['status'] == 'rejected' && promotion['rejection_reason'] != null) ...[
+              SizedBox(height: 12),
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.withOpacity(0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.cancel_outlined,
+                          size: 16,
+                          color: Colors.red.shade600,
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          'Rejection Reason:',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.red.shade600,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 6),
+                    Text(
+                      promotion['rejection_reason'],
+                      style: TextStyle(
+                        color: Colors.red.shade700,
+                        fontSize: 13,
+                      ),
+                    ),
+                    if (promotion['rejected_at'] != null) ...[
+                      SizedBox(height: 4),
+                      Text(
+                        'Rejected on: ${_formatDate(promotion['rejected_at'])}',
+                        style: TextStyle(
+                          color: Colors.red.shade600,
+                          fontSize: 12,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
         actions: [
