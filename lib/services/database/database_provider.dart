@@ -791,26 +791,29 @@ class DatabaseProvider extends ChangeNotifier {
     _selectedCustomerDebts = [];
   }
 
-  Future<void> fileCustomerReport({
+  Future<String?> fileCustomerReport({
     required String storeId,
     required String customerId,
     required String customerName,
     required String reportReason,
     required String reportedByUserId,
+    required double reportedBalance,
   }) async {
     try {
-      await _debtsDatabase.fileCustomerReport(
+      final result = await _debtsDatabase.fileCustomerReport(
         storeId: storeId,
         reportedId: customerId,
         customerName: customerName,
         reportReason: reportReason,
         reportedByUserId: reportedByUserId,
         complainant_contact: _user!.phone,
+        reportedBalance: reportedBalance,
       );
       print("✅ Report filed for customer $customerId");
+      return result;
     } catch (e) {
       print("❌ Failed to file report: $e");
-      rethrow;
+      return 'ERROR';
     }
   }
 

@@ -1,8 +1,6 @@
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tutorial_coach_mark/tutorial_coach_mark.dart';
 import 'package:valgrow_ui/components/global_keys.dart';
 import 'package:valgrow_ui/components/target.dart';
@@ -97,7 +95,7 @@ Customer Information:
 • Customer ID : ${widget.customerDetails.customerId}
 
 Report Details:
-• Report Type : Debt Default
+• Report Type : Debt Dispute
 • Debt ID : ${overdueDebt.debtId}
 • Outstanding Balance : ₱${overdueDebt.balance.toStringAsFixed(2)}
 • Original Due Date : ${overdueDebt.dueDate.toLocal().toString().split(' ')[0]}
@@ -120,21 +118,49 @@ This customer has failed to meet their debt obligations despite the agreed-upon 
     );
 
     if (confirmed == true && storeId != null && userId != null) {
-      await provider.fileCustomerReport(
+      final result = await provider.fileCustomerReport(
         storeId: storeId,
         customerId: widget.customerDetails.customerId,
         customerName: widget.customerDetails.name,
         reportReason: controller.text.trim(),
         reportedByUserId: userId,
+        reportedBalance: overdueDebt.balance,
       );
 
-      Fluttertoast.showToast(
-        msg: "Report submitted successfully.",
-        backgroundColor: Colors.green,
-        textColor: Colors.white,
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.BOTTOM,
-      );
+      if (result == 'SUCCESS') {
+        Fluttertoast.showToast(
+          msg: "Report submitted successfully.",
+          backgroundColor: Colors.green,
+          textColor: Colors.white,
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+        );
+      } else if (result == 'DUPLICATE_BY_USER') {
+        Fluttertoast.showToast(
+          msg: "You have already reported this customer for this balance amount (₱${overdueDebt.balance.toStringAsFixed(2)}).",
+          backgroundColor: Colors.orange,
+          textColor: Colors.white,
+          toastLength: Toast.LENGTH_LONG,
+          gravity: ToastGravity.BOTTOM,
+        );
+      } else if (result?.startsWith('DUPLICATE_BY_COLLEAGUE|') == true) {
+        final reporterName = result!.split('|')[1];
+        Fluttertoast.showToast(
+          msg: "$reporterName has already reported this customer for this balance amount (₱${overdueDebt.balance.toStringAsFixed(2)}).",
+          backgroundColor: Colors.orange,
+          textColor: Colors.white,
+          toastLength: Toast.LENGTH_LONG,
+          gravity: ToastGravity.BOTTOM,
+        );
+      } else {
+        Fluttertoast.showToast(
+          msg: "Failed to submit report. Please try again.",
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+        );
+      }
     }
   }
 
@@ -208,56 +234,6 @@ This customer has failed to meet their debt obligations despite the agreed-upon 
   TutorialCoachMark? tutorialCoachMark;
   List<TargetFocus> myTargets = [];
   Target target = Target();
-
-  //Needed method
-  void _checkAndStartTutorial() async {
-    final prefs = await SharedPreferences.getInstance();
-    myTargets.clear();
-    final hasShownTutorial =
-        prefs.getBool('hasShownAddProductTutorial') ?? false;
-
-    if (!hasShownTutorial) {
-      // Add your targets
-      target.addMyTargets(
-          DebtsPersonalEdit,
-          "DebtsPersonalEdit",
-          ContentAlign.bottom,
-          "Edit the customer's personal and debt details here.",
-          myTargets);
-
-      target.addMyTargets(
-          DebtsPersonalDetails,
-          "DebtsPersonalDetails",
-          ContentAlign.bottom,
-          "View the customer's complete profile, including contact information and debt history.",
-          myTargets);
-
-      target.addMyTargets(
-          DebtsPersonalListKey,
-          "DebtsPersonalList",
-          ContentAlign.top,
-          "Browse the list of debts for this customer.",
-          myTargets);
-
-      target.addMyTargets(
-          DebtsPersonalReport,
-          "DebtsPersonalReport",
-          ContentAlign.bottom,
-          "Report issues related to this customer's debts, such as overdue balances or disputes.",
-          myTargets);
-
-      // Delay and start the tutorial
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Future.delayed(const Duration(seconds: 1), () {
-          tutorialCoachMark = TutorialCoachMark(targets: myTargets)
-            ..show(context: context);
-
-          // Set the flag so it won't show again
-          prefs.setBool('hasShownAddProductTutorial', false);
-        });
-      });
-    }
-  }
 
   @override
   Widget build(BuildContext context) {

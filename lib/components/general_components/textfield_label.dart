@@ -27,13 +27,11 @@ class MyTextfieldLabeled extends StatefulWidget {
 
 class _MyTextfieldLabeledState extends State<MyTextfieldLabeled> {
   bool _obscureText = false;
-  bool _isReadOnly = false;
 
   @override
   void initState() {
     super.initState();
     _obscureText = widget.isObscure;
-    _isReadOnly = widget.isReadOnly; // Initialize obscure text state
   }
 
   @override
@@ -51,7 +49,7 @@ class _MyTextfieldLabeledState extends State<MyTextfieldLabeled> {
           ),
         ),
         TextField(
-          readOnly: _isReadOnly,
+          readOnly: widget.isReadOnly,
           controller: widget.controller,
           keyboardType: widget.isNumeric 
               ? const TextInputType.numberWithOptions(decimal: true)

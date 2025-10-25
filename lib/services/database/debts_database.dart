@@ -253,7 +253,6 @@ class DebtsDatabase {
         debtSnapshot.data() as Map<String, dynamic>;
 
     double currentBalance = (debtData['balance'] ?? 0).toDouble();
-    double totalAmount = (debtData['total_amount'] ?? 0).toDouble();
     double alreadyPaid = (debtData['amount_paid'] ?? 0).toDouble();
     String transactionId =
         debtData['transactionId'] ?? ""; // ✅ Original Transaction ID
@@ -377,40 +376,73 @@ class DebtsDatabase {
     }
   }
 
-  Future<void> fileCustomerReport({
+  Future<String?> fileCustomerReport({
     required String storeId,
     required String reportedId,
     required String customerName,
     required String reportReason,
     required String reportedByUserId,
     required String complainant_contact,
+    required double reportedBalance,
   }) async {
     try {
-      final now = DateTime.now();
-      final yesterday = now.subtract(const Duration(hours: 24));
-
-      // 🔍 Check for duplicate reports within 24 hours
+      // 🔍 Check for existing reports with the same balance amount from ANY user in the store
       final existingQuery = await _db
           .collection('admin_reports')
           .where('storeId', isEqualTo: storeId)
-          .where('respondent', isEqualTo: reportedId) // ✅ Fixed field
-          .where('complainant', isEqualTo: reportedByUserId) // ✅ Fixed field
-          .where('status', isEqualTo: 'pending')
+          .where('respondent', isEqualTo: reportedId)
+          .where('status', whereIn: ['Pending', 'pending'])
           .get();
 
-      final recentDuplicate = existingQuery.docs.any((doc) {
+      final balanceDuplicate = existingQuery.docs.any((doc) {
         final data = doc.data();
-        final timestamp = (data['timestamp'] as Timestamp?)?.toDate();
-        final reason = data['reason'] as String? ?? '';
-
-        return timestamp != null &&
-            timestamp.isAfter(yesterday) &&
-            reason.trim() == reportReason.trim();
+        final existingBalance = (data['reportedBalance'] as num?)?.toDouble();
+        final existingComplainant = data['complainant'] as String?;
+        
+        // Check if same balance amount exists, regardless of who filed it
+        if (existingBalance != null && existingBalance == reportedBalance) {
+          // If it's the same complainant, it's a duplicate from same user
+          if (existingComplainant == reportedByUserId) {
+            print("⚠️ User already reported this balance amount. Skipping submission.");
+            return true;
+          }
+          // If it's a different complainant, it's overlap between owner/employee
+          else {
+            print("⚠️ This balance amount already reported by another store member. Preventing overlap.");
+            return true;
+          }
+        }
+        return false;
       });
 
-      if (recentDuplicate) {
-        print("⚠️ Duplicate report detected. Skipping report submission.");
-        return;
+      // Check for specific type of duplicate to provide better user feedback
+      if (balanceDuplicate) {
+        // Find the existing report details for better user feedback
+        final existingReport = existingQuery.docs.firstWhere((doc) {
+          final data = doc.data();
+          final existingBalance = (data['reportedBalance'] as num?)?.toDouble();
+          return existingBalance == reportedBalance;
+        });
+        
+        final existingComplainant = existingReport['complainant'] as String?;
+        
+        // Check if it's the same user or different user
+        final existingByCurrentUser = existingComplainant == reportedByUserId;
+        
+        if (existingByCurrentUser) {
+          return 'DUPLICATE_BY_USER';
+        } else {
+          // Try to get the name of the person who originally filed the report
+          try {
+            final originalReporterDoc = await _db.collection('users').doc(existingComplainant!).get();
+            final originalReporterName = originalReporterDoc.exists 
+                ? (originalReporterDoc.data() as Map<String, dynamic>)['name'] as String? ?? 'Another store member'
+                : 'Another store member';
+            return 'DUPLICATE_BY_COLLEAGUE|$originalReporterName';
+          } catch (e) {
+            return 'DUPLICATE_BY_COLLEAGUE|Another store member';
+          }
+        }
       }
 
       // 📝 Proceed with filing the report
@@ -428,11 +460,14 @@ class DebtsDatabase {
         'reportCategory': 'Debt Dispute',
         'type': 'Business to Customer',
         'complainant_contact': complainant_contact,
+        'reportedBalance': reportedBalance,
       });
 
       print("✅ Customer report filed successfully for $customerName");
+      return 'SUCCESS';
     } catch (e) {
       print("❌ Error filing customer report: $e");
+      return 'ERROR';
     }
   }
 

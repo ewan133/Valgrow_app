@@ -21,17 +21,34 @@ class _LoginPageState extends State<LoginPage> {
   final _auth = AuthService();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  bool _isLoading = false; // Loading state
   // navigate to signup
   void navigateToSignup() {
     Navigator.pushNamed(context, "/signup");
   }
 
   _login() async {
-    if (!mounted) return;
+    if (!mounted || _isLoading) return; // Prevent multiple login attempts
+
+    setState(() {
+      _isLoading = true;
+    });
 
     try {
       await _auth.loginUserWithEmailAndPassword(_emailController.text.trim(),
           _passwordController.text.trim(), context);
+      
+      // If we reach here, login was successful
+      if (mounted) {
+        Fluttertoast.showToast(
+          msg: "Login successful!",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.TOP,
+          backgroundColor: Colors.green,
+          textColor: Colors.white,
+          fontSize: 16.0,
+        );
+      }
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
 
@@ -45,11 +62,11 @@ class _LoginPageState extends State<LoginPage> {
         errorMessage = "Invalid email format.";
       }
 
-      if (errorMessage != null && mounted) {
+      if (mounted) {
         Fluttertoast.showToast(
           msg: errorMessage,
-          toastLength: Toast.LENGTH_SHORT, // or Toast.LENGTH_LONG
-          gravity: ToastGravity.TOP, // Position of the toast
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
           backgroundColor: Colors.redAccent,
           textColor: Colors.white,
           fontSize: 16.0,
@@ -65,14 +82,18 @@ class _LoginPageState extends State<LoginPage> {
         textColor: Colors.white,
         fontSize: 16.0,
       );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     double screenHeight = MediaQuery.of(context).size.height;
-    double keyboardHeight =
-        MediaQuery.of(context).viewInsets.bottom; // Detect keyboard height
 
     return Scaffold(
       body: SafeArea(
@@ -118,12 +139,24 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       const SizedBox(height: 20),
                       MyButton(
-                        onTap: _login,
-                        text: "Login",
-                        color: Color(0xFF14AE5C),
+                        onTap: _isLoading ? null : _login, // Disable button when loading
+                        text: _isLoading ? "Logging in..." : "Login",
+                        color: _isLoading ? Colors.grey : Color(0xFF14AE5C),
                         borderRadius: 100,
                         width: double.infinity,
                       ),
+                      if (_isLoading)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 16),
+                          child: SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF14AE5C)),
+                              strokeWidth: 2,
+                            ),
+                          ),
+                        ),
                       const SizedBox(height: 10),
                       GestureDetector(
                         onTap: () {

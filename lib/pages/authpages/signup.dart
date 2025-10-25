@@ -1,9 +1,9 @@
 import 'dart:developer';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:valgrow_ui/components/general_components/autocompleteTextfield.dart';
 import 'package:valgrow_ui/components/general_components/button.dart';
-import 'package:valgrow_ui/components/general_components/logo.dart';
 import 'package:valgrow_ui/components/general_components/text.dart';
 import 'package:valgrow_ui/components/general_components/textfield_label.dart';
 import 'package:valgrow_ui/services/auth/auth_service.dart';
@@ -35,6 +35,8 @@ class _SignupPageState extends State<SignupPage> {
   String selectedBarangay = "Arkong Bato";
   String selectedItem = "Store Owner"; // Default role
   int _currentStep = 0;
+  String _passwordStrength = "";
+  Color _passwordStrengthColor = Colors.grey;
 
   List<String> streetItems = [];
 
@@ -94,6 +96,11 @@ class _SignupPageState extends State<SignupPage> {
     super.initState();
     _cityController.text = "Valenzuela City"; // default value for city
     _loadStreets(); // fetch streets asynchronously
+    
+    // Add listener to password field for real-time strength checking
+    _passwordController.addListener(() {
+      _checkPasswordStrength(_passwordController.text);
+    });
   }
 
   Future<void> _loadStreets() async {
@@ -107,10 +114,52 @@ class _SignupPageState extends State<SignupPage> {
     Navigator.pushNamed(context, '/login');
   }
 
+  // Strong password validation method
+  bool _isStrongPassword(String password) {
+    if (password.length < 8) return false;
+    
+    // Check for at least one uppercase letter
+    if (!RegExp(r'[A-Z]').hasMatch(password)) return false;
+    
+    // Check for at least one lowercase letter
+    if (!RegExp(r'[a-z]').hasMatch(password)) return false;
+    
+    // Check for at least one digit
+    if (!RegExp(r'[0-9]').hasMatch(password)) return false;
+    
+    // Check for at least one special character
+    if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(password)) return false;
+    
+    return true;
+  }
+
+  // Method to check password strength and update UI
+  void _checkPasswordStrength(String password) {
+    setState(() {
+      if (password.isEmpty) {
+        _passwordStrength = "";
+        _passwordStrengthColor = Colors.grey;
+      } else if (password.length < 6) {
+        _passwordStrength = "Too short";
+        _passwordStrengthColor = Colors.red;
+      } else if (!_isStrongPassword(password)) {
+        _passwordStrength = "Weak";
+        _passwordStrengthColor = Colors.orange;
+      } else {
+        _passwordStrength = "Strong";
+        _passwordStrengthColor = Colors.green;
+      }
+    });
+  }
+
   void _nextStep() {
     if (_houseNumberController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please enter your house number")),
+      Fluttertoast.showToast(
+        msg: "Please enter your house number",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
       );
       return;
     }
@@ -147,24 +196,50 @@ class _SignupPageState extends State<SignupPage> {
         houseNumber.isEmpty ||
         street.isEmpty ||
         confirmPassword.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please fill in all fields")),
+      Fluttertoast.showToast(
+        msg: "Please fill in all fields",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
       );
       return;
     }
 
     if (!RegExp(r'^09\d{9}$').hasMatch(number)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text(
-                "Invalid phone number. Must be 11 digits starting with 09")),
+      Fluttertoast.showToast(
+        msg: "Invalid phone number. Must be 11 digits starting with 09",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
       );
       return;
     }
 
     if (password != confirmPassword) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Passwords do not match!")),
+      Fluttertoast.showToast(
+        msg: "Passwords do not match!",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+      );
+      return;
+    }
+
+    // Strong password validation
+    if (!_isStrongPassword(password)) {
+      Fluttertoast.showToast(
+        msg: "Password must be at least 8 characters long and contain:\n" +
+             "• At least one uppercase letter\n" +
+             "• At least one lowercase letter\n" +
+             "• At least one number\n" +
+             "• At least one special character (!@#\$%^&*)",
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
       );
       return;
     }
@@ -185,8 +260,12 @@ class _SignupPageState extends State<SignupPage> {
     } on FirebaseAuthException catch (e) {
       _auth.exceptionHandler(e.code, context);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error during signup: ${e.toString()}")),
+      Fluttertoast.showToast(
+        msg: "Error during signup: ${e.toString()}",
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
       );
     }
   }
@@ -401,6 +480,41 @@ class _SignupPageState extends State<SignupPage> {
             hint: "",
             isObscure: true,
           ),
+          // Password strength indicator
+          if (_passwordController.text.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 4, left: 4),
+              child: Row(
+                children: [
+                  Text(
+                    "Password strength: ",
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  Text(
+                    _passwordStrength,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: _passwordStrengthColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          if (_passwordController.text.isNotEmpty && !_isStrongPassword(_passwordController.text))
+            Padding(
+              padding: const EdgeInsets.only(top: 4, left: 4),
+              child: Text(
+                "Use 8+ chars with uppercase, lowercase, number & special character",
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ),
           const SizedBox(height: 8),
           MyTextfieldLabeled(
             color: Colors.black,
