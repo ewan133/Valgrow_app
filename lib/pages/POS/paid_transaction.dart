@@ -21,7 +21,7 @@ class _PaidTransactionState extends State<PaidTransaction> {
 
   void initState() {
     super.initState();
-    _checkAndStartTutorial();
+    //_checkAndStartTutorial();
   }
 
   nowStart(_) {

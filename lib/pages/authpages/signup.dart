@@ -37,6 +37,7 @@ class _SignupPageState extends State<SignupPage> {
   int _currentStep = 0;
   String _passwordStrength = "";
   Color _passwordStrengthColor = Colors.grey;
+  bool _isLoading = false; // Add loading state
 
   List<String> streetItems = [];
 
@@ -182,7 +183,7 @@ class _SignupPageState extends State<SignupPage> {
     String confirmPassword = _confirmPasswordController.text.trim();
     String storecode = _storeCodeController.text.trim();
     String houseNumber = _houseNumberController.text.trim();
-    String street = selectedStreet;
+    String street = _streetController.text.trim();
     String role = selectedItem;
     String storename = _storeNameController.text.trim();
     String barangay = selectedBarangay;
@@ -244,22 +245,31 @@ class _SignupPageState extends State<SignupPage> {
       return;
     }
 
+    // Show loading indicator
+    setState(() => _isLoading = true);
+
     try {
       User? user = await _auth.createUserWithEmailAndPassword(email, password);
-      if (user == null) return;
+      if (user == null) {
+        setState(() => _isLoading = false);
+        return;
+      }
 
       if (role == "Store Owner") {
         await _db.createStoreOwnerProfile(email, name, number, houseNumber,
-            selectedStreet, storename, barangay);
+            street, storename, barangay);
       } else {
         await _db.createEmployeeProfile(email, name, number, storecode);
       }
 
+      setState(() => _isLoading = false);
       Navigator.pop(context);
       log("User created successfully");
     } on FirebaseAuthException catch (e) {
+      setState(() => _isLoading = false);
       _auth.exceptionHandler(e.code, context);
     } catch (e) {
+      setState(() => _isLoading = false);
       Fluttertoast.showToast(
         msg: "Error during signup: ${e.toString()}",
         toastLength: Toast.LENGTH_LONG,
@@ -528,22 +538,40 @@ class _SignupPageState extends State<SignupPage> {
             children: [
               Expanded(
                 child: MyButton(
-                  onTap: _goBack,
+                  onTap: _isLoading ? () {} : _goBack,
                   text: "Back",
-                  color: Colors.grey,
+                  color: _isLoading ? Colors.grey.shade400 : Colors.grey,
                   borderRadius: 100,
                   width: double.infinity,
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: MyButton(
-                  onTap: _signup,
-                  text: "Sign Up",
-                  color: Color(0xFF14AE5C),
-                  borderRadius: 100,
-                  width: double.infinity,
-                ),
+                child: _isLoading
+                    ? Container(
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: Color(0xFF14AE5C),
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                        child: Center(
+                          child: SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2.5,
+                            ),
+                          ),
+                        ),
+                      )
+                    : MyButton(
+                        onTap: _signup,
+                        text: "Sign Up",
+                        color: Color(0xFF14AE5C),
+                        borderRadius: 100,
+                        width: double.infinity,
+                      ),
               ),
             ],
           ),

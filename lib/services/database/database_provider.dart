@@ -206,6 +206,40 @@ class DatabaseProvider extends ChangeNotifier {
     }
   }
 
+  /// Update Store Address & Notify
+  Future<void> updateStoreAddress(String houseNumber, String street, String barangay) async {
+    try {
+      if (_store == null) return;
+
+      await _db.updateStoreAddress(_store!.storeId, houseNumber, street, barangay);
+
+      // Build the full address string
+      final address = "$houseNumber $street, $barangay, Valenzuela City"
+          .trim()
+          .replaceAll(RegExp(r'\s+'), ' ');
+
+      _store = _store!.copyWith(
+        houseNumber: houseNumber,
+        street: street,
+        barangay: barangay,
+        address: address,
+      );
+      notifyListeners();
+    } catch (e) {
+      print("Error updating store address: $e");
+    }
+  }
+
+  /// Get all unique streets
+  Future<List<String>> getAllUniqueStreets() async {
+    try {
+      return await _db.getAllUniqueStreets();
+    } catch (e) {
+      print("Error fetching streets: $e");
+      return [];
+    }
+  }
+
   /// Clear data (useful for logout)
   void clearData() {
     _user = null;
@@ -866,12 +900,20 @@ class DatabaseProvider extends ChangeNotifier {
   
   */
 
-  Future<void> fetchTransactionHistory(String storeId) async {
+  Future<void> fetchTransactionHistory(String storeId, {int? limit}) async {
     _isLoadingTransactions = true;
+    _transactionHistory = []; // Clear existing data
     notifyListeners();
+    
     try {
-      _transactionHistory =
-          await _historyDatabase.getAllTransactionHistory(storeId);
+      // Stream transactions and add them one by one
+      await for (var transaction in _historyDatabase.streamTransactionHistory(storeId, limit: limit)) {
+        _transactionHistory.add(transaction);
+        notifyListeners(); // Update UI with each new transaction
+      }
+      
+      // Sort by date after all transactions are loaded
+      _transactionHistory.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       print("✅ Fetched ${_transactionHistory.length} transactions.");
     } catch (e) {
       print("❌ Error fetching transactions: $e");

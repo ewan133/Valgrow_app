@@ -16,6 +16,8 @@ class HistoryPage extends StatefulWidget {
 
 class _HistoryPageState extends State<HistoryPage> {
   late String formattedDate;
+  final int _initialLimit = 30; // Initial limit for transactions
+  bool _showAllTransactions = false;
 
   @override
   void initState() {
@@ -23,15 +25,31 @@ class _HistoryPageState extends State<HistoryPage> {
     DateTime now = DateTime.now();
     formattedDate = DateFormat('MMMM d, yyyy').format(now);
 
-    // ✅ Fetch transaction history on page load
+    // ✅ Fetch transaction history on page load with initial limit
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final databaseProvider =
           Provider.of<DatabaseProvider>(context, listen: false);
       if (databaseProvider.store != null) {
-        databaseProvider
-            .fetchTransactionHistory(databaseProvider.store!.storeId);
+        databaseProvider.fetchTransactionHistory(
+          databaseProvider.store!.storeId,
+          limit: _initialLimit,
+        );
       }
     });
+  }
+
+  // ✅ Load all transactions
+  void _loadAllTransactions() async {
+    final databaseProvider =
+        Provider.of<DatabaseProvider>(context, listen: false);
+    if (databaseProvider.store != null) {
+      await databaseProvider.fetchTransactionHistory(
+        databaseProvider.store!.storeId,
+      );
+      setState(() {
+        _showAllTransactions = true;
+      });
+    }
   }
 
   @override
@@ -46,13 +64,15 @@ class _HistoryPageState extends State<HistoryPage> {
               children: [
                 _buildDateHeader(), // ✅ Header with current date
 
-                if (databaseProvider.isLoadingTransactions)
-                  _buildLoadingIndicator() // ✅ Show loading indicator
-                else if (databaseProvider.transactionHistory.isEmpty)
+                if (databaseProvider.isLoadingTransactions && 
+                    databaseProvider.transactionHistory.isEmpty)
+                  _buildLoadingIndicator() // ✅ Show loading indicator only if no data yet
+                else if (!databaseProvider.isLoadingTransactions && 
+                         databaseProvider.transactionHistory.isEmpty)
                   _buildNoTransactionsMessage() // ✅ Show no data message
                 else
                   _buildTransactionList(
-                      databaseProvider), // ✅ Show transactions
+                      databaseProvider), // ✅ Show transactions (even while loading more)
               ],
             ),
           );
@@ -117,10 +137,17 @@ class _HistoryPageState extends State<HistoryPage> {
 
   // ✅ Builds the transaction list grouped by date
   Widget _buildTransactionList(DatabaseProvider databaseProvider) {
+    final allTransactions = databaseProvider.transactionHistory;
+    
+    // Check if there might be more transactions (if we got exactly the limit)
+    final hasMoreTransactions = !_showAllTransactions && 
+        allTransactions.length >= _initialLimit &&
+        !databaseProvider.isLoadingTransactions;
+
     // ✅ Group transactions by date (as `DateTime`)
     Map<DateTime, List> groupedTransactions = {};
 
-    for (var transaction in databaseProvider.transactionHistory) {
+    for (var transaction in allTransactions) {
       DateTime dateKey = DateTime(
         transaction.createdAt.year,
         transaction.createdAt.month,
@@ -134,34 +161,85 @@ class _HistoryPageState extends State<HistoryPage> {
     }
 
     return Expanded(
-      child: ListView.builder(
-        padding: const EdgeInsets.only(top: 10),
-        itemCount: groupedTransactions.length,
-        itemBuilder: (context, index) {
-          DateTime date = groupedTransactions.keys.elementAt(index);
-          List transactions = groupedTransactions[date]!;
+      child: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.only(top: 10, bottom: 10),
+              itemCount: groupedTransactions.length,
+              itemBuilder: (context, index) {
+                DateTime date = groupedTransactions.keys.elementAt(index);
+                List transactions = groupedTransactions[date]!;
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              MyDateContainer(
-                  date: date), // ✅ Uses MyDateContainer with real date
-              ...transactions.map((transaction) => GestureDetector(
-                    onTap: () => _showTransactionSummary(
-                        context, transaction), // ✅ Show alert on tap
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 2),
-                      child: MyHistoryTile(
-                        transactionType:
-                            transaction.transactionType, // Sales / Expense
-                        amount: transaction.totalAmount,
-                        timestamp: transaction.createdAt,
-                      ),
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    MyDateContainer(
+                        date: date), // ✅ Uses MyDateContainer with real date
+                    ...transactions.map((transaction) => GestureDetector(
+                          onTap: () => _showTransactionSummary(
+                              context, transaction), // ✅ Show alert on tap
+                          child: Padding(
+                            padding: const EdgeInsets.only(bottom: 2),
+                            child: MyHistoryTile(
+                              transactionType:
+                                  transaction.transactionType, // Sales / Expense
+                              amount: transaction.totalAmount,
+                              timestamp: transaction.createdAt,
+                            ),
+                          ),
+                        )),
+                  ],
+                );
+              },
+            ),
+          ),
+          
+          // ✅ Show loading indicator at bottom while streaming
+          if (databaseProvider.isLoadingTransactions)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Center(
+                child: CircularProgressIndicator(
+                  color: Color(0xFF14AE5C),
+                  strokeWidth: 2,
+                ),
+              ),
+            ),
+          
+          // ✅ "See More" button at the end
+          if (hasMoreTransactions)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _loadAllTransactions,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF14AE5C),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                  )),
-            ],
-          );
-        },
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.expand_more, color: Colors.white),
+                      SizedBox(width: 8),
+                      MyText(
+                        text: "See More Transactions",
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

@@ -32,7 +32,7 @@ class _POSPageState extends State<POSPage> {
 
   void initState() {
     super.initState();
-    _checkAndStartTutorial();
+    //_checkAndStartTutorial();
   }
 
   nowStart(_) {

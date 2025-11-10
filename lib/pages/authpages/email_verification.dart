@@ -46,7 +46,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
             const SizedBox(height: 20),
             const Text(
               "A verification email has been sent to your email address. "
-              "Please check your inbox and verify your email to continue.",
+              "Please check your inbox or spam and verify your email to continue.",
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 16),
             ),

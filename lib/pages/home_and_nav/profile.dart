@@ -2,14 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
-import 'package:valgrow_ui/components/general_components/appbar.dart';
 import 'package:valgrow_ui/components/general_components/singel_text_alert.dart';
-import 'package:valgrow_ui/components/general_components/text.dart';
-import 'package:valgrow_ui/components/profile_components/details_box.dart';
 import 'package:valgrow_ui/models/store_profile.dart';
 import 'package:valgrow_ui/models/user_profile.dart';
 import 'package:valgrow_ui/services/auth/auth_service.dart';
-import 'package:valgrow_ui/components/general_components/button.dart';
 import 'package:valgrow_ui/services/database/database_provider.dart';
 
 class ProfilePage extends StatefulWidget {
@@ -25,6 +21,8 @@ class _ProfilePageState extends State<ProfilePage> {
   final TextEditingController _phoneEditController = TextEditingController();
   final TextEditingController _storeNameEditController =
       TextEditingController();
+  final TextEditingController _houseNumberEditController = TextEditingController();
+  final TextEditingController _streetEditController = TextEditingController();
 
   // auth service instance
   final _auth = AuthService();
@@ -36,6 +34,44 @@ class _ProfilePageState extends State<ProfilePage> {
   StoreProfile? store;
 
   bool _isLoading = true;
+  List<String> streetItems = [];
+  String selectedBarangay = "Arkong Bato";
+
+  final List<String> barangayDropdownItems = [
+    "Arkong Bato",
+    "Balangkas",
+    "Bignay",
+    "Bisig",
+    "Canumay East",
+    "Canumay West",
+    "Coloong",
+    "Dalandanan",
+    "Isla",
+    "Lawang Bato",
+    "Lingunan",
+    "Mabolo",
+    "Malanday",
+    "Malinta",
+    "Palasan",
+    "Pariancillo Villa",
+    "Pasolo",
+    "Poblacion",
+    "Polo",
+    "Punturin",
+    "Rincon",
+    "Tagalag",
+    "Veinte Reales",
+    "Wawang Pulo",
+    "Bagbaguin",
+    "Gen. T. de Leon",
+    "Karuhatan",
+    "Mapulang Lupa",
+    "Marulas",
+    "Maysan",
+    "Parada",
+    "Paso de Blas",
+    "Ugong"
+  ];
 
   // Color palette constants
   static const Color primaryGreen = Color(0xFF14AE5C);
@@ -49,8 +85,16 @@ class _ProfilePageState extends State<ProfilePage> {
     super.initState();
     user = Provider.of<DatabaseProvider>(context, listen: false).user;
     store = Provider.of<DatabaseProvider>(context, listen: false).store;
+    _loadStreets();
     setState(() {
       _isLoading = false;
+    });
+  }
+
+  Future<void> _loadStreets() async {
+    final streets = await databaseProvider.getAllUniqueStreets();
+    setState(() {
+      streetItems = streets;
     });
   }
 
@@ -107,6 +151,192 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  void showStoreAddressEditingBox() {
+    final store = Provider.of<DatabaseProvider>(context, listen: false).store;
+    
+    if (store == null) return;
+
+    // Pre-fill controllers with current values
+    _houseNumberEditController.text = store.houseNumber;
+    _streetEditController.text = store.street;
+    selectedBarangay = store.barangay;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            backgroundColor: cardBackground,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
+            ),
+            contentPadding: EdgeInsets.all(20),
+            insetPadding: EdgeInsets.symmetric(horizontal: 20),
+            title: Text(
+              "Edit Store Address",
+              style: TextStyle(
+                color: textPrimary,
+                fontWeight: FontWeight.w600,
+                fontSize: 20,
+              ),
+            ),
+            content: SizedBox(
+              width: MediaQuery.of(context).size.width * 0.9,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                  // House Number
+                  Text(
+                    "House Number:",
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: textPrimary,
+                    ),
+                  ),
+                  SizedBox(height: 6),
+                  TextField(
+                    controller: _houseNumberEditController,
+                    decoration: InputDecoration(
+                      hintText: "Enter house number",
+                      filled: true,
+                      fillColor: backgroundColor,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    ),
+                  ),
+                  SizedBox(height: 12),
+
+                  // Street
+                  Text(
+                    "Street:",
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: textPrimary,
+                    ),
+                  ),
+                  SizedBox(height: 6),
+                  Autocomplete<String>(
+                    initialValue: TextEditingValue(text: _streetEditController.text),
+                    optionsBuilder: (TextEditingValue textEditingValue) {
+                      if (textEditingValue.text.isEmpty) {
+                        return const Iterable<String>.empty();
+                      }
+                      return streetItems.where((String option) {
+                        return option.toLowerCase().contains(textEditingValue.text.toLowerCase());
+                      });
+                    },
+                    onSelected: (String selection) {
+                      _streetEditController.text = selection;
+                    },
+                    fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+                      // Sync the autocomplete controller with our controller
+                      controller.addListener(() {
+                        _streetEditController.text = controller.text;
+                      });
+                      return TextField(
+                        controller: controller,
+                        focusNode: focusNode,
+                        onChanged: (value) {
+                          _streetEditController.text = value;
+                        },
+                        decoration: InputDecoration(
+                          hintText: "Enter or select street",
+                          filled: true,
+                          fillColor: backgroundColor,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                        ),
+                      );
+                    },
+                  ),
+                  SizedBox(height: 12),
+
+                  // Barangay
+                  Text(
+                    "Barangay:",
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: textPrimary,
+                    ),
+                  ),
+                  SizedBox(height: 6),
+                  DropdownButtonFormField<String>(
+                    value: selectedBarangay,
+                    items: barangayDropdownItems.map((item) {
+                      return DropdownMenuItem<String>(
+                        value: item,
+                        child: Text(item),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setDialogState(() {
+                        selectedBarangay = value!;
+                      });
+                    },
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: backgroundColor,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  
+                  // City (read-only)
+                  Text(
+                    "City: Valenzuela City",
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: textSecondary,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  "Cancel",
+                  style: TextStyle(color: textSecondary),
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  saveStoreAddress();
+                  Navigator.pop(context);
+                },
+                child: Text(
+                  "Save",
+                  style: TextStyle(
+                    color: primaryGreen,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   // save phone number
   Future<void> savePhone() async {
     // Validate phone number using RegExp (e.g., starts with 0 followed by 10 digits)
@@ -135,6 +365,24 @@ class _ProfilePageState extends State<ProfilePage> {
     }
 
     await databaseProvider.updateStoreName(storeName);
+  }
+
+  // save store address
+  Future<void> saveStoreAddress() async {
+    final houseNumber = _houseNumberEditController.text.trim();
+    final street = _streetEditController.text.trim();
+    final barangay = selectedBarangay;
+
+    if (houseNumber.isEmpty || street.isEmpty) {
+      _showSnackBar(
+        'Please fill in all address fields',
+        isError: true,
+      );
+      return;
+    }
+
+    await databaseProvider.updateStoreAddress(houseNumber, street, barangay);
+    _showSnackBar('Store address updated successfully!');
   }
 
   void _showSnackBar(String message, {bool isError = false}) {
@@ -468,16 +716,28 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                         SizedBox(height: 16),
                         
-                        SizedBox(
-                          width: double.infinity,
-                          child: _buildActionButton(
-                            text: "Store Promotion",
-                            onPressed: () {
-                              Navigator.pushNamed(context, '/store_promotion_list');
-                            },
-                            backgroundColor: primaryGreen,
-                            textColor: cardBackground,
-                          ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildActionButton(
+                                text: "Store Promotion",
+                                onPressed: () {
+                                  Navigator.pushNamed(context, '/store_promotion_list');
+                                },
+                                backgroundColor: primaryGreen,
+                                textColor: cardBackground,
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            Expanded(
+                              child: _buildActionButton(
+                                text: "Edit Store Address",
+                                onPressed: showStoreAddressEditingBox,
+                                backgroundColor: primaryGreen.withOpacity(0.1),
+                                textColor: primaryGreen,
+                              ),
+                            ),
+                          ],
                         ),
                         
                         SizedBox(height: 8),

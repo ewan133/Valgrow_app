@@ -173,7 +173,7 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
       });
     });
 
-    _checkAndStartTutorial();
+    //_checkAndStartTutorial();
   }
 
   void _confirmPayment() {

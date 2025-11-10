@@ -59,8 +59,13 @@ class _EditItemModalState extends State<EditItemModal> {
       categories = categorySet.toList();
       setState(() {});
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error loading categories: $e")),
+      Fluttertoast.showToast(
+        msg: "Error loading categories: $e",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
       );
     }
   }
@@ -74,8 +79,13 @@ class _EditItemModalState extends State<EditItemModal> {
         setState(() => _image = File(pickedFile.path));
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Error picking image. Please try again.")),
+      Fluttertoast.showToast(
+        msg: "Error picking image. Please try again.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
       );
       print("❌ Error picking image: $e");
     }

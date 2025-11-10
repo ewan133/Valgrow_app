@@ -39,7 +39,7 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   nowStart(_) {
-    Future.delayed(Duration(seconds: 1));
+    Future.delayed(Duration(milliseconds: 50));
     tutorialCoachMark = TutorialCoachMark(targets: myTargets)
       ..show(context: context);
   }
@@ -71,7 +71,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
       // Delay and start the tutorial
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        Future.delayed(const Duration(seconds: 1), () {
+        Future.delayed(const Duration(microseconds: 50), () {
           tutorialCoachMark = TutorialCoachMark(targets: myTargets)
             ..show(context: context);
 

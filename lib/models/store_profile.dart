@@ -5,6 +5,9 @@ class StoreProfile {
   final String storeCode;
   final String contact;
   final String address; // ✅ Added
+  final String houseNumber;
+  final String street;
+  final String barangay;
 
   StoreProfile({
     required this.storeId,
@@ -13,6 +16,9 @@ class StoreProfile {
     required this.storeCode,
     required this.contact,
     required this.address, // ✅ Added
+    required this.houseNumber,
+    required this.street,
+    required this.barangay,
   });
 
   /// ✅ **copyWith Method for Updating StoreProfile**
@@ -23,6 +29,9 @@ class StoreProfile {
     String? storeCode,
     String? contact,
     String? address, // ✅ Added
+    String? houseNumber,
+    String? street,
+    String? barangay,
   }) {
     return StoreProfile(
       storeId: storeId ?? this.storeId,
@@ -31,6 +40,9 @@ class StoreProfile {
       storeCode: storeCode ?? this.storeCode,
       contact: contact ?? this.contact,
       address: address ?? this.address, // ✅ Added
+      houseNumber: houseNumber ?? this.houseNumber,
+      street: street ?? this.street,
+      barangay: barangay ?? this.barangay,
     );
   }
 
@@ -43,6 +55,9 @@ class StoreProfile {
       storeCode: map['storeCode'] ?? '',
       contact: map['contact'] ?? '',
       address: map['address'] ?? '', // ✅ Added
+      houseNumber: map['houseNumber'] ?? '',
+      street: map['street'] ?? '',
+      barangay: map['barangay'] ?? '',
     );
   }
 
@@ -55,6 +70,9 @@ class StoreProfile {
       'storeCode': storeCode,
       'contact': contact,
       'address': address, // ✅ Added
+      'houseNumber': houseNumber,
+      'street': street,
+      'barangay': barangay,
     };
   }
 }

@@ -241,6 +241,20 @@ class DatabaseService {
     }
   }
 
+  // update store address
+  Future<void> updateStoreAddress(String storeId, String houseNumber, String street, String barangay) async {
+    try {
+      await _db.collection('stores').doc(storeId).update({
+        'houseNumber': houseNumber,
+        'street': street,
+        'barangay': barangay,
+      });
+      print("✅ Store address updated successfully");
+    } catch (e) {
+      print("❌ Error updating store address: $e");
+    }
+  }
+
   // update user document
   Future<void> updateUserDocument(String uid, String document) async {
     try {

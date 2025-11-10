@@ -4,19 +4,95 @@
   class HistoryDatabase {
     final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-    /// ✅ Fetch all transaction history (Sales, Debts, Debt Payments) in a SINGLE LIST
-    Future<List<TransactionHistory>> getAllTransactionHistory(String storeId) async {
+  /// ✅ Stream transaction history (Sales, Debts, Debt Payments) one by one
+  Stream<TransactionHistory> streamTransactionHistory(String storeId, {int? limit}) async* {
     try {
-      List<TransactionHistory> historyList = [];
-
-      // Fetch Sales & Debt Transactions
-      QuerySnapshot transactionSnapshot = await _db
+      // Stream Sales & Debt Transactions with optional limit
+      Query transactionQuery = _db
           .collection('transactions')
           .where('storeId', isEqualTo: storeId)
-          .orderBy('created_at', descending: true)
-          .get();
+          .orderBy('created_at', descending: true);
+      
+      if (limit != null) {
+        transactionQuery = transactionQuery.limit(limit);
+      }
+      
+      QuerySnapshot transactionSnapshot = await transactionQuery.get();
 
+      // Yield transactions one by one as they're processed
       for (var doc in transactionSnapshot.docs) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>? ?? {};
+
+        String transactionType = _determineTransactionType(data);
+
+        List<TransactionItem> items = await _getTransactionItems(doc.id);
+
+        String? customerName;
+        if (transactionType == "Debts" && data['customerId'] != null) {
+          customerName = await _getCustomerName(data['customerId']);
+        }
+
+        yield TransactionHistory(
+          transactionId: doc.id,
+          storeId: data['storeId'] ?? '',
+          totalAmount: (data['total_amount'] ?? 0.0).toDouble(),
+          createdAt: (data['created_at'] as Timestamp?)?.toDate() ?? DateTime.now(),
+          transactionType: transactionType,
+          items: items,
+          customerName: customerName,
+          debtPaymentMethod: null,
+        );
+      }
+
+      // Stream Debt Payments with optional limit
+      Query debtPaymentQuery = _db
+          .collection('debt_payments')
+          .where('storeId', isEqualTo: storeId)
+          .orderBy('payment_date', descending: true);
+      
+      if (limit != null) {
+        debtPaymentQuery = debtPaymentQuery.limit(limit);
+      }
+      
+      QuerySnapshot debtPaymentSnapshot = await debtPaymentQuery.get();
+
+      // Yield debt payments one by one
+      for (var doc in debtPaymentSnapshot.docs) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>? ?? {};
+
+        yield TransactionHistory(
+          transactionId: doc.id,
+          storeId: data['storeId'] ?? '',
+          totalAmount: (data['amount_paid'] ?? 0.0).toDouble(),
+          createdAt: (data['payment_date'] as Timestamp?)?.toDate() ?? DateTime.now(),
+          transactionType: "Debt Payment",
+          items: [],
+          customerName: data['customerId'] ?? "Unknown",
+          debtPaymentMethod: data['payment_method'] ?? "Unknown",
+        );
+      }
+
+    } catch (e) {
+      print("❌ Error streaming transaction history: $e");
+    }
+  }
+
+  /// ✅ Fetch all transaction history (Sales, Debts, Debt Payments) in a SINGLE LIST
+  Future<List<TransactionHistory>> getAllTransactionHistory(String storeId, {int? limit}) async {
+  try {
+    List<TransactionHistory> historyList = [];
+
+    // Fetch Sales & Debt Transactions with optional limit
+    Query transactionQuery = _db
+        .collection('transactions')
+        .where('storeId', isEqualTo: storeId)
+        .orderBy('created_at', descending: true);
+    
+    if (limit != null) {
+      transactionQuery = transactionQuery.limit(limit);
+    }
+    
+    QuerySnapshot transactionSnapshot = await transactionQuery.get();      for (var doc in transactionSnapshot.docs) {
         Map<String, dynamic> data = doc.data() as Map<String, dynamic>? ?? {};
 
         String transactionType = _determineTransactionType(data);
@@ -40,14 +116,17 @@
         ));
       }
 
-      // Fetch Debt Payments
-      QuerySnapshot debtPaymentSnapshot = await _db
-          .collection('debt_payments')
-          .where('storeId', isEqualTo: storeId)
-          .orderBy('payment_date', descending: true)
-          .get();
-
-      for (var doc in debtPaymentSnapshot.docs) {
+    // Fetch Debt Payments with optional limit
+    Query debtPaymentQuery = _db
+        .collection('debt_payments')
+        .where('storeId', isEqualTo: storeId)
+        .orderBy('payment_date', descending: true);
+    
+    if (limit != null) {
+      debtPaymentQuery = debtPaymentQuery.limit(limit);
+    }
+    
+    QuerySnapshot debtPaymentSnapshot = await debtPaymentQuery.get();      for (var doc in debtPaymentSnapshot.docs) {
         Map<String, dynamic> data = doc.data() as Map<String, dynamic>? ?? {};
 
         historyList.add(TransactionHistory(
