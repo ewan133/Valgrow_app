@@ -21,7 +21,8 @@ class _ProfilePageState extends State<ProfilePage> {
   final TextEditingController _phoneEditController = TextEditingController();
   final TextEditingController _storeNameEditController =
       TextEditingController();
-  final TextEditingController _houseNumberEditController = TextEditingController();
+  final TextEditingController _houseNumberEditController =
+      TextEditingController();
   final TextEditingController _streetEditController = TextEditingController();
 
   // auth service instance
@@ -109,7 +110,8 @@ class _ProfilePageState extends State<ProfilePage> {
 
             // If user is null, show a loading state or handle accordingly
             if (user == null) {
-              return Center(child: CircularProgressIndicator(color: primaryGreen));
+              return Center(
+                  child: CircularProgressIndicator(color: primaryGreen));
             }
 
             return MySingelTextAlert(
@@ -135,7 +137,8 @@ class _ProfilePageState extends State<ProfilePage> {
 
             // If store is null, show a loading state or handle accordingly
             if (store == null) {
-              return Center(child: CircularProgressIndicator(color: primaryGreen));
+              return Center(
+                  child: CircularProgressIndicator(color: primaryGreen));
             }
 
             return MySingelTextAlert(
@@ -153,7 +156,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   void showStoreAddressEditingBox() {
     final store = Provider.of<DatabaseProvider>(context, listen: false).store;
-    
+
     if (store == null) return;
 
     // Pre-fill controllers with current values
@@ -187,127 +190,134 @@ class _ProfilePageState extends State<ProfilePage> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                  // House Number
-                  Text(
-                    "House Number:",
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: textPrimary,
-                    ),
-                  ),
-                  SizedBox(height: 6),
-                  TextField(
-                    controller: _houseNumberEditController,
-                    decoration: InputDecoration(
-                      hintText: "Enter house number",
-                      filled: true,
-                      fillColor: backgroundColor,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
+                    // House Number
+                    Text(
+                      "House Number:",
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: textPrimary,
                       ),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                     ),
-                  ),
-                  SizedBox(height: 12),
-
-                  // Street
-                  Text(
-                    "Street:",
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: textPrimary,
-                    ),
-                  ),
-                  SizedBox(height: 6),
-                  Autocomplete<String>(
-                    initialValue: TextEditingValue(text: _streetEditController.text),
-                    optionsBuilder: (TextEditingValue textEditingValue) {
-                      if (textEditingValue.text.isEmpty) {
-                        return const Iterable<String>.empty();
-                      }
-                      return streetItems.where((String option) {
-                        return option.toLowerCase().contains(textEditingValue.text.toLowerCase());
-                      });
-                    },
-                    onSelected: (String selection) {
-                      _streetEditController.text = selection;
-                    },
-                    fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
-                      // Sync the autocomplete controller with our controller
-                      controller.addListener(() {
-                        _streetEditController.text = controller.text;
-                      });
-                      return TextField(
-                        controller: controller,
-                        focusNode: focusNode,
-                        onChanged: (value) {
-                          _streetEditController.text = value;
-                        },
-                        decoration: InputDecoration(
-                          hintText: "Enter or select street",
-                          filled: true,
-                          fillColor: backgroundColor,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8),
-                            borderSide: BorderSide.none,
-                          ),
-                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    SizedBox(height: 6),
+                    TextField(
+                      controller: _houseNumberEditController,
+                      decoration: InputDecoration(
+                        hintText: "Enter house number",
+                        filled: true,
+                        fillColor: backgroundColor,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide.none,
                         ),
-                      );
-                    },
-                  ),
-                  SizedBox(height: 12),
-
-                  // Barangay
-                  Text(
-                    "Barangay:",
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: textPrimary,
-                    ),
-                  ),
-                  SizedBox(height: 6),
-                  DropdownButtonFormField<String>(
-                    value: selectedBarangay,
-                    items: barangayDropdownItems.map((item) {
-                      return DropdownMenuItem<String>(
-                        value: item,
-                        child: Text(item),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setDialogState(() {
-                        selectedBarangay = value!;
-                      });
-                    },
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: backgroundColor,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                        borderSide: BorderSide.none,
+                        contentPadding:
+                            EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                       ),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                     ),
-                  ),
-                  SizedBox(height: 8),
-                  
-                  // City (read-only)
-                  Text(
-                    "City: Valenzuela City",
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: textSecondary,
-                      fontStyle: FontStyle.italic,
+                    SizedBox(height: 12),
+
+                    // Street
+                    Text(
+                      "Street:",
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: textPrimary,
+                      ),
                     ),
-                  ),
-                ],
+                    SizedBox(height: 6),
+                    Autocomplete<String>(
+                      initialValue:
+                          TextEditingValue(text: _streetEditController.text),
+                      optionsBuilder: (TextEditingValue textEditingValue) {
+                        if (textEditingValue.text.isEmpty) {
+                          return const Iterable<String>.empty();
+                        }
+                        return streetItems.where((String option) {
+                          return option
+                              .toLowerCase()
+                              .contains(textEditingValue.text.toLowerCase());
+                        });
+                      },
+                      onSelected: (String selection) {
+                        _streetEditController.text = selection;
+                      },
+                      fieldViewBuilder:
+                          (context, controller, focusNode, onFieldSubmitted) {
+                        // Sync the autocomplete controller with our controller
+                        controller.addListener(() {
+                          _streetEditController.text = controller.text;
+                        });
+                        return TextField(
+                          controller: controller,
+                          focusNode: focusNode,
+                          onChanged: (value) {
+                            _streetEditController.text = value;
+                          },
+                          decoration: InputDecoration(
+                            hintText: "Enter or select street",
+                            filled: true,
+                            fillColor: backgroundColor,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide.none,
+                            ),
+                            contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 12),
+                          ),
+                        );
+                      },
+                    ),
+                    SizedBox(height: 12),
+
+                    // Barangay
+                    Text(
+                      "Barangay:",
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: textPrimary,
+                      ),
+                    ),
+                    SizedBox(height: 6),
+                    DropdownButtonFormField<String>(
+                      value: selectedBarangay,
+                      items: barangayDropdownItems.map((item) {
+                        return DropdownMenuItem<String>(
+                          value: item,
+                          child: Text(item),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setDialogState(() {
+                          selectedBarangay = value!;
+                        });
+                      },
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: backgroundColor,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding:
+                            EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      ),
+                    ),
+                    SizedBox(height: 8),
+
+                    // City (read-only)
+                    Text(
+                      "City: Valenzuela City",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: textSecondary,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
             ),
             actions: [
               TextButton(
@@ -437,7 +447,7 @@ class _ProfilePageState extends State<ProfilePage> {
       content: "Are you sure you want to logout?",
     );
     if (!confirm) return;
-    await _auth.signout();
+    await _auth.signout(context);
   }
 
   Future<bool> _showConfirmationDialog(
@@ -472,7 +482,8 @@ class _ProfilePageState extends State<ProfilePage> {
                 onPressed: () => Navigator.pop(context, true),
                 child: Text(
                   "Confirm",
-                  style: TextStyle(color: primaryGreen, fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                      color: primaryGreen, fontWeight: FontWeight.w600),
                 ),
               ),
             ],
@@ -567,7 +578,6 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: backgroundColor,
-      
       body: Consumer<DatabaseProvider>(
         builder: (context, databaseProvider, child) {
           // Access the user and store data from the provider
@@ -651,31 +661,26 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                         ),
                         SizedBox(height: 12),
-                        
                         _buildProfileDetail(
                           label: "Email",
                           value: _isLoading ? "Loading..." : user.email,
                         ),
-                        
                         Container(
                           height: 1,
                           color: backgroundColor,
                           margin: EdgeInsets.symmetric(vertical: 6),
                         ),
-                        
                         _buildProfileDetail(
                           label: "Phone number",
                           value: _isLoading ? "Loading..." : user.phone,
                           onTap: showPhoneEdittingBox,
                           editable: true,
                         ),
-                        
                         Container(
                           height: 1,
                           color: backgroundColor,
                           margin: EdgeInsets.symmetric(vertical: 6),
                         ),
-                        
                         _buildProfileDetail(
                           label: "Affiliated Store",
                           value: _isLoading ? "Loading..." : store.name,
@@ -715,33 +720,34 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                         ),
                         SizedBox(height: 16),
-                        
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _buildActionButton(
-                                text: "Store Promotion",
-                                onPressed: () {
-                                  Navigator.pushNamed(context, '/store_promotion_list');
-                                },
-                                backgroundColor: primaryGreen,
-                                textColor: cardBackground,
+                        if (user.role == "Store Owner") ...[
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildActionButton(
+                                  text: "Store Promotion",
+                                  onPressed: () {
+                                    Navigator.pushNamed(
+                                        context, '/store_promotion_list');
+                                  },
+                                  backgroundColor: primaryGreen,
+                                  textColor: cardBackground,
+                                ),
                               ),
-                            ),
-                            SizedBox(width: 8),
-                            Expanded(
-                              child: _buildActionButton(
-                                text: "Edit Store Address",
-                                onPressed: showStoreAddressEditingBox,
-                                backgroundColor: primaryGreen.withOpacity(0.1),
-                                textColor: primaryGreen,
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: _buildActionButton(
+                                  text: "Edit Store Address",
+                                  onPressed: showStoreAddressEditingBox,
+                                  backgroundColor:
+                                      primaryGreen.withOpacity(0.1),
+                                  textColor: primaryGreen,
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                        
-                        SizedBox(height: 8),
-                        
+                            ],
+                          ),
+                          SizedBox(height: 8),
+                        ],
                         Row(
                           children: [
                             Expanded(
@@ -767,7 +773,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                   ),
                 ),
-                
+
                 SizedBox(height: 24),
               ],
             ),

@@ -175,13 +175,22 @@ class _ReceiptPageState extends State<ReceiptPage> {
 
               /// 📅 Transaction Info
               const SizedBox(height: 4),
-              _receiptInfoRow("DATE", DateFormat('MM/dd/yyyy').format(DateTime.parse(transaction["created_at"].toDate().toString()))),
-              _receiptInfoRow("TIME", DateFormat('hh:mm a').format(DateTime.parse(transaction["created_at"].toDate().toString()))),
+              _receiptInfoRow(
+                  "DATE",
+                  DateFormat('MM/dd/yyyy').format(DateTime.parse(
+                      transaction["created_at"].toDate().toString()))),
+              _receiptInfoRow(
+                  "TIME",
+                  DateFormat('hh:mm a').format(DateTime.parse(
+                      transaction["created_at"].toDate().toString()))),
               _receiptInfoRow("CASHIER", cashierName.toUpperCase()),
               if (customer != null)
-                _receiptInfoRow("CUSTOMER", customer["name"].toString().toUpperCase()),
-              _receiptInfoRow("RECEIPT #", widget.transactionId.substring(0, 8).toUpperCase()),
-              _receiptInfoRow("TXN TYPE", transaction["payment_method"].toString().toUpperCase()),
+                _receiptInfoRow(
+                    "CUSTOMER", customer["name"].toString().toUpperCase()),
+              _receiptInfoRow("RECEIPT #",
+                  widget.transactionId.substring(0, 8).toUpperCase()),
+              _receiptInfoRow("TXN TYPE",
+                  transaction["payment_method"].toString().toUpperCase()),
 
               const SizedBox(height: 8),
               _doubleLine(),
@@ -234,7 +243,7 @@ class _ReceiptPageState extends State<ReceiptPage> {
                       child: Text(
                         item['item_name'].toString().toUpperCase(),
                         style: const TextStyle(
-                            fontFamily: "Courier", 
+                            fontFamily: "Courier",
                             fontSize: 10,
                             fontWeight: FontWeight.w500),
                       ),
@@ -245,7 +254,7 @@ class _ReceiptPageState extends State<ReceiptPage> {
                         "₱${(item['quantity'] * item['unit_price']).toStringAsFixed(2)}",
                         textAlign: TextAlign.right,
                         style: const TextStyle(
-                            fontFamily: "Courier", 
+                            fontFamily: "Courier",
                             fontSize: 10,
                             fontWeight: FontWeight.bold),
                       ),
@@ -259,7 +268,7 @@ class _ReceiptPageState extends State<ReceiptPage> {
                     child: Text(
                       "@ ₱${item['unit_price'].toStringAsFixed(2)} each",
                       style: const TextStyle(
-                          fontFamily: "Courier", 
+                          fontFamily: "Courier",
                           fontSize: 9,
                           color: Colors.grey),
                     ),
@@ -272,20 +281,26 @@ class _ReceiptPageState extends State<ReceiptPage> {
               /// 💰 Totals
               const SizedBox(height: 4),
               _receiptTotal("SUBTOTAL",
-                  "₱${transaction["total_amount"].toStringAsFixed(2)}", isLarge: false),
-              if (transaction["discount"] != null && transaction["discount"] > 0)
+                  "₱${transaction["total_amount"].toStringAsFixed(2)}",
+                  isLarge: false),
+              if (transaction["discount"] != null &&
+                  transaction["discount"] > 0)
                 _receiptTotal("DISCOUNT",
-                    "-₱${transaction["discount"].toStringAsFixed(2)}", isLarge: false),
+                    "-₱${transaction["discount"].toStringAsFixed(2)}",
+                    isLarge: false),
               const SizedBox(height: 4),
               _doubleLine(),
               _receiptTotal("TOTAL AMOUNT",
-                  "₱${transaction["total_amount"].toStringAsFixed(2)}", isLarge: true),
+                  "₱${transaction["total_amount"].toStringAsFixed(2)}",
+                  isLarge: true),
               const SizedBox(height: 4),
               if (!isDebtPayment) ...[
                 _receiptTotal("CASH TENDERED",
-                    "₱${transaction["amount_paid"].toStringAsFixed(2)}", isLarge: false),
-                _receiptTotal("CHANGE", 
-                    "₱${transaction["change"].toStringAsFixed(2)}", isLarge: false),
+                    "₱${transaction["amount_paid"].toStringAsFixed(2)}",
+                    isLarge: false),
+                _receiptTotal(
+                    "CHANGE", "₱${transaction["change"].toStringAsFixed(2)}",
+                    isLarge: false),
               ],
 
               /// 🔥 Debt Section
@@ -304,10 +319,12 @@ class _ReceiptPageState extends State<ReceiptPage> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                _receiptTotal(
-                    "OUTSTANDING BALANCE", "₱${debt["balance"].toStringAsFixed(2)}", isLarge: false),
+                _receiptTotal("OUTSTANDING BALANCE",
+                    "₱${debt["balance"].toStringAsFixed(2)}",
+                    isLarge: false),
                 _receiptTotal("DUE DATE",
-                    DateFormat('MM/dd/yyyy').format(debt["due_date"].toDate()), isLarge: false),
+                    DateFormat('MM/dd/yyyy').format(debt["due_date"].toDate()),
+                    isLarge: false),
               ],
 
               /// 🔥 Debt Payments Section
@@ -361,7 +378,7 @@ class _ReceiptPageState extends State<ReceiptPage> {
               const Center(
                 child: Text("PLEASE COME AGAIN",
                     style: TextStyle(
-                        fontFamily: "Courier", 
+                        fontFamily: "Courier",
                         fontSize: 10,
                         letterSpacing: 0.5)),
               ),
@@ -369,7 +386,7 @@ class _ReceiptPageState extends State<ReceiptPage> {
               const Center(
                 child: Text("This serves as your official receipt",
                     style: TextStyle(
-                        fontFamily: "Courier", 
+                        fontFamily: "Courier",
                         fontSize: 8,
                         fontStyle: FontStyle.italic)),
               ),
@@ -402,7 +419,8 @@ Widget _doubleLine() {
     child: Center(
       child: Text(
         "=======================================",
-        style: TextStyle(fontFamily: "Courier", fontSize: 10, fontWeight: FontWeight.bold),
+        style: TextStyle(
+            fontFamily: "Courier", fontSize: 10, fontWeight: FontWeight.bold),
       ),
     ),
   );

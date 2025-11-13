@@ -12,7 +12,11 @@ import 'package:valgrow_ui/services/storage/storage_service.dart';
 class PromotionConfig {
   static const double DEFAULT_PRICE_PER_DAY = 15.0;
   static const int DEFAULT_MIN_DAYS = 7;
-  static const List<String> DEFAULT_PAYMENT_METHODS = ['GCash', 'Maya', 'Bank Transfer'];
+  static const List<String> DEFAULT_PAYMENT_METHODS = [
+    'GCash',
+    'Maya',
+    'Bank Transfer'
+  ];
 }
 
 class StorePromotionForm extends StatefulWidget {
@@ -21,7 +25,6 @@ class StorePromotionForm extends StatefulWidget {
 }
 
 class _StorePromotionFormState extends State<StorePromotionForm> {
-  
   // Form and UI Controllers
   final _part1FormKey = GlobalKey<FormState>();
   final _part2FormKey = GlobalKey<FormState>();
@@ -32,7 +35,7 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
   final TextEditingController _descriptionController = TextEditingController();
   File? _receiptImage;
   File? _storeImage;
-  
+
   // Date and pricing
   DateTime? _startDate;
   DateTime? _endDate;
@@ -42,7 +45,7 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
   int _minDays = 7;
   List<String> _paymentMethods = [];
   Map<String, dynamic> _paymentMethodDetails = {};
-  
+
   // Form state
   int _currentStep = 0;
   String _selectedPaymentMethod = '';
@@ -63,16 +66,33 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
 
   Future<void> _loadPromotionPricing() async {
     try {
-      final config = await PromotionDatabase().fetchPromotionConfig();
+      // Get store's barangay from database provider
+      final store = Provider.of<DatabaseProvider>(context, listen: false).store;
+
+      if (store == null) {
+        throw Exception('Store information not available');
+      }
+
+      // Get barangay from store's address or barangay field
+      String barangay = store.barangay;
+
+      if (barangay.isEmpty) {
+        throw Exception('Store barangay not found');
+      }
+
+      print("🔍 Loading promotion config for barangay: $barangay");
+
+      final config = await PromotionDatabase().fetchPromotionConfig(barangay);
       setState(() {
-        _pricePerDay = config['price_per_day']?.toDouble() ?? PromotionConfig.DEFAULT_PRICE_PER_DAY;
+        _pricePerDay = config['price_per_day']?.toDouble() ??
+            PromotionConfig.DEFAULT_PRICE_PER_DAY;
         _minDays = config['min_days'] ?? PromotionConfig.DEFAULT_MIN_DAYS;
-        
+
         // Extract payment methods with index-based approach
         final methods = config['payment_methods'] as List<dynamic>? ?? [];
         _paymentMethods = [];
         _paymentMethodDetails = {};
-        
+
         // Build payment method details map with index-based keys
         for (int i = 0; i < methods.length; i++) {
           final method = methods[i];
@@ -81,22 +101,35 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
           _paymentMethodDetails[methodKey] = {
             'type': method['type'], // Store original type name
             'qr_code': method['qrCode'] ?? '',
-            'account_name': method['accountName'] ?? '',
             'account_number': method['accountNumber'] ?? '',
-            'bank_name': method['bankName'] ?? '',
+            'id': method['id'],
             'index': i,
           };
         }
-        
+
         _isLoadingConfig = false;
+
+        print("✅ Loaded ${_paymentMethods.length} payment methods");
       });
     } catch (e) {
+      print("❌ Error loading promotion pricing: $e");
       setState(() {
-        _pricePerDay = PromotionConfig.DEFAULT_PRICE_PER_DAY;
-        _minDays = PromotionConfig.DEFAULT_MIN_DAYS;
-        _paymentMethods = PromotionConfig.DEFAULT_PAYMENT_METHODS;
+        _pricePerDay = 0.0;
+        _minDays = 0;
+        _paymentMethods = [];
+        _paymentMethodDetails = {};
         _isLoadingConfig = false;
       });
+
+      // Show error to user
+      Fluttertoast.showToast(
+        msg:
+            'Promotion feature is not available. Rules and payment methods are not configured.',
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+      );
     }
   }
 
@@ -111,7 +144,7 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
   void _calculateAmount() {
     if (_startDate != null && _endDate != null && _pricePerDay > 0) {
       final days = _endDate!.difference(_startDate!).inDays + 1;
-      
+
       // Check minimum days requirement
       if (days < _minDays) {
         Fluttertoast.showToast(
@@ -123,7 +156,7 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
         );
         return;
       }
-      
+
       setState(() {
         _selectedDays = days;
         _calculatedAmount = days * _pricePerDay;
@@ -143,9 +176,9 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: Theme.of(context).colorScheme.copyWith(
-              primary: accentGreen,
-              surface: primaryWhite,
-            ),
+                  primary: accentGreen,
+                  surface: primaryWhite,
+                ),
           ),
           child: child!,
         );
@@ -164,7 +197,7 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
   void _nextStep() {
     if (_currentStep == 0) {
       if (_part1FormKey.currentState!.validate() &&
-          _startDate != null && 
+          _startDate != null &&
           _endDate != null &&
           _storeImage != null) {
         setState(() {
@@ -200,7 +233,7 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
 
   void _submitForm() async {
     if (!_part2FormKey.currentState!.validate()) return;
-    
+
     if (_receiptImage == null) {
       Fluttertoast.showToast(
         msg: 'Please upload payment receipt',
@@ -211,7 +244,7 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
       );
       return;
     }
-    
+
     if (_selectedPaymentMethod.isEmpty) {
       Fluttertoast.showToast(
         msg: 'Please select a payment method',
@@ -252,9 +285,10 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
 
       if (_storeImage != null) {
         String imageName = 'store_${DateTime.now().millisecondsSinceEpoch}';
-        storeImageUrl = await Provider.of<StorageService>(context, listen: false)
-                .uploadImage(_storeImage!, imageName, context) ??
-            '';
+        storeImageUrl =
+            await Provider.of<StorageService>(context, listen: false)
+                    .uploadImage(_storeImage!, imageName, context) ??
+                '';
       }
 
       if (receiptUrl.isEmpty || storeImageUrl.isEmpty) {
@@ -276,8 +310,8 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
         description: _descriptionController.text.trim(),
         amount: _calculatedAmount,
         storeId: store.storeId,
-        status: 'pending', 
-        startDate: _startDate, 
+        status: 'pending',
+        startDate: _startDate,
         endDate: _endDate,
         paymentMethod: _selectedPaymentMethod,
       );
@@ -291,7 +325,6 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
         textColor: Colors.white,
       );
       _resetForm();
-      
     } catch (e) {
       Navigator.pop(context);
       Fluttertoast.showToast(
@@ -503,7 +536,9 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
               height: 2,
               margin: EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: _currentStep >= 1 ? accentGreen : subtleGray.withOpacity(0.3),
+                color: _currentStep >= 1
+                    ? accentGreen
+                    : subtleGray.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(1),
               ),
             ),
@@ -517,14 +552,16 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
   Widget _buildStepCircle(int step, String label) {
     final isActive = _currentStep == step;
     final isCompleted = _currentStep > step;
-    
+
     return Column(
       children: [
         Container(
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: isCompleted || isActive ? accentGreen : subtleGray.withOpacity(0.3),
+            color: isCompleted || isActive
+                ? accentGreen
+                : subtleGray.withOpacity(0.3),
             shape: BoxShape.circle,
           ),
           child: Center(
@@ -633,6 +670,31 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
                     ),
                   ],
                 ),
+              ),
+            )
+          else if (_pricePerDay <= 0 || _minDays <= 0)
+            Container(
+              padding: EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.red.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.red.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.error_outline, color: Colors.red, size: 24),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Promotion feature is not available. Rules and payment methods are not configured for your barangay.',
+                      style: TextStyle(
+                        color: Colors.red.shade700,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             )
           else
@@ -752,12 +814,13 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
             ),
           ),
           SizedBox(height: 12),
-          
+
           _buildInputField(
             controller: _titleController,
             label: 'Promotion Title',
             icon: Icons.title,
-            validator: (value) => value?.isEmpty == true ? 'Please enter promotion title' : null,
+            validator: (value) =>
+                value?.isEmpty == true ? 'Please enter promotion title' : null,
           ),
           SizedBox(height: 16),
 
@@ -766,7 +829,9 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
             label: 'Promotion Description',
             icon: Icons.description,
             maxLines: 3,
-            validator: (value) => value?.isEmpty == true ? 'Please enter promotion description' : null,
+            validator: (value) => value?.isEmpty == true
+                ? 'Please enter promotion description'
+                : null,
           ),
         ],
       ),
@@ -884,7 +949,7 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
             ),
           ),
           SizedBox(height: 12),
-          
+
           if (_isLoadingConfig)
             Container(
               padding: EdgeInsets.all(40),
@@ -912,19 +977,20 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
             Container(
               padding: EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: primaryWhite,
+                color: Colors.red.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                border: Border.all(color: Colors.red.withOpacity(0.3)),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.warning_amber, color: Colors.orange),
+                  Icon(Icons.error_outline, color: Colors.red, size: 24),
                   SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'No payment methods configured. Please contact admin.',
+                      'Promotion feature is not available. Payment methods and rules are not configured for your barangay.',
                       style: TextStyle(
-                        color: primaryBlack,
+                        color: Colors.red.shade700,
+                        fontWeight: FontWeight.w500,
                         fontSize: 14,
                       ),
                     ),
@@ -933,8 +999,10 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
               ),
             )
           else
-            ..._paymentMethods.map((method) => _buildPaymentMethodCard(method)).toList(),
-          
+            ..._paymentMethods
+                .map((method) => _buildPaymentMethodCard(method))
+                .toList(),
+
           SizedBox(height: 24),
 
           // Payment Receipt Upload
@@ -960,17 +1028,17 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
 
   Widget _buildPaymentMethodCard(String methodKey) {
     final isSelected = _selectedPaymentMethod == methodKey;
-    
+
     // Get payment method details from database config
     final methodDetails = _paymentMethodDetails[methodKey] ?? {};
     final methodType = methodDetails['type'] ?? methodKey; // Display name
     final methodIndex = methodDetails['index'] ?? 0;
     final qrUrl = methodDetails['qr_code'] ?? '';
     final accountNumber = methodDetails['account_number'] ?? 'N/A';
-    
+
     // Create unique key for each payment method to ensure different images
     final uniqueKey = '${methodKey}_${qrUrl}_${accountNumber}';
-    
+
     return Container(
       margin: EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -1033,7 +1101,8 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
                           ),
                           SizedBox(width: 8),
                           Container(
-                            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
                               color: accentGreen.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(4),
@@ -1052,7 +1121,6 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
                     ),
                   ],
                 ),
-                
                 if (isSelected && methodDetails.isNotEmpty) ...[
                   SizedBox(height: 16),
                   Container(
@@ -1064,15 +1132,19 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        
                         SizedBox(height: 8),
-                        
-                        Text('Account Number: $accountNumber', 
-                             style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: primaryBlack)),
-                        
+                        Text('Account Number: $accountNumber',
+                            style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                                color: primaryBlack)),
                         if (qrUrl.isNotEmpty) ...[
                           SizedBox(height: 12),
-                          Text('QR Code:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: primaryBlack)),
+                          Text('QR Code:',
+                              style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: primaryBlack)),
                           SizedBox(height: 8),
                           Center(
                             child: Container(
@@ -1087,37 +1159,59 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
                                       borderRadius: BorderRadius.circular(8),
                                       child: Image.network(
                                         qrUrl,
-                                        key: ValueKey(uniqueKey), // Unique key for each image
+                                        key: ValueKey(
+                                            uniqueKey), // Unique key for each image
                                         fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) {
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
                                           return Center(
                                             child: Column(
-                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
                                               children: [
-                                                Icon(Icons.error, size: 40, color: subtleGray),
+                                                Icon(Icons.error,
+                                                    size: 40,
+                                                    color: subtleGray),
                                                 SizedBox(height: 8),
-                                                Text('QR Failed', style: TextStyle(fontSize: 12, color: subtleGray)),
+                                                Text('QR Failed',
+                                                    style: TextStyle(
+                                                        fontSize: 12,
+                                                        color: subtleGray)),
                                                 SizedBox(height: 4),
-                                                Text('${methodType} #${methodIndex + 1}', style: TextStyle(fontSize: 10, color: subtleGray)),
+                                                Text(
+                                                    '${methodType} #${methodIndex + 1}',
+                                                    style: TextStyle(
+                                                        fontSize: 10,
+                                                        color: subtleGray)),
                                               ],
                                             ),
                                           );
                                         },
-                                        loadingBuilder: (context, child, loadingProgress) {
-                                          if (loadingProgress == null) return child;
+                                        loadingBuilder:
+                                            (context, child, loadingProgress) {
+                                          if (loadingProgress == null)
+                                            return child;
                                           return Center(
                                             child: Column(
-                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment.center,
                                               children: [
                                                 CircularProgressIndicator(
                                                   color: accentGreen,
-                                                  value: loadingProgress.expectedTotalBytes != null
-                                                      ? loadingProgress.cumulativeBytesLoaded / 
-                                                        loadingProgress.expectedTotalBytes!
+                                                  value: loadingProgress
+                                                              .expectedTotalBytes !=
+                                                          null
+                                                      ? loadingProgress
+                                                              .cumulativeBytesLoaded /
+                                                          loadingProgress
+                                                              .expectedTotalBytes!
                                                       : null,
                                                 ),
                                                 SizedBox(height: 8),
-                                                Text('Loading QR...', style: TextStyle(fontSize: 12, color: subtleGray)),
+                                                Text('Loading QR...',
+                                                    style: TextStyle(
+                                                        fontSize: 12,
+                                                        color: subtleGray)),
                                               ],
                                             ),
                                           );
@@ -1126,13 +1220,22 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
                                     )
                                   : Center(
                                       child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
                                         children: [
-                                          Icon(Icons.qr_code, size: 60, color: subtleGray),
+                                          Icon(Icons.qr_code,
+                                              size: 60, color: subtleGray),
                                           SizedBox(height: 8),
-                                          Text('QR Code', style: TextStyle(fontSize: 12, color: subtleGray)),
+                                          Text('QR Code',
+                                              style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: subtleGray)),
                                           SizedBox(height: 4),
-                                          Text('${methodType} #${methodIndex + 1}', style: TextStyle(fontSize: 10, color: subtleGray)),
+                                          Text(
+                                              '${methodType} #${methodIndex + 1}',
+                                              style: TextStyle(
+                                                  fontSize: 10,
+                                                  color: subtleGray)),
                                         ],
                                       ),
                                     ),
@@ -1143,7 +1246,6 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
                     ),
                   ),
                 ],
-                
                 if (isSelected && methodDetails.isEmpty) ...[
                   SizedBox(height: 16),
                   Container(
@@ -1154,7 +1256,8 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.info_outline, color: Colors.orange, size: 16),
+                        Icon(Icons.info_outline,
+                            color: Colors.orange, size: 16),
                         SizedBox(width: 8),
                         Expanded(
                           child: Text(
@@ -1209,7 +1312,6 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
             ],
           ),
           SizedBox(height: 12),
-          
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
@@ -1219,7 +1321,8 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
                 foregroundColor: primaryWhite,
                 elevation: 0,
                 padding: EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
               ),
               child: Text(
                 'Select Dates',
@@ -1227,7 +1330,6 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
               ),
             ),
           ),
-          
           if (_startDate != null && _endDate != null) ...[
             SizedBox(height: 16),
             Container(
@@ -1303,9 +1405,9 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
         color: primaryWhite,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: image == null 
-            ? subtleGray.withOpacity(0.3)
-            : accentGreen.withOpacity(0.3),
+          color: image == null
+              ? subtleGray.withOpacity(0.3)
+              : accentGreen.withOpacity(0.3),
           width: 1,
         ),
         boxShadow: [
@@ -1435,7 +1537,8 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
                 onPressed: _previousStep,
                 style: OutlinedButton.styleFrom(
                   side: BorderSide(color: accentGreen),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
                   padding: EdgeInsets.symmetric(vertical: 12),
                 ),
                 child: Text(
@@ -1450,7 +1553,6 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
             ),
             SizedBox(width: 12),
           ],
-          
           Expanded(
             child: ElevatedButton(
               onPressed: _currentStep == 0 ? _nextStep : _submitForm,
@@ -1458,7 +1560,8 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
                 backgroundColor: accentGreen,
                 foregroundColor: primaryWhite,
                 elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
                 padding: EdgeInsets.symmetric(vertical: 12),
               ),
               child: Text(
@@ -1485,7 +1588,6 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
       body: Column(
         children: [
           _buildStepIndicator(),
-          
           Expanded(
             child: PageView(
               controller: _pageController,
@@ -1507,5 +1609,4 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
       bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
-
-    }
+}

@@ -24,8 +24,18 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
   final _auth = AuthService();
 
   bool _isLoading = false;
+  String _passwordStrength = "";
+  Color _passwordStrengthColor = Colors.grey;
 
   @override
+  void initState() {
+    super.initState();
+    // Add listener to password field for real-time strength checking
+    _passwordController.addListener(() {
+      _checkPasswordStrength(_passwordController.text);
+    });
+  }
+
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
@@ -33,6 +43,44 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  // Strong password validation method
+  bool _isStrongPassword(String password) {
+    if (password.length < 8) return false;
+
+    // Check for at least one uppercase letter
+    if (!RegExp(r'[A-Z]').hasMatch(password)) return false;
+
+    // Check for at least one lowercase letter
+    if (!RegExp(r'[a-z]').hasMatch(password)) return false;
+
+    // Check for at least one digit
+    if (!RegExp(r'[0-9]').hasMatch(password)) return false;
+
+    // Check for at least one special character
+    if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(password)) return false;
+
+    return true;
+  }
+
+  // Method to check password strength and update UI
+  void _checkPasswordStrength(String password) {
+    setState(() {
+      if (password.isEmpty) {
+        _passwordStrength = "";
+        _passwordStrengthColor = Colors.grey;
+      } else if (password.length < 6) {
+        _passwordStrength = "Too short";
+        _passwordStrengthColor = Colors.red;
+      } else if (!_isStrongPassword(password)) {
+        _passwordStrength = "Weak";
+        _passwordStrengthColor = Colors.orange;
+      } else {
+        _passwordStrength = "Strong";
+        _passwordStrengthColor = Colors.green;
+      }
+    });
   }
 
   void _showToast(String message) {
@@ -81,8 +129,13 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
       return;
     }
 
-    if (password.length < 8) {
-      _showToast("❗ Password must be at least 8 characters long.");
+    if (!_isStrongPassword(password)) {
+      _showToast(
+          "❗ Password must be at least 8 characters long and contain:\n" +
+              "• At least one uppercase letter\n" +
+              "• At least one lowercase letter\n" +
+              "• At least one number\n" +
+              "• At least one special character (!@#\$%^&*)");
       return;
     }
 
@@ -102,7 +155,7 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
         storeCode: storeCode,
         context: context,
       );
-      
+
       Navigator.pushNamedAndRemoveUntil(
         context,
         '/management',
@@ -160,6 +213,42 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
               hint: "Enter password",
               isObscure: true,
             ),
+            // Password strength indicator
+            if (_passwordController.text.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4, left: 4),
+                child: Row(
+                  children: [
+                    Text(
+                      "Password strength: ",
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    Text(
+                      _passwordStrength,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: _passwordStrengthColor,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            if (_passwordController.text.isNotEmpty &&
+                !_isStrongPassword(_passwordController.text))
+              Padding(
+                padding: const EdgeInsets.only(top: 4, left: 4),
+                child: Text(
+                  "Use 8+ chars with uppercase, lowercase, number & special character",
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ),
             const SizedBox(height: 10),
             MyTextfieldLabeled(
               color: Colors.black,

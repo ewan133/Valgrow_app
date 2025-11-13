@@ -207,11 +207,13 @@ class DatabaseProvider extends ChangeNotifier {
   }
 
   /// Update Store Address & Notify
-  Future<void> updateStoreAddress(String houseNumber, String street, String barangay) async {
+  Future<void> updateStoreAddress(
+      String houseNumber, String street, String barangay) async {
     try {
       if (_store == null) return;
 
-      await _db.updateStoreAddress(_store!.storeId, houseNumber, street, barangay);
+      await _db.updateStoreAddress(
+          _store!.storeId, houseNumber, street, barangay);
 
       // Build the full address string
       final address = "$houseNumber $street, $barangay, Valenzuela City"
@@ -245,6 +247,35 @@ class DatabaseProvider extends ChangeNotifier {
     _user = null;
     _store = null;
     _items = [];
+    _batch = [];
+    _basket = [];
+    _customers = [];
+    _debtsWithCustomers = [];
+    _nearestDueDate = null;
+    _customerDebts = [];
+    _selectedCustomer = null;
+    _selectedCustomerDebts = [];
+    _transactionHistory = [];
+    _employees = [];
+    _notifications = [];
+    _salesReport = [];
+    _transactionDetails = null;
+    _expenses = [];
+    _debtPaymentReport = [];
+    quickSummary = {};
+    _performanceChartData = {};
+    _isLoading = false;
+    _isLoadingDebts = false;
+    _isLoadingTransactions = false;
+    _isLoadingEmployees = false;
+    _isLoadingNotifications = false;
+    _isCheckingOverdueDebts = false;
+    _isLoadingSalesReport = false;
+    _isLoadingTransaction = false;
+    _isLoadingExpenses = false;
+    _isLoadingDebtPaymentReport = false;
+    isLoadingQuickSummary = false;
+    _isLoadingPerformanceCharts = false;
     notifyListeners();
   }
 
@@ -507,7 +538,7 @@ class DatabaseProvider extends ChangeNotifier {
                 })
             .toList(),
         customerName: customerName ?? "Guest",
-        storeOwnerId: _store!.storeId, 
+        storeOwnerId: _store!.storeId,
         reference_number: reference_number ?? null,
       );
 
@@ -738,16 +769,15 @@ class DatabaseProvider extends ChangeNotifier {
     }
   }
 
-  Future<String?> processDebtPayment({
-    required String debtId,
-    required double amountPaid,
-    required String paymentMethod,
-    required String storeId,
-    required String customerId,
-    required String customerName,
-    required double remainingBalance,
-    String? reference_number
-  }) async {
+  Future<String?> processDebtPayment(
+      {required String debtId,
+      required double amountPaid,
+      required String paymentMethod,
+      required String storeId,
+      required String customerId,
+      required String customerName,
+      required double remainingBalance,
+      String? reference_number}) async {
     _isLoading = true;
     notifyListeners();
 
@@ -758,7 +788,8 @@ class DatabaseProvider extends ChangeNotifier {
         amountPaid: amountPaid,
         paymentMethod: paymentMethod,
         storeId: storeId,
-        customerId: customerId, reference_number: reference_number ,
+        customerId: customerId,
+        reference_number: reference_number,
       );
 
       if (newTransactionId != null) {
@@ -904,14 +935,15 @@ class DatabaseProvider extends ChangeNotifier {
     _isLoadingTransactions = true;
     _transactionHistory = []; // Clear existing data
     notifyListeners();
-    
+
     try {
       // Stream transactions and add them one by one
-      await for (var transaction in _historyDatabase.streamTransactionHistory(storeId, limit: limit)) {
+      await for (var transaction
+          in _historyDatabase.streamTransactionHistory(storeId, limit: limit)) {
         _transactionHistory.add(transaction);
         notifyListeners(); // Update UI with each new transaction
       }
-      
+
       // Sort by date after all transactions are loaded
       _transactionHistory.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       print("✅ Fetched ${_transactionHistory.length} transactions.");
@@ -1401,6 +1433,4 @@ class DatabaseProvider extends ChangeNotifier {
       rethrow;
     }
   }
-
-  
 }

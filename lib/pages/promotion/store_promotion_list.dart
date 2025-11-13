@@ -5,7 +5,6 @@ import 'package:valgrow_ui/components/general_components/appbar.dart';
 import 'package:valgrow_ui/services/database/database_provider.dart';
 import 'package:valgrow_ui/services/database/promotion_database.dart';
 
-
 class StorePromotionList extends StatefulWidget {
   const StorePromotionList({super.key});
 
@@ -17,7 +16,7 @@ class _StorePromotionListState extends State<StorePromotionList>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final PromotionDatabase _promotionDb = PromotionDatabase();
-  
+
   List<Map<String, dynamic>> allPromotions = [];
   bool isLoading = true;
   String? error;
@@ -45,14 +44,14 @@ class _StorePromotionListState extends State<StorePromotionList>
     final now = DateTime.now();
     final startDate = (promotion['start_date'] as Timestamp).toDate();
     final endDate = (promotion['end_date'] as Timestamp).toDate();
-    
+
     return now.isAfter(startDate) && now.isBefore(endDate);
   }
 
   Future<void> _loadPromotions() async {
     final provider = Provider.of<DatabaseProvider>(context, listen: false);
     final storeId = provider.store?.storeId;
-    
+
     if (storeId == null) {
       setState(() {
         error = 'Store ID not available';
@@ -68,7 +67,7 @@ class _StorePromotionListState extends State<StorePromotionList>
       });
 
       final promotions = await _promotionDb.fetchStorePromotions(storeId);
-      
+
       setState(() {
         allPromotions = promotions;
         isLoading = false;
@@ -85,21 +84,25 @@ class _StorePromotionListState extends State<StorePromotionList>
     switch (status) {
       case 'active':
         // Active: status is 'approved' AND within date range
-        return allPromotions.where((promo) => 
-          promo['status'] == 'approved' && _isPromotionActive(promo)
-        ).toList();
-      
+        return allPromotions
+            .where((promo) =>
+                promo['status'] == 'approved' && _isPromotionActive(promo))
+            .toList();
+
       case 'pending':
         // Pending: status is 'pending' regardless of date
-        return allPromotions.where((promo) => promo['status'] == 'pending').toList();
-      
+        return allPromotions
+            .where((promo) => promo['status'] == 'pending')
+            .toList();
+
       case 'inactive':
         // Inactive: status is 'rejected' OR (status is 'approved' but outside date range)
-        return allPromotions.where((promo) => 
-          promo['status'] == 'rejected' || 
-          (promo['status'] == 'approved' && !_isPromotionActive(promo))
-        ).toList();
-      
+        return allPromotions
+            .where((promo) =>
+                promo['status'] == 'rejected' ||
+                (promo['status'] == 'approved' && !_isPromotionActive(promo)))
+            .toList();
+
       default:
         return [];
     }
@@ -132,41 +135,47 @@ class _StorePromotionListState extends State<StorePromotionList>
           // Tabs container moved outside AppBar
           Container(
             margin: EdgeInsets.all(16),
+            padding: EdgeInsets.all(4),
             decoration: BoxDecoration(
-              color: lightGray,
+              color: accentGreen,
               borderRadius: BorderRadius.circular(12),
             ),
             child: TabBar(
               controller: _tabController,
-              labelColor: primaryWhite, // White text for selected tab
-              unselectedLabelColor: primaryBlack.withOpacity(0.6),
+              labelColor: primaryBlack, // Black text for selected tab
+              unselectedLabelColor: primaryWhite.withOpacity(0.7),
               indicator: BoxDecoration(
-                color: accentGreen,
-                borderRadius: BorderRadius.circular(12),
+                color: primaryWhite,
+                borderRadius: BorderRadius.circular(10),
               ),
               labelStyle: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-              unselectedLabelStyle: TextStyle(fontWeight: FontWeight.w400, fontSize: 13),
+              unselectedLabelStyle:
+                  TextStyle(fontWeight: FontWeight.w400, fontSize: 13),
               dividerColor: Colors.transparent,
+              indicatorPadding: EdgeInsets.all(2),
               tabs: [
                 Tab(
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 8),
-                    child: Text('Active (${_getPromotionsByStatus('active').length})',
-                      style: TextStyle(fontSize: 11)),
+                    child: Text(
+                        'Active (${_getPromotionsByStatus('active').length})',
+                        style: TextStyle(fontSize: 11)),
                   ),
                 ),
                 Tab(
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 8),
-                    child: Text('Pending (${_getPromotionsByStatus('pending').length})',
-                      style: TextStyle(fontSize: 11)),
+                    child: Text(
+                        'Pending (${_getPromotionsByStatus('pending').length})',
+                        style: TextStyle(fontSize: 11)),
                   ),
                 ),
                 Tab(
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: 8),
-                    child: Text('Inactive (${_getPromotionsByStatus('inactive').length})',
-                      style: TextStyle(fontSize: 11)),
+                    child: Text(
+                        'Inactive (${_getPromotionsByStatus('inactive').length})',
+                        style: TextStyle(fontSize: 11)),
                   ),
                 ),
               ],
@@ -181,9 +190,12 @@ class _StorePromotionListState extends State<StorePromotionList>
                     : TabBarView(
                         controller: _tabController,
                         children: [
-                          _buildPromotionList(_getPromotionsByStatus('active'), 'active'),
-                          _buildPromotionList(_getPromotionsByStatus('pending'), 'pending'),
-                          _buildPromotionList(_getPromotionsByStatus('inactive'), 'inactive'),
+                          _buildPromotionList(
+                              _getPromotionsByStatus('active'), 'active'),
+                          _buildPromotionList(
+                              _getPromotionsByStatus('pending'), 'pending'),
+                          _buildPromotionList(
+                              _getPromotionsByStatus('inactive'), 'inactive'),
                         ],
                       ),
           ),
@@ -289,7 +301,8 @@ class _StorePromotionListState extends State<StorePromotionList>
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: Text('Retry', style: TextStyle(fontWeight: FontWeight.w600)),
+                child: Text('Retry',
+                    style: TextStyle(fontWeight: FontWeight.w600)),
               ),
             ],
           ),
@@ -298,7 +311,8 @@ class _StorePromotionListState extends State<StorePromotionList>
     );
   }
 
-  Widget _buildPromotionList(List<Map<String, dynamic>> promotions, String type) {
+  Widget _buildPromotionList(
+      List<Map<String, dynamic>> promotions, String type) {
     if (promotions.isEmpty) {
       return Container(
         color: primaryWhite,
@@ -362,11 +376,11 @@ class _StorePromotionListState extends State<StorePromotionList>
 
   Widget _buildPromotionCard(Map<String, dynamic> promotion, String type) {
     Color statusColor;
-    
+
     // Determine display based on actual status and date range
     bool isWithinDateRange = _isPromotionActive(promotion);
     String actualStatus = promotion['status'] ?? 'unknown';
-    
+
     switch (type) {
       case 'active':
         statusColor = accentGreen;
@@ -468,7 +482,7 @@ class _StorePromotionListState extends State<StorePromotionList>
               ],
             ),
           ),
-          
+
           // Card content
           Padding(
             padding: EdgeInsets.all(16),
@@ -502,7 +516,7 @@ class _StorePromotionListState extends State<StorePromotionList>
                   ],
                 ),
                 SizedBox(height: 8),
-                
+
                 // Description
                 Text(
                   promotion['description'] ?? 'No description available',
@@ -515,7 +529,7 @@ class _StorePromotionListState extends State<StorePromotionList>
                   overflow: TextOverflow.ellipsis,
                 ),
                 SizedBox(height: 16),
-                
+
                 // Details row
                 Row(
                   children: [
@@ -529,7 +543,7 @@ class _StorePromotionListState extends State<StorePromotionList>
                     Expanded(
                       child: _buildSimpleDetailItem(
                         Icons.calendar_today,
-                        promotion['end_date'] != null 
+                        promotion['end_date'] != null
                             ? _formatDate(promotion['end_date'])
                             : 'No end date',
                       ),
@@ -537,7 +551,7 @@ class _StorePromotionListState extends State<StorePromotionList>
                   ],
                 ),
                 SizedBox(height: 16),
-                
+
                 // Clean action button
                 SizedBox(
                   width: double.infinity,
@@ -557,7 +571,7 @@ class _StorePromotionListState extends State<StorePromotionList>
                     child: Text(
                       'View Details',
                       style: TextStyle(
-                        fontSize: 14, 
+                        fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -646,7 +660,8 @@ class _StorePromotionListState extends State<StorePromotionList>
               style: TextStyle(color: primaryBlack),
             ),
             // Show rejection reason if the promotion is rejected
-            if (promotion['status'] == 'rejected' && promotion['rejection_reason'] != null) ...[
+            if (promotion['status'] == 'rejected' &&
+                promotion['rejection_reason'] != null) ...[
               SizedBox(height: 12),
               Container(
                 padding: EdgeInsets.all(12),

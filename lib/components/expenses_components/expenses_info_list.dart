@@ -4,7 +4,7 @@ import 'package:valgrow_ui/components/general_components/text.dart';
 import 'package:valgrow_ui/models/expenses_details.dart';
 import 'package:intl/intl.dart';
 
-class MyExpensesInfoList extends StatelessWidget {
+class MyExpensesInfoList extends StatefulWidget {
   final ExpenseModel expense;
   final VoidCallback? onEdit;
   final VoidCallback? onDelete;
@@ -17,37 +17,46 @@ class MyExpensesInfoList extends StatelessWidget {
   });
 
   @override
+  State<MyExpensesInfoList> createState() => _MyExpensesInfoListState();
+}
+
+class _MyExpensesInfoListState extends State<MyExpensesInfoList> {
+  bool _isExpanded = false;
+
+  @override
   Widget build(BuildContext context) {
-    final formattedDate = DateFormat("MMMM dd, yyyy").format(expense.date);
+    final formattedDate =
+        DateFormat("MMMM dd, yyyy").format(widget.expense.date);
+    final hasNote = widget.expense.note?.trim().isNotEmpty ?? false;
 
     return Slidable(
-      key: Key(expense.expenseId),
+      key: Key(widget.expense.expenseId),
       endActionPane: ActionPane(
         motion: const DrawerMotion(),
         extentRatio: 0.35,
         children: [
           CustomSlidableAction(
-            onPressed: (_) => onEdit?.call(),
+            onPressed: (_) => widget.onEdit?.call(),
             padding: const EdgeInsets.all(0),
             child: Container(
               width: 50,
               height: 50,
               decoration: BoxDecoration(
                 color: Colors.blue,
-                borderRadius: BorderRadius.circular(12), // 👈 Rounded corners
+                borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(Icons.edit, color: Colors.white),
             ),
           ),
           CustomSlidableAction(
-            onPressed: (_) => onDelete?.call(),
+            onPressed: (_) => widget.onDelete?.call(),
             padding: const EdgeInsets.all(0),
             child: Container(
               width: 50,
               height: 50,
               decoration: BoxDecoration(
                 color: Colors.red,
-                borderRadius: BorderRadius.circular(12), // 👈 Rounded corners
+                borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(Icons.delete, color: Colors.white),
             ),
@@ -92,7 +101,7 @@ class MyExpensesInfoList extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                     MyText(
-                      text: expense.category,
+                      text: widget.expense.category,
                       fontSize: 16,
                       color: Colors.black,
                       fontWeight: FontWeight.normal,
@@ -109,7 +118,7 @@ class MyExpensesInfoList extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                     MyText(
-                      text: "₱${expense.amount.toStringAsFixed(2)}",
+                      text: "₱${widget.expense.amount.toStringAsFixed(2)}",
                       fontSize: 16,
                       color: Colors.black,
                       fontWeight: FontWeight.bold,
@@ -118,6 +127,72 @@ class MyExpensesInfoList extends StatelessWidget {
                 ),
               ],
             ),
+
+            // Show expand/collapse button if there's a note
+            if (hasNote) ...[
+              const SizedBox(height: 12),
+              InkWell(
+                onTap: () {
+                  setState(() {
+                    _isExpanded = !_isExpanded;
+                  });
+                },
+                child: Row(
+                  children: [
+                    Icon(
+                      _isExpanded ? Icons.expand_less : Icons.expand_more,
+                      color: Colors.grey.shade700,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      _isExpanded ? "Hide Note" : "View Note",
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            // Collapsible note section
+            if (_isExpanded && hasNote) ...[
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Note:",
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.grey.shade700,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      widget.expense.note!,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.black87,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),

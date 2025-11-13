@@ -99,96 +99,100 @@ class ExpenseInfoPage extends StatelessWidget {
                       ),
                     )
                   else
-                    ...expenses.map((expense) => Padding(
-                          padding: const EdgeInsets.only(bottom: 0.0),
-                          child: GestureDetector(
-                            onTap: () async {
-                              await showDialog(
-                                context: context,
-                                builder: (context) => AlertDialog(
-                                  title: const Text("Record Note"),
-                                  content: Text(
-                                      (expense.note?.trim().isEmpty ?? true)
-                                          ? "No note provided."
-                                          : expense.note!),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(context),
-                                      child: const Text("Close"),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                            child: MyExpensesInfoList(
-                              expense: expense,
-                              onEdit: () async {
-                                final result =
-                                    await showDialog<Map<String, dynamic>>(
-                                  context: context,
-                                  builder: (context) =>
-                                      EditExpensesModal(expense: expense),
-                                );
-
-                                if (result != null) {
-                                  await provider.updateExpense(
-                                    expenseId: result['expenseId'],
-                                    amount: result['amount'],
-                                    category: result['category'],
-                                    note: result['note'],
-                                    date: result['date'],
-                                  );
-
+                    ...expenses.map(
+                      (expense) => Padding(
+                        padding: const EdgeInsets.only(bottom: 0.0),
+                        child: MyExpensesInfoList(
+                          expense: expense,
+                          onEdit: expense.category == 'Capital'
+                              ? () {
                                   Fluttertoast.showToast(
-                                    msg: "Record updated successfully.",
-                                    toastLength: Toast.LENGTH_SHORT,
+                                    msg:
+                                        "Capital expenses cannot be edited. They are auto-generated from inventory purchases.",
+                                    toastLength: Toast.LENGTH_LONG,
                                     gravity: ToastGravity.BOTTOM,
-                                    backgroundColor: Colors.green,
+                                    backgroundColor: Colors.orange,
                                     textColor: Colors.white,
                                   );
                                 }
-                              },
-                              onDelete: () async {
-                                final confirm = await showDialog<bool>(
-                                  context: context,
-                                  builder: (ctx) => AlertDialog(
-                                    title: const Text("Delete Record"),
-                                    content: const Text(
-                                        "Are you sure you want to delete this record?"),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () =>
-                                            Navigator.pop(ctx, false),
-                                        child: const Text("Cancel"),
-                                      ),
-                                      TextButton(
-                                        onPressed: () =>
-                                            Navigator.pop(ctx, true),
-                                        child: const Text(
-                                          "Delete",
-                                          style: TextStyle(color: Colors.red),
+                              : () async {
+                                  final result =
+                                      await showDialog<Map<String, dynamic>>(
+                                    context: context,
+                                    builder: (context) =>
+                                        EditExpensesModal(expense: expense),
+                                  );
+
+                                  if (result != null) {
+                                    await provider.updateExpense(
+                                      expenseId: result['expenseId'],
+                                      amount: result['amount'],
+                                      category: result['category'],
+                                      note: result['note'],
+                                      date: result['date'],
+                                    );
+
+                                    Fluttertoast.showToast(
+                                      msg: "Record updated successfully.",
+                                      toastLength: Toast.LENGTH_SHORT,
+                                      gravity: ToastGravity.BOTTOM,
+                                      backgroundColor: Colors.green,
+                                      textColor: Colors.white,
+                                    );
+                                  }
+                                },
+                          onDelete: expense.category == 'Capital'
+                              ? () {
+                                  Fluttertoast.showToast(
+                                    msg:
+                                        "Capital expenses cannot be deleted. They are auto-generated from inventory purchases.",
+                                    toastLength: Toast.LENGTH_LONG,
+                                    gravity: ToastGravity.BOTTOM,
+                                    backgroundColor: Colors.orange,
+                                    textColor: Colors.white,
+                                  );
+                                }
+                              : () async {
+                                  final confirm = await showDialog<bool>(
+                                    context: context,
+                                    builder: (ctx) => AlertDialog(
+                                      title: const Text("Delete Record"),
+                                      content: const Text(
+                                          "Are you sure you want to delete this record?"),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(ctx, false),
+                                          child: const Text("Cancel"),
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-
-                                if (confirm == true) {
-                                  await provider
-                                      .deleteExpense(expense.expenseId);
-
-                                  Fluttertoast.showToast(
-                                    msg: "Record deleted successfully.",
-                                    toastLength: Toast.LENGTH_SHORT,
-                                    gravity: ToastGravity.BOTTOM,
-                                    backgroundColor: Colors.red,
-                                    textColor: Colors.white,
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(ctx, true),
+                                          child: const Text(
+                                            "Delete",
+                                            style: TextStyle(color: Colors.red),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   );
-                                }
-                              },
-                            ),
-                          ),
-                        )),
+
+                                  if (confirm == true) {
+                                    await provider
+                                        .deleteExpense(expense.expenseId);
+
+                                    Fluttertoast.showToast(
+                                      msg: "Record deleted successfully.",
+                                      toastLength: Toast.LENGTH_SHORT,
+                                      gravity: ToastGravity.BOTTOM,
+                                      backgroundColor: Colors.red,
+                                      textColor: Colors.white,
+                                    );
+                                  }
+                                },
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),

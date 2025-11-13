@@ -56,8 +56,8 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20.0),
               child: ElevatedButton.icon(
-                onPressed: () async{
-                 await _auth.sendEmailVerificationLink();
+                onPressed: () async {
+                  await _auth.sendEmailVerificationLink();
                 },
                 icon: const Icon(
                   Icons.email,
@@ -80,7 +80,7 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
             TextButton(
               onPressed: () {
                 Navigator.pushNamed(context, '/login');
-                _auth.signout();
+                _auth.signout(context);
               },
               child: const Text(
                 "Back to Login",

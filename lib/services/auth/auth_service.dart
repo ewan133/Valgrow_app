@@ -3,7 +3,9 @@ import 'package:cloud_functions/cloud_functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:provider/provider.dart';
 import 'package:valgrow_ui/services/auth/wrapper.dart';
+import 'package:valgrow_ui/services/database/database_provider.dart';
 import 'package:valgrow_ui/services/database/management_database.dart';
 
 class AuthService {
@@ -70,10 +72,14 @@ class AuthService {
   }
 
   // logout the user
-  Future<void> signout() async {
+  Future<void> signout(BuildContext context) async {
     try {
       await _auth.signOut();
       log("User logged out");
+
+      // Clear all app data when logging out
+      final provider = context.read<DatabaseProvider>();
+      provider.clearData();
     } catch (e) {
       log("Something went wrong");
     }

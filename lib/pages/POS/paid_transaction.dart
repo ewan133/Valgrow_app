@@ -331,8 +331,33 @@ class _PaidTransactionState extends State<PaidTransaction> {
         const SizedBox(height: 5),
         TextField(
           controller: controller,
-          keyboardType: TextInputType.number,
-          onChanged: onChanged,
+          keyboardType: const TextInputType.numberWithOptions(
+              decimal: true, signed: false),
+          onChanged: (value) {
+            // ✅ Remove any negative signs and non-numeric characters except decimal point
+            String filtered = value.replaceAll(RegExp(r'[^0-9.]'), '');
+
+            // ✅ Ensure only one decimal point
+            int decimalCount = '.'.allMatches(filtered).length;
+            if (decimalCount > 1) {
+              int firstDecimalIndex = filtered.indexOf('.');
+              filtered = filtered.substring(0, firstDecimalIndex + 1) +
+                  filtered.substring(firstDecimalIndex + 1).replaceAll('.', '');
+            }
+
+            // ✅ Update controller if value changed
+            if (filtered != value) {
+              controller.value = TextEditingValue(
+                text: filtered,
+                selection: TextSelection.collapsed(offset: filtered.length),
+              );
+            }
+
+            // ✅ Call the onChanged callback if provided
+            if (onChanged != null) {
+              onChanged(filtered);
+            }
+          },
           maxLength: maxLength ?? 100000,
           decoration: InputDecoration(
             hintText: hint ?? "Enter amount",
@@ -411,7 +436,8 @@ class _PaidTransactionState extends State<PaidTransaction> {
       }
 
       _receivedAmount = receivedAmount;
-      _change = receivedAmount - totalAmount;
+      // ✅ Change should never be negative - if payment is less than total, change is 0
+      _change = (receivedAmount - totalAmount).clamp(0, double.infinity);
     });
   }
 

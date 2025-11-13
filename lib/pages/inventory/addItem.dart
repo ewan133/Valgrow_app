@@ -46,6 +46,9 @@ class _AdditemPageState extends State<AdditemPage> {
       Provider.of<DatabaseProvider>(context, listen: false);
   UserProfile? user;
 
+  // Field validation states
+  Set<String> _invalidFields = {};
+
   @override
   void initState() {
     super.initState();
@@ -165,16 +168,44 @@ class _AdditemPageState extends State<AdditemPage> {
     final user = Provider.of<DatabaseProvider>(context, listen: false).user;
     final items = Provider.of<DatabaseProvider>(context, listen: false).items;
 
-    if (_nameController.text.trim().isEmpty ||
-        _regularPriceController.text.trim().isEmpty ||
-        _unpaidPriceController.text.trim().isEmpty ||
-        unitValue == null ||
-        categoryValue == null) {
+    setState(() {
+      _invalidFields.clear();
+    });
+
+    bool hasError = false;
+
+    if (_nameController.text.trim().isEmpty) {
+      _invalidFields.add('name');
+      hasError = true;
+    }
+
+    if (_regularPriceController.text.trim().isEmpty) {
+      _invalidFields.add('regularPrice');
+      hasError = true;
+    }
+
+    if (_unpaidPriceController.text.trim().isEmpty) {
+      _invalidFields.add('unpaidPrice');
+      hasError = true;
+    }
+
+    if (unitValue == null) {
+      _invalidFields.add('unit');
+      hasError = true;
+    }
+
+    if (categoryValue == null) {
+      _invalidFields.add('category');
+      hasError = true;
+    }
+
+    if (hasError) {
+      setState(() {});
       Fluttertoast.showToast(
         msg: "Please fill in all required fields",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
-        backgroundColor: Colors.orange,
+        backgroundColor: Colors.red,
         textColor: Colors.white,
         fontSize: 16.0,
       );
@@ -409,36 +440,48 @@ class _AdditemPageState extends State<AdditemPage> {
                     const SizedBox(height: 15),
                     MyTextfieldLabeled(
                       key: addItemName,
-                      color: Colors.grey.shade400,
+                      color: _invalidFields.contains('name')
+                          ? Colors.red
+                          : Colors.grey.shade400,
                       controller: _nameController,
                       label: "Item Name:",
                       hint: '',
+                      showRedAsterisk: true,
                     ),
                     const SizedBox(height: 8),
                     MyTextfieldLabeled(
                       key: addItemRegularPrice,
-                      color: Colors.grey.shade400,
+                      color: _invalidFields.contains('regularPrice')
+                          ? Colors.red
+                          : Colors.grey.shade400,
                       controller: _regularPriceController,
                       label: "Regular Price:",
                       isNumeric: true,
                       hint: '',
+                      showRedAsterisk: true,
                     ),
                     const SizedBox(height: 8),
                     MyTextfieldLabeled(
                       key: addItemUnpaidPrice,
-                      color: Colors.grey.shade400,
+                      color: _invalidFields.contains('unpaidPrice')
+                          ? Colors.red
+                          : Colors.grey.shade400,
                       controller: _unpaidPriceController,
-                      label: "Unpaid Price:",
+                      label: "Utang Price:",
                       isNumeric: true,
                       hint: '',
+                      showRedAsterisk: true,
                     ),
                     const SizedBox(height: 8),
                     MyDropdown(
                       key: addItemCategory,
                       text: 'Category:',
-                      color: Colors.grey.shade400,
+                      color: _invalidFields.contains('category')
+                          ? Colors.red
+                          : Colors.grey.shade400,
                       choices: categories,
                       selectedValue: categoryValue,
+                      showRedAsterisk: true,
                       onChanged: (newValue) {
                         if (newValue != null) {
                           setState(() {
@@ -455,11 +498,14 @@ class _AdditemPageState extends State<AdditemPage> {
                     MyDropdown(
                       key: addItemUnit,
                       text: "Unit:",
-                      color: Colors.grey.shade400,
+                      color: _invalidFields.contains('unit')
+                          ? Colors.red
+                          : Colors.grey.shade400,
                       choices: units,
                       selectedValue: unitValue,
                       onChanged: (value) => setState(() => unitValue = value),
                       showAddNew: false,
+                      showRedAsterisk: true,
                     ),
                     const SizedBox(height: 8),
                     Row(

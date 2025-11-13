@@ -67,7 +67,6 @@ class _POSPageState extends State<POSPage> {
         });
       });
     }
-   
   }
 
   addMyTargets(GlobalKey target, String identifier, ContentAlign alignment,
@@ -125,7 +124,10 @@ class _POSPageState extends State<POSPage> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child:  Text("Next", style: TextStyle(fontSize: 14),),
+                        child: Text(
+                          "Next",
+                          style: TextStyle(fontSize: 14),
+                        ),
                       ),
                     ),
                   ],
@@ -140,8 +142,11 @@ class _POSPageState extends State<POSPage> {
 
   // ✅ Method to scan barcode using MobileScanner
   void scanBarcode(BuildContext context) {
-    if (isScanning) return;
-    isScanning = true;
+    if (isScanning) return; // Prevent opening multiple scanners
+
+    setState(() {
+      isScanning = true;
+    });
 
     showDialog(
       context: context,
@@ -154,20 +159,18 @@ class _POSPageState extends State<POSPage> {
           child: MobileScanner(
             onDetect: (BarcodeCapture capture) {
               final List<Barcode> barcodes = capture.barcodes;
-              if (barcodes.isEmpty || !isScanning) return;
+              if (barcodes.isEmpty) return;
 
               final String scannedCode = barcodes.first.rawValue ?? '';
               if (scannedCode.isEmpty) return;
 
-              // ✅ Prevent multiple detections from triggering too fast
-              isScanning = false;
-
               // ✅ Process scanned barcode
               _processScannedBarcode(context, scannedCode);
 
-              // ✅ Re-enable scanning after a short delay (prevents duplicate scans)
-              Future.delayed(const Duration(seconds: 2), () {
-                isScanning = true; // ✅ Allow next scan
+              // ✅ Close scanner and reset state
+              Navigator.pop(dialogContext);
+              setState(() {
+                isScanning = false;
               });
             },
           ),
@@ -175,14 +178,23 @@ class _POSPageState extends State<POSPage> {
         actions: [
           TextButton(
             onPressed: () {
-              isScanning = false; // ✅ Stop scanning
               Navigator.pop(dialogContext); // ✅ Close scanner manually
+              setState(() {
+                isScanning = false; // ✅ Reset scanning state
+              });
             },
             child: const Text("Close"),
           ),
         ],
       ),
-    );
+    ).then((_) {
+      // ✅ Ensure state is reset if dialog is dismissed in any other way
+      if (mounted) {
+        setState(() {
+          isScanning = false;
+        });
+      }
+    });
   }
 
   // ✅ Process scanned barcode

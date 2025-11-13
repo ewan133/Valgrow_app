@@ -89,7 +89,11 @@ class _DebtPaymentPageState extends State<DebtPaymentPage> {
 
     Fluttertoast.showToast(
       msg: "Sending notification...",
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.blue,
+      textColor: Colors.white,
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      fontSize: 16.0,
     );
 
     // ✅ Ensure API key & sender ID are fetched
@@ -252,9 +256,9 @@ Please settle your balance before the due date. Thank you!
         double.tryParse(_customerMoneyController.text) ?? 0.0;
 
     setState(() {
-      _change = ( customerMoney - widget.debtDetails.balance ) < 0
+      _change = (customerMoney - widget.debtDetails.balance) < 0
           ? 0.0
-          : (customerMoney - widget.debtDetails.balance );
+          : (customerMoney - widget.debtDetails.balance);
     });
   }
 
@@ -433,9 +437,9 @@ Please settle your balance before the due date. Thank you!
                             setState(() =>
                                 _isProcessing = true); // ✅ Start processing
 
-                            double payingAmount =
-                                double.tryParse(_customerMoneyController.text) ??
-                                    0.0;
+                            double payingAmount = double.tryParse(
+                                    _customerMoneyController.text) ??
+                                0.0;
                             double receivedAmount = double.tryParse(
                                     _customerMoneyController.text) ??
                                 0.0;
@@ -458,8 +462,7 @@ Please settle your balance before the due date. Thank you!
                             // ✅ Ensure received amount is not less than paying amount
                             if (receivedAmount <= 0) {
                               Fluttertoast.showToast(
-                                msg:
-                                    "Invalid payment amount!",
+                                msg: "Invalid payment amount!",
                                 toastLength: Toast.LENGTH_SHORT,
                                 gravity: ToastGravity.BOTTOM,
                                 backgroundColor: Colors.red,
@@ -470,7 +473,6 @@ Please settle your balance before the due date. Thank you!
                               return;
                             }
 
-                            
                             // // ✅ Ensure received amount is not less than paying amount
                             // if (payingAmount < widget.debtDetails.balance && receivedAmount > payingAmount) {
                             //   Fluttertoast.showToast(
@@ -515,7 +517,8 @@ Please settle your balance before the due date. Thank you!
                             }
 
                             if (_selectedPaymentMethod == "Gcash" &&
-                                _referenceController.text.isNotEmpty && _referenceController.text.length < 4) {
+                                _referenceController.text.isNotEmpty &&
+                                _referenceController.text.length < 4) {
                               Fluttertoast.showToast(
                                 msg: "Please enter the valid reference number!",
                                 toastLength: Toast.LENGTH_SHORT,
@@ -541,7 +544,8 @@ Please settle your balance before the due date. Thank you!
                               customerId: widget.customerDetails.customerId,
                               customerName: widget.customerDetails.name,
                               remainingBalance:
-                                  widget.debtDetails.balance - receivedAmount, reference_number: _referenceController.text,
+                                  widget.debtDetails.balance - receivedAmount,
+                              reference_number: _referenceController.text,
                             );
 
                             if (transactionId != null) {
@@ -595,8 +599,9 @@ Please settle your balance before the due date. Thank you!
                           ),
                   ),
                 ),
-                
-                const SizedBox(height: 20), // Added space under the Pay Debt button
+
+                const SizedBox(
+                    height: 20), // Added space under the Pay Debt button
               ],
             ],
           ),

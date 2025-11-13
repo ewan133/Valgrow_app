@@ -3,7 +3,7 @@ import 'package:valgrow_ui/services/auth/auth_service.dart';
 
 class DocumentVerificationPage extends StatelessWidget {
   const DocumentVerificationPage({super.key});
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -15,7 +15,8 @@ class DocumentVerificationPage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const Icon(Icons.verified_user, size: 100, color: Color(0xFF14AE5C)),
+              const Icon(Icons.verified_user,
+                  size: 100, color: Color(0xFF14AE5C)),
               const SizedBox(height: 20),
               const Text(
                 "Your Document is Under Review",
@@ -28,15 +29,18 @@ class DocumentVerificationPage extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 16, color: Colors.grey),
               ),
-
               const SizedBox(height: 30),
               ElevatedButton.icon(
                 onPressed: () {
                   final _auth = AuthService();
-                  _auth.signout();
+                  _auth.signout(context);
                   Navigator.pushNamed(context, '/login'); // Navigate back
                 },
-                icon: const Icon(Icons.home, color: Colors.white, size: 30,),
+                icon: const Icon(
+                  Icons.home,
+                  color: Colors.white,
+                  size: 30,
+                ),
                 label: const Text("Back to Login"),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Color(0xFF14AE5C),

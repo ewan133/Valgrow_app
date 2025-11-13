@@ -4,9 +4,13 @@ import 'package:valgrow_ui/models/debts_model.dart';
 
 class MyPersonalDebtsCard extends StatelessWidget {
   final DebtDetails debtDetails; // ✅ Required debt details
+  final VoidCallback? onPayment; // ✅ Add payment callback
 
-  const MyPersonalDebtsCard({Key? key, required this.debtDetails})
-      : super(key: key);
+  const MyPersonalDebtsCard({
+    Key? key,
+    required this.debtDetails,
+    this.onPayment,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -16,8 +20,9 @@ class MyPersonalDebtsCard extends StatelessWidget {
     String amount = "₱${debtDetails.balance.toStringAsFixed(2)}";
 
     // Check if debt is overdue
-    bool isOverdue = DateTime.now().isAfter(debtDetails.dueDate) && debtDetails.status != "paid";
-    
+    bool isOverdue = DateTime.now().isAfter(debtDetails.dueDate) &&
+        debtDetails.status != "paid";
+
     // Status Color Logic
     Color statusColor;
     switch (debtDetails.status) {
@@ -40,7 +45,7 @@ class MyPersonalDebtsCard extends StatelessWidget {
         color: isPaid ? Colors.grey[300] : Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isPaid ? Colors.grey[600]! : Colors.grey[500]!, 
+          color: isPaid ? Colors.grey[600]! : Colors.grey[500]!,
           width: 1.5,
         ),
         boxShadow: isPaid
@@ -90,12 +95,17 @@ class MyPersonalDebtsCard extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: isPaid ? Colors.grey[400] : statusColor.withOpacity(0.12),
+                    color: isPaid
+                        ? Colors.grey[400]
+                        : statusColor.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: isPaid ? Colors.grey[600]! : statusColor.withOpacity(0.3),
+                      color: isPaid
+                          ? Colors.grey[600]!
+                          : statusColor.withOpacity(0.3),
                       width: 1,
                     ),
                   ),
@@ -137,7 +147,8 @@ class MyPersonalDebtsCard extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
-                              color: isPaid ? Colors.grey[600] : Colors.grey[600],
+                              color:
+                                  isPaid ? Colors.grey[600] : Colors.grey[600],
                               letterSpacing: 0.5,
                             ),
                           ),
@@ -158,11 +169,13 @@ class MyPersonalDebtsCard extends StatelessWidget {
                         Padding(
                           padding: const EdgeInsets.only(top: 8),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
                               color: Colors.red.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.red.withOpacity(0.3), width: 1),
+                              border: Border.all(
+                                  color: Colors.red.withOpacity(0.3), width: 1),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
@@ -212,7 +225,8 @@ class MyPersonalDebtsCard extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
-                              color: isPaid ? Colors.grey[600] : Colors.grey[600],
+                              color:
+                                  isPaid ? Colors.grey[600] : Colors.grey[600],
                               letterSpacing: 0.5,
                             ),
                           ),
@@ -233,6 +247,36 @@ class MyPersonalDebtsCard extends StatelessWidget {
                 ),
               ],
             ),
+
+            // Add Payment Button for unpaid/partial debts, View Details for paid
+            if (onPayment != null) ...[
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: onPayment,
+                  icon:
+                      Icon(isPaid ? Icons.visibility : Icons.payment, size: 18),
+                  label: Text(
+                    isPaid ? "View Details" : "Add Payment",
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor:
+                        isPaid ? Colors.grey[600] : const Color(0xFF14AE5C),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),

@@ -7,6 +7,7 @@ class MyDropdown extends StatelessWidget {
   final String? selectedValue;
   final Function(String?) onChanged;
   final bool showAddNew;
+  final bool showRedAsterisk; // Show red asterisk for required fields
 
   const MyDropdown({
     super.key,
@@ -16,6 +17,7 @@ class MyDropdown extends StatelessWidget {
     required this.selectedValue,
     required this.onChanged,
     this.showAddNew = true,
+    this.showRedAsterisk = false, // Default to false
   });
 
   Future<String?> _showAddNewDialog(BuildContext context) async {
@@ -54,15 +56,40 @@ class MyDropdown extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          text,
-          style: const TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Colors.black,
-          ),
-        ),
+        showRedAsterisk
+            ? Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: text,
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black,
+                      ),
+                    ),
+                    const TextSpan(
+                      text: ' *',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.red,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            : Text(
+                text,
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black,
+                ),
+              ),
         DropdownButtonFormField<String>(
           value: choices.contains(selectedValue) ? selectedValue : null,
           decoration: InputDecoration(

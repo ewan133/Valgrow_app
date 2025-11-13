@@ -137,7 +137,8 @@ This customer has failed to meet their debt obligations despite the agreed-upon 
         );
       } else if (result == 'DUPLICATE_BY_USER') {
         Fluttertoast.showToast(
-          msg: "You have already reported this customer for this balance amount (₱${overdueDebt.balance.toStringAsFixed(2)}).",
+          msg:
+              "You have already reported this customer for this balance amount (₱${overdueDebt.balance.toStringAsFixed(2)}).",
           backgroundColor: Colors.orange,
           textColor: Colors.white,
           toastLength: Toast.LENGTH_LONG,
@@ -146,7 +147,8 @@ This customer has failed to meet their debt obligations despite the agreed-upon 
       } else if (result?.startsWith('DUPLICATE_BY_COLLEAGUE|') == true) {
         final reporterName = result!.split('|')[1];
         Fluttertoast.showToast(
-          msg: "$reporterName has already reported this customer for this balance amount (₱${overdueDebt.balance.toStringAsFixed(2)}).",
+          msg:
+              "$reporterName has already reported this customer for this balance amount (₱${overdueDebt.balance.toStringAsFixed(2)}).",
           backgroundColor: Colors.orange,
           textColor: Colors.white,
           toastLength: Toast.LENGTH_LONG,
@@ -301,10 +303,10 @@ This customer has failed to meet their debt obligations despite the agreed-upon 
                             final debt = sortedDebts[index];
                             return Padding(
                               padding: const EdgeInsets.symmetric(vertical: 5),
-                              child: GestureDetector(
-                                onTap: () =>
+                              child: MyPersonalDebtsCard(
+                                debtDetails: debt,
+                                onPayment: () =>
                                     showDebtPaymentDialog(context, debt),
-                                child: MyPersonalDebtsCard(debtDetails: debt),
                               ),
                             );
                           },

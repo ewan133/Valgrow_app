@@ -9,6 +9,7 @@ class MyTextfieldLabeled extends StatefulWidget {
   final bool isNumeric; // Accept numbers (int/decimal)
   final bool isObscure; // Toggle for password fields
   final bool isReadOnly;
+  final bool showRedAsterisk; // Show red asterisk for required fields
 
   const MyTextfieldLabeled({
     super.key,
@@ -19,6 +20,7 @@ class MyTextfieldLabeled extends StatefulWidget {
     this.isNumeric = false, // Default to false (text input)
     this.isObscure = false, // Default to false (not a password field)
     this.isReadOnly = false,
+    this.showRedAsterisk = false, // Default to false
   });
 
   @override
@@ -39,19 +41,44 @@ class _MyTextfieldLabeledState extends State<MyTextfieldLabeled> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          widget.label,
-          style: const TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Colors.black,
-          ),
-        ),
+        widget.showRedAsterisk
+            ? Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: widget.label,
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black,
+                      ),
+                    ),
+                    const TextSpan(
+                      text: ' *',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.red,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            : Text(
+                widget.label,
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black,
+                ),
+              ),
         TextField(
           readOnly: widget.isReadOnly,
           controller: widget.controller,
-          keyboardType: widget.isNumeric 
+          keyboardType: widget.isNumeric
               ? const TextInputType.numberWithOptions(decimal: true)
               : TextInputType.text,
           inputFormatters: widget.isNumeric
@@ -80,7 +107,8 @@ class _MyTextfieldLabeledState extends State<MyTextfieldLabeled> {
               fontWeight: FontWeight.w500,
               color: Color(0xFFBDBDBD), // Hint text color
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
             suffixIcon: widget.isObscure
                 ? IconButton(
                     icon: Icon(

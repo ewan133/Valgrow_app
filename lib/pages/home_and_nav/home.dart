@@ -61,7 +61,6 @@ class _HomePageState extends State<HomePage> {
       // Fetch user data using Provider
       final databaseProvider = context.read<DatabaseProvider>();
       await databaseProvider.fetchUserProfile(uid);
-      
 
       final user = databaseProvider.user;
       await databaseProvider.fetchStoreProfile(user!.storeId);
@@ -78,8 +77,6 @@ class _HomePageState extends State<HomePage> {
           ),
         );
       }
-
-      
 
       // ✅ Handle navigation based on user verification status
       // if (user.status == 'Unverified' && user.document.isEmpty) {
@@ -143,49 +140,57 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBody: false,
       body: _pages[_selectedIndex], // Display the selected page
       // bottom nav bar
-      bottomNavigationBar: CurvedNavigationBar(
-        index: _selectedIndex,
-        backgroundColor: Colors.white,
-        color: Color(0xFF14AE5C),
-        height: 70,
-        items: [
-          CurvedNavigationBarItem(
-              child: Icon(
-                Icons.person,
-                size: 35,
-              ),
-              label: 'Profile',
-              labelStyle: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              )),
-          CurvedNavigationBarItem(
-              child: Icon(
-                Icons.home,
-                size: 35,
-              ),
-              label: 'Home',
-              labelStyle: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              )),
-          CurvedNavigationBarItem(
-              child: Icon(
-                Icons.history,
-                size: 35,
-              ),
-              label: 'History',
-              labelStyle: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              )),
-        ],
-        onTap: _onNavBarTapped, // Handle button tap
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+        ),
+        child: SafeArea(
+          child: CurvedNavigationBar(
+            index: _selectedIndex,
+            backgroundColor: Colors.transparent,
+            color: Color(0xFF14AE5C),
+            height: 70,
+            items: [
+              CurvedNavigationBarItem(
+                  child: Icon(
+                    Icons.person,
+                    size: 35,
+                  ),
+                  label: 'Profile',
+                  labelStyle: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  )),
+              CurvedNavigationBarItem(
+                  child: Icon(
+                    Icons.home,
+                    size: 35,
+                  ),
+                  label: 'Home',
+                  labelStyle: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  )),
+              CurvedNavigationBarItem(
+                  child: Icon(
+                    Icons.history,
+                    size: 35,
+                  ),
+                  label: 'History',
+                  labelStyle: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  )),
+            ],
+            onTap: _onNavBarTapped, // Handle button tap
+          ),
+        ),
       ),
     );
   }

@@ -100,6 +100,9 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
     await databaseProvider.addNewBatch(newBatch);
     await databaseProvider.fetchBatchByItemId(widget.item.itemId);
 
+    // ✅ Refresh items to update total stock immediately
+    await databaseProvider.fetchItemsByStoreId();
+
     // ✅ Show success toast notification
     Fluttertoast.showToast(
       msg: "Stock successfully added!",
@@ -135,12 +138,8 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
           "Tap here to edit the item's information, such as name, price, or category.",
           myTargets);
 
-      target.addMyTargets(
-          itemDetailsImage,
-          "itemDetailsImage",
-          ContentAlign.bottom,
-          "Displays the product image.",
-          myTargets);
+      target.addMyTargets(itemDetailsImage, "itemDetailsImage",
+          ContentAlign.bottom, "Displays the product image.", myTargets);
 
       target.addMyTargets(
           itemDetailsAddStock,
@@ -225,11 +224,19 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
             "label": "Update Stock",
             "icon": Icons.add_shopping_cart, // ✅ Choice Icon
             "action": () {
+              // ✅ Get the latest item data from provider
+              final databaseProvider =
+                  Provider.of<DatabaseProvider>(context, listen: false);
+              final currentItem = databaseProvider.items.firstWhere(
+                (i) => i.itemId == widget.item.itemId,
+                orElse: () => widget.item,
+              );
+
               showDialog(
                 context: context,
                 builder: (context) => ReduceStocksModal(
                   currentStock:
-                      widget.item.total_stock, // ✅ Pass current stock count
+                      currentItem.total_stock, // ✅ Pass updated stock count
                   onSave: (int quantity, String reason) {
                     // ✅ Call reduceStock method from provider
                     Provider.of<DatabaseProvider>(context, listen: false)
@@ -246,7 +253,8 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(vertical: 13.0, horizontal: 8),
+        padding:
+            const EdgeInsets.only(top: 13.0, left: 8, right: 8, bottom: 80),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -322,10 +330,11 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
                               "₱${item.regular_price.toStringAsFixed(2)}",
                             ),
                             _buildDetailRow(
-                              "Unpaid Price:",
+                              "Utang Price:",
                               "₱${item.unpaid_price.toStringAsFixed(2)}",
                             ),
-                            _buildDetailRow("Total Stock:", "${item.total_stock}"),
+                            _buildDetailRow(
+                                "Total Stock:", "${item.total_stock}"),
                             _buildDetailRow(
                               "Last Updated:",
                               DateFormat('yyyy-MM-dd HH:mm')

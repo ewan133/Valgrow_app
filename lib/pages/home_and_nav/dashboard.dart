@@ -315,6 +315,15 @@ class _DashboardPageState extends State<DashboardPage> {
                       mainAxisSpacing: 10,
                       crossAxisSpacing: 10,
                       children: [
+                        if (user?.ims == true)
+                          MyHomeButton(
+                            key: myInventoryIcon,
+                            text: "Inventory",
+                            onPressed: () =>
+                                Navigator.pushNamed(context, '/inventory'),
+                            icon: Icon(Icons.inventory_2,
+                                size: 32, color: Colors.black),
+                          ),
                         if (user?.pos == true)
                           MyHomeButton(
                             key: myPOSICon,
@@ -332,15 +341,6 @@ class _DashboardPageState extends State<DashboardPage> {
                                 Navigator.pushNamed(context, '/debts'),
                             icon:
                                 Icon(Icons.note, size: 32, color: Colors.black),
-                          ),
-                        if (user?.ims == true)
-                          MyHomeButton(
-                            key: myInventoryIcon,
-                            text: "Inventory",
-                            onPressed: () =>
-                                Navigator.pushNamed(context, '/inventory'),
-                            icon: Icon(Icons.inventory_2,
-                                size: 32, color: Colors.black),
                           ),
                         if (user?.reports == true)
                           MyHomeButton(

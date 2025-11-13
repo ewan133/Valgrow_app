@@ -134,8 +134,7 @@ class _AddExpensesModalState extends State<AddExpensesModal> {
                   child: TextField(
                     decoration: InputDecoration(
                       labelText: "Date",
-                      hintText:
-                          DateFormat('MMM d, yyyy').format(_selectedDate),
+                      hintText: DateFormat('MMM d, yyyy').format(_selectedDate),
                       border: const OutlineInputBorder(),
                       suffixIcon: const Icon(Icons.calendar_today),
                     ),
@@ -196,12 +195,18 @@ class _AddExpensesModalState extends State<AddExpensesModal> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child:  Text("Cancel",style: TextStyle(color: Colors.black),),
+          child: Text(
+            "Cancel",
+            style: TextStyle(color: Colors.black),
+          ),
         ),
         ElevatedButton(
           onPressed: _submit,
           style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-          child:  Text("Save", style: TextStyle(color: Colors.white),),
+          child: Text(
+            "Save",
+            style: TextStyle(color: Colors.white),
+          ),
         ),
       ],
     );

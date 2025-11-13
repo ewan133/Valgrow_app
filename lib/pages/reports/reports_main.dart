@@ -55,7 +55,7 @@ class _ReportsMainPageState extends State<ReportsMainPage> {
         title: "Reports",
         actionWidget: PopupMenuButton<ReportType>(
           child: Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.only(right: 13.0),
             child: const Text(
               "Select",
               style: TextStyle(

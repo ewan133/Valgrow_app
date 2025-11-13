@@ -356,6 +356,168 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
     }
   }
 
+  /// ✅ Function to show Terms and Conditions Modal
+  void _showTermsAndConditions(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.8,
+              maxWidth: 600,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade700,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.description,
+                          color: Colors.white, size: 28),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Text(
+                          "Terms of Agreement for Debt Recording",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                ),
+                // Content
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "Please read this agreement carefully before proceeding.\nBy checking the box below or continuing to use the ValGrow system, you acknowledge that you have read, understood, and agreed to the following Terms of Agreement between the Business Owner and the Customer.",
+                          style: TextStyle(fontSize: 14, height: 1.5),
+                        ),
+                        const SizedBox(height: 20),
+                        _buildTermSection(
+                          "1. Purpose of Agreement",
+                          "This Terms of Agreement (\"Agreement\") governs the use of the Utang Tracker feature in ValGrow, an Inventory and POS Management System developed for micro business. It ensures that all debt transactions (\"utang\") recorded through ValGrow are legitimate, transparent, and made with the consent of both the Customer and the Business Owner.",
+                        ),
+                        _buildTermSection(
+                          "2. Consent and Authorization",
+                          "By proceeding, you (the Customer) expressly consent to:\n\n• The recording of your debt transaction in the ValGrow system.\n\n• The collection of your name, contact number, and profile photo solely for transaction verification and communication purposes.\n\n• The use of your transaction data to track balances, due dates, and payment history.\n\nYou acknowledge that this digital confirmation serves as your explicit consent and digital signature for the transaction.",
+                        ),
+                        _buildTermSection(
+                          "3. Business Owner's Responsibility",
+                          "The Business Owner agrees to:\n\n• Record only legitimate and agreed-upon transactions with real customers.\n\n• Obtain the Customer's verbal or written consent before creating a debt record in the system.\n\n• Use accurate information (name, contact number, and photo) when adding customers.\n\n• Avoid misuse of the system by adding fake accounts or unauthorized entries.\n\nValGrow and its developers shall not be held liable for any misuse or false entries made by business owners or staff.",
+                        ),
+                        _buildTermSection(
+                          "4. Customer's Responsibility",
+                          "The Customer agrees to:\n\n• Verify and confirm that all recorded debt transactions in ValGrow are correct.\n\n• Pay the amount owed according to the agreed payment schedule.\n\n• Contact the business owner directly for clarifications or disputes regarding recorded debts.",
+                        ),
+                        _buildTermSection(
+                          "5. Data Privacy and Protection",
+                          "• All customer data recorded in ValGrow (name, number, transaction details) will be stored securely and used only for business transaction purposes.\n\n• Personal information will not be shared with third parties except as required by law or upon written consent.\n\n• Users have the right to request correction or deletion of inaccurate data by contacting the business owner.",
+                        ),
+                        _buildTermSection(
+                          "6. Dispute and Verification",
+                          "In case of discrepancies or disputes:\n\n• The Customer and Business Owner should attempt to resolve issues through direct communication.\n\n• If unresolved, either party may seek assistance from the Barangay Representative who supervises ValGrow usage in the area.",
+                        ),
+                        _buildTermSection(
+                          "7. Agreement Confirmation",
+                          "By checking the box below, both the Business Owner and Customer confirm that:\n\n• All information provided is true and accurate.\n\n• Both parties voluntarily agree to the transaction.\n\n• This digital consent serves as a legally binding acknowledgment of financial responsibility.",
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                // Footer
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(16),
+                      bottomRight: Radius.circular(16),
+                    ),
+                  ),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue.shade700,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text(
+                        "I Understand",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Helper widget to build each term section
+  Widget _buildTermSection(String title, String content) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            content,
+            style: const TextStyle(
+              fontSize: 14,
+              height: 1.6,
+              color: Colors.black87,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final databaseProvider = Provider.of<DatabaseProvider>(context);
@@ -449,6 +611,29 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
                   context: context,
                 ),
 
+                const SizedBox(height: 2),
+
+                // Terms and Conditions Button
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      foregroundColor: Colors.blue.shade700,
+                    ),
+                    onPressed: () => _showTermsAndConditions(context),
+                    icon: Icon(Icons.description_outlined, size: 16),
+                    label: Text(
+                      "View Terms and Conditions",
+                      style: TextStyle(
+                        fontSize: 14,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                ),
+
                 const SizedBox(height: 15),
 
                 // Due Date Picker
@@ -492,7 +677,8 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
                   ),
                 ),
                 const SizedBox(
-                    height: 20), // Extra space to avoid keyboard overflow
+                    height:
+                        40), // Extra space to avoid keyboard and nav bar overlap
               ],
             ),
           ),
@@ -692,7 +878,6 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
 }
 
 // Function to build user input field
-// Function to build user input field
 Widget _buildInputField({
   Key? key,
   required String label,
@@ -712,8 +897,33 @@ Widget _buildInputField({
       const SizedBox(height: 5),
       TextField(
         controller: controller,
-        keyboardType: TextInputType.number,
-        onChanged: onChanged,
+        keyboardType:
+            const TextInputType.numberWithOptions(decimal: true, signed: false),
+        onChanged: (value) {
+          // ✅ Remove any negative signs and non-numeric characters except decimal point
+          String filtered = value.replaceAll(RegExp(r'[^0-9.]'), '');
+
+          // ✅ Ensure only one decimal point
+          int decimalCount = '.'.allMatches(filtered).length;
+          if (decimalCount > 1) {
+            int firstDecimalIndex = filtered.indexOf('.');
+            filtered = filtered.substring(0, firstDecimalIndex + 1) +
+                filtered.substring(firstDecimalIndex + 1).replaceAll('.', '');
+          }
+
+          // ✅ Update controller if value changed
+          if (filtered != value) {
+            controller.value = TextEditingValue(
+              text: filtered,
+              selection: TextSelection.collapsed(offset: filtered.length),
+            );
+          }
+
+          // ✅ Call the onChanged callback if provided
+          if (onChanged != null) {
+            onChanged(filtered);
+          }
+        },
         maxLength: maxLength ?? 100000,
         decoration: InputDecoration(
           hintText: hint ?? "Enter amount",

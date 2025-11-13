@@ -41,6 +41,9 @@ class _SignupPageState extends State<SignupPage> {
 
   List<String> streetItems = [];
 
+  // Field validation states
+  Set<String> _invalidFields = {};
+
   final List<String> barangayDropdownItems = [
     "Arkong Bato",
     "Balangkas",
@@ -97,7 +100,7 @@ class _SignupPageState extends State<SignupPage> {
     super.initState();
     _cityController.text = "Valenzuela City"; // default value for city
     _loadStreets(); // fetch streets asynchronously
-    
+
     // Add listener to password field for real-time strength checking
     _passwordController.addListener(() {
       _checkPasswordStrength(_passwordController.text);
@@ -118,19 +121,19 @@ class _SignupPageState extends State<SignupPage> {
   // Strong password validation method
   bool _isStrongPassword(String password) {
     if (password.length < 8) return false;
-    
+
     // Check for at least one uppercase letter
     if (!RegExp(r'[A-Z]').hasMatch(password)) return false;
-    
+
     // Check for at least one lowercase letter
     if (!RegExp(r'[a-z]').hasMatch(password)) return false;
-    
+
     // Check for at least one digit
     if (!RegExp(r'[0-9]').hasMatch(password)) return false;
-    
+
     // Check for at least one special character
     if (!RegExp(r'[!@#$%^&*(),.?":{}|<>]').hasMatch(password)) return false;
-    
+
     return true;
   }
 
@@ -154,9 +157,31 @@ class _SignupPageState extends State<SignupPage> {
   }
 
   void _nextStep() {
+    setState(() {
+      _invalidFields.clear();
+    });
+
+    bool hasError = false;
+
+    if (_storeNameController.text.trim().isEmpty) {
+      _invalidFields.add('storeName');
+      hasError = true;
+    }
+
+    if (_streetController.text.trim().isEmpty) {
+      _invalidFields.add('street');
+      hasError = true;
+    }
+
     if (_houseNumberController.text.trim().isEmpty) {
+      _invalidFields.add('houseNumber');
+      hasError = true;
+    }
+
+    if (hasError) {
+      setState(() {});
       Fluttertoast.showToast(
-        msg: "Please enter your house number",
+        msg: "Please fill in all required fields",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
         backgroundColor: Colors.red,
@@ -164,6 +189,7 @@ class _SignupPageState extends State<SignupPage> {
       );
       return;
     }
+
     setState(() {
       _currentStep = 1;
     });
@@ -188,26 +214,23 @@ class _SignupPageState extends State<SignupPage> {
     String storename = _storeNameController.text.trim();
     String barangay = selectedBarangay;
 
-    if (name.isEmpty ||
-        number.isEmpty ||
-        email.isEmpty ||
-        role.isEmpty ||
-        storename.isEmpty ||
-        password.isEmpty ||
-        houseNumber.isEmpty ||
-        street.isEmpty ||
-        confirmPassword.isEmpty) {
-      Fluttertoast.showToast(
-        msg: "Please fill in all fields",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.BOTTOM,
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-      );
-      return;
+    setState(() {
+      _invalidFields.clear();
+    });
+
+    bool hasError = false;
+
+    if (name.isEmpty) {
+      _invalidFields.add('name');
+      hasError = true;
     }
 
-    if (!RegExp(r'^09\d{9}$').hasMatch(number)) {
+    if (number.isEmpty) {
+      _invalidFields.add('number');
+      hasError = true;
+    } else if (!RegExp(r'^09\d{9}$').hasMatch(number)) {
+      _invalidFields.add('number');
+      hasError = true;
       Fluttertoast.showToast(
         msg: "Invalid phone number. Must be 11 digits starting with 09",
         toastLength: Toast.LENGTH_SHORT,
@@ -215,10 +238,43 @@ class _SignupPageState extends State<SignupPage> {
         backgroundColor: Colors.red,
         textColor: Colors.white,
       );
-      return;
     }
 
-    if (password != confirmPassword) {
+    if (email.isEmpty) {
+      _invalidFields.add('email');
+      hasError = true;
+    }
+
+    if (selectedItem == "Employee" && storecode.isEmpty) {
+      _invalidFields.add('storeCode');
+      hasError = true;
+    }
+
+    if (password.isEmpty) {
+      _invalidFields.add('password');
+      hasError = true;
+    } else if (!_isStrongPassword(password)) {
+      _invalidFields.add('password');
+      hasError = true;
+      Fluttertoast.showToast(
+        msg: "Password must be at least 8 characters long and contain:\n" +
+            "• At least one uppercase letter\n" +
+            "• At least one lowercase letter\n" +
+            "• At least one number\n" +
+            "• At least one special character (!@#\$%^&*)",
+        toastLength: Toast.LENGTH_LONG,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+      );
+    }
+
+    if (confirmPassword.isEmpty) {
+      _invalidFields.add('confirmPassword');
+      hasError = true;
+    } else if (password != confirmPassword) {
+      _invalidFields.add('confirmPassword');
+      hasError = true;
       Fluttertoast.showToast(
         msg: "Passwords do not match!",
         toastLength: Toast.LENGTH_SHORT,
@@ -226,22 +282,22 @@ class _SignupPageState extends State<SignupPage> {
         backgroundColor: Colors.red,
         textColor: Colors.white,
       );
-      return;
     }
 
-    // Strong password validation
-    if (!_isStrongPassword(password)) {
-      Fluttertoast.showToast(
-        msg: "Password must be at least 8 characters long and contain:\n" +
-             "• At least one uppercase letter\n" +
-             "• At least one lowercase letter\n" +
-             "• At least one number\n" +
-             "• At least one special character (!@#\$%^&*)",
-        toastLength: Toast.LENGTH_LONG,
-        gravity: ToastGravity.BOTTOM,
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-      );
+    if (hasError) {
+      setState(() {});
+      if (_invalidFields.isNotEmpty &&
+          !_invalidFields.contains('number') &&
+          !_invalidFields.contains('password') &&
+          !_invalidFields.contains('confirmPassword')) {
+        Fluttertoast.showToast(
+          msg: "Please fill in all required fields",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+        );
+      }
       return;
     }
 
@@ -256,8 +312,8 @@ class _SignupPageState extends State<SignupPage> {
       }
 
       if (role == "Store Owner") {
-        await _db.createStoreOwnerProfile(email, name, number, houseNumber,
-            street, storename, barangay);
+        await _db.createStoreOwnerProfile(
+            email, name, number, houseNumber, street, storename, barangay);
       } else {
         await _db.createEmployeeProfile(email, name, number, storecode);
       }
@@ -325,10 +381,13 @@ class _SignupPageState extends State<SignupPage> {
           const SizedBox(height: 20),
 
           MyTextfieldLabeled(
-            color: Colors.black,
+            color: _invalidFields.contains('storeName')
+                ? Colors.red
+                : Colors.black,
             controller: _storeNameController,
             label: "Store Name:",
             hint: "",
+            showRedAsterisk: true,
           ),
           const SizedBox(height: 8),
 
@@ -417,17 +476,22 @@ class _SignupPageState extends State<SignupPage> {
           // const SizedBox(height: 8),
 
           MyAutoCompleteTextField(
-              label: "Streets",
+              label: "Streets:",
               hint: "",
               suggestions: streetItems,
               controller: _streetController,
-              color: Colors.black),
+              color:
+                  _invalidFields.contains('street') ? Colors.red : Colors.black,
+              showRedAsterisk: true),
 
           MyTextfieldLabeled(
-            color: Colors.black,
+            color: _invalidFields.contains('houseNumber')
+                ? Colors.red
+                : Colors.black,
             controller: _houseNumberController,
-            label: "House Number:",
+            label: "Building/House Number:",
             hint: "",
+            showRedAsterisk: true,
           ),
           const SizedBox(height: 20),
 
@@ -455,40 +519,61 @@ class _SignupPageState extends State<SignupPage> {
           ),
           const SizedBox(height: 20),
           MyTextfieldLabeled(
-            color: Colors.black,
+            color: _invalidFields.contains('name') ? Colors.red : Colors.black,
             controller: _nameController,
             label: "Name:",
             hint: "",
+            showRedAsterisk: true,
           ),
           const SizedBox(height: 8),
           MyTextfieldLabeled(
-            color: Colors.black,
+            color: _invalidFields.contains('email') ? Colors.red : Colors.black,
             controller: _emailController,
             label: "Email:",
             hint: "",
+            showRedAsterisk: true,
           ),
           const SizedBox(height: 8),
           MyTextfieldLabeled(
-            color: Colors.black,
+            color:
+                _invalidFields.contains('number') ? Colors.red : Colors.black,
             controller: _numberController,
             label: "Phone Number:",
-            hint: "",
+            hint: "09XXXXXXXXX",
+            showRedAsterisk: true,
           ),
+          if (_numberController.text.isNotEmpty &&
+              !RegExp(r'^09\d{9}$').hasMatch(_numberController.text))
+            Padding(
+              padding: const EdgeInsets.only(top: 4, left: 4),
+              child: Text(
+                "Phone number must be 11 digits starting with 09",
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.red,
+                ),
+              ),
+            ),
           //const SizedBox(height: 8),
           if (selectedItem != "Store Owner")
             MyTextfieldLabeled(
-              color: Colors.black,
+              color: _invalidFields.contains('storeCode')
+                  ? Colors.red
+                  : Colors.black,
               controller: _storeCodeController,
               label: "Store Code:",
               hint: "",
+              showRedAsterisk: true,
             ),
           const SizedBox(height: 8),
           MyTextfieldLabeled(
-            color: Colors.black,
+            color:
+                _invalidFields.contains('password') ? Colors.red : Colors.black,
             controller: _passwordController,
             label: "Password:",
             hint: "",
             isObscure: true,
+            showRedAsterisk: true,
           ),
           // Password strength indicator
           if (_passwordController.text.isNotEmpty)
@@ -514,7 +599,8 @@ class _SignupPageState extends State<SignupPage> {
                 ],
               ),
             ),
-          if (_passwordController.text.isNotEmpty && !_isStrongPassword(_passwordController.text))
+          if (_passwordController.text.isNotEmpty &&
+              !_isStrongPassword(_passwordController.text))
             Padding(
               padding: const EdgeInsets.only(top: 4, left: 4),
               child: Text(
@@ -527,11 +613,14 @@ class _SignupPageState extends State<SignupPage> {
             ),
           const SizedBox(height: 8),
           MyTextfieldLabeled(
-            color: Colors.black,
+            color: _invalidFields.contains('confirmPassword')
+                ? Colors.red
+                : Colors.black,
             controller: _confirmPasswordController,
             label: "Confirm Password:",
             hint: "",
             isObscure: true,
+            showRedAsterisk: true,
           ),
           const SizedBox(height: 20),
           Row(

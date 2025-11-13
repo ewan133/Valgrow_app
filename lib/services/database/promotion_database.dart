@@ -233,42 +233,62 @@ class PromotionDatabase {
     }
   }
 
-  /// ✅ Fetch promotion configuration (price per day, min days, payment methods)
-  Future<Map<String, dynamic>> fetchPromotionConfig() async {
+  /// ✅ Fetch promotion configuration (price per day, min days, payment methods) from barangayProfiles
+  Future<Map<String, dynamic>> fetchPromotionConfig(String barangayName) async {
     try {
-      // Get promotion rules (price_per_day, min_days)
-      final promoDoc =
-          await _db.collection('promotion_rules').doc('config').get();
+      final barangayLower = barangayName.toLowerCase().trim();
+      print("🔍 Fetching config for barangay: $barangayLower");
 
-      // Get admin-config payment methods
-      final paymentDoc =
-          await _db.collection('admin_config').doc('payment_methods').get();
+      // Query barangayProfiles collection using the barangay field
+      final querySnapshot = await _db
+          .collection('barangayProfiles')
+          .where('barangayName', isEqualTo: barangayLower)
+          .limit(1)
+          .get();
 
-      final promoData = promoDoc.exists ? promoDoc.data()! : {};
-      final paymentData = paymentDoc.exists ? paymentDoc.data()! : {};
+      if (querySnapshot.docs.isEmpty) {
+        print("⚠️ Barangay profile not found for: $barangayLower");
+        return {
+          "price_per_day": 15.0,
+          "min_days": 7,
+          "payment_methods": [],
+        };
+      }
+
+      final barangayData = querySnapshot.docs.first.data();
+
+      // Extract promotionRules map
+      final promotionRules =
+          barangayData["promotionRules"] as Map<String, dynamic>? ?? {};
+
+      // Extract paymentMethods array
+      final paymentMethodsArray =
+          barangayData["paymentMethods"] as List<dynamic>? ?? [];
 
       final config = {
-        "price_per_day": promoData["price_per_day"] ?? 50.0,
-        "min_days": promoData["min_days"] ?? 7,
-        "payment_methods": paymentData["methods"] ?? [],
+        "price_per_day": promotionRules["price_per_day"]?.toDouble() ?? 15.0,
+        "min_days": promotionRules["min_days"] ?? 7,
+        "payment_methods": paymentMethodsArray,
       };
 
       // ✅ Debug print the config result
-      print("🔎 Promotion Config Fetched:");
+      print("🔎 Promotion Config Fetched from barangayProfiles:");
+      print("   Barangay: $barangayLower");
       print("   Price per day: ${config["price_per_day"]}");
       print("   Min days: ${config["min_days"]}");
-      print("   Payment methods:");
-      for (var method in config["payment_methods"]) {
-        print("     ▶ ${method["type"]} (ID: ${method["id"]})");
-        print("        QR: ${method["qrCode"]}");
-        print("        Updated: ${method["updated_at"]}");
+      print("   Payment methods count: ${paymentMethodsArray.length}");
+      for (var i = 0; i < paymentMethodsArray.length; i++) {
+        final method = paymentMethodsArray[i];
+        print("     ▶ Method #${i + 1}: ${method["type"]}");
+        print("        Account: ${method["accountNumber"]}");
+        print("        QR Code: ${method["qrCode"] ?? 'N/A'}");
       }
 
       return config;
     } catch (e) {
-      print("❌ Failed to fetch promotion config: $e");
+      print("❌ Failed to fetch promotion config from barangayProfiles: $e");
       return {
-        "price_per_day": 50.0,
+        "price_per_day": 15.0,
         "min_days": 7,
         "payment_methods": [],
       };

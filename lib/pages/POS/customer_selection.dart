@@ -32,7 +32,6 @@ class _CustomerSelectionModalState extends State<CustomerSelectionModal> {
   final TextEditingController _searchController = TextEditingController();
   String? _phoneError;
   List<CustomerDetails> _filteredCustomers = [];
-  bool _isUploading = false; // ✅ Track upload status
 
   @override
   void initState() {
@@ -66,45 +65,6 @@ class _CustomerSelectionModalState extends State<CustomerSelectionModal> {
     });
   }
 
-  /// ✅ Image Picker (Camera or Gallery)
-  Future<void> _pickImage(ImageSource source) async {
-    final pickedFile = await ImagePicker().pickImage(source: source);
-    if (pickedFile != null) {
-      setState(() {
-        _selectedImage = File(pickedFile.path);
-      });
-    }
-  }
-
-  /// ✅ Show Image Picker Options
-  void _showImagePickerOptions() {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => SafeArea(
-        child: Wrap(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: const Text("Take a Photo"),
-              onTap: () {
-                Navigator.pop(context);
-                _pickImage(ImageSource.camera);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: const Text("Choose from Gallery"),
-              onTap: () {
-                Navigator.pop(context);
-                _pickImage(ImageSource.gallery);
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   /// ✅ Show Customer Details Dialog (for Adding a Customer)
   void _showCustomerDetailsDialog(BuildContext context) {
     showDialog(
@@ -112,6 +72,7 @@ class _CustomerSelectionModalState extends State<CustomerSelectionModal> {
       barrierDismissible: false,
       builder: (context) {
         File? localImage = _selectedImage;
+        bool isDialogLoading = false; // ✅ Local loading state for dialog
 
         return StatefulBuilder(
           builder: (context, setDialogState) {
@@ -154,6 +115,94 @@ class _CustomerSelectionModalState extends State<CustomerSelectionModal> {
                   ),
                 ),
               );
+            }
+
+            // ✅ Local function to handle adding customer with dialog state
+            void _handleAddCustomerInDialog() async {
+              String name = _nameController.text.trim();
+              String phone = _phoneController.text.trim();
+
+              if (name.isEmpty || phone.isEmpty) {
+                Fluttertoast.showToast(
+                  msg: "Please fill in all required fields.",
+                  toastLength: Toast.LENGTH_SHORT,
+                  gravity: ToastGravity.BOTTOM,
+                  backgroundColor: Colors.red,
+                  textColor: Colors.white,
+                  fontSize: 16.0,
+                );
+                return;
+              }
+
+              if (!_validatePhoneNumber(phone)) return;
+
+              setDialogState(() =>
+                  isDialogLoading = true); // ✅ Update dialog loading state
+
+              String imageUrl =
+                  "https://firebasestorage.googleapis.com/v0/b/valgrow-new.firebasestorage.app/o/uploaded_images%2Fdefault.jpg?alt=media";
+
+              try {
+                if (_selectedImage != null) {
+                  String imageName =
+                      "customer-${DateTime.now().millisecondsSinceEpoch}";
+                  String? uploadedUrl =
+                      await Provider.of<StorageService>(context, listen: false)
+                          .uploadImage(_selectedImage!, imageName, context);
+                  imageUrl = uploadedUrl ?? imageUrl;
+                }
+
+                bool success =
+                    await Provider.of<DatabaseProvider>(context, listen: false)
+                        .addNewCustomer(
+                            name: name, phone: phone, imageUrl: imageUrl);
+
+                if (!success) {
+                  setDialogState(() => isDialogLoading = false);
+                  Fluttertoast.showToast(
+                    msg: "Customer already exists.",
+                    toastLength: Toast.LENGTH_SHORT,
+                    gravity: ToastGravity.BOTTOM,
+                    backgroundColor: Colors.orange,
+                    textColor: Colors.white,
+                    fontSize: 16.0,
+                  );
+                  return;
+                }
+
+                _fetchCustomers();
+                final newCustomer =
+                    Provider.of<DatabaseProvider>(context, listen: false)
+                        .customers
+                        .firstWhereOrNull((c) => c.name == name);
+
+                if (newCustomer != null) {
+                  widget.onItemSelected(newCustomer);
+                }
+
+                Fluttertoast.showToast(
+                  msg: "Customer successfully added.",
+                  toastLength: Toast.LENGTH_SHORT,
+                  gravity: ToastGravity.TOP,
+                  backgroundColor: Colors.green,
+                  textColor: Colors.white,
+                  fontSize: 16.0,
+                );
+
+                if (mounted) {
+                  Navigator.pop(context);
+                }
+              } catch (e) {
+                setDialogState(() => isDialogLoading = false);
+                Fluttertoast.showToast(
+                  msg: "Error adding customer. Try again.",
+                  toastLength: Toast.LENGTH_SHORT,
+                  gravity: ToastGravity.TOP,
+                  backgroundColor: Colors.red,
+                  textColor: Colors.white,
+                  fontSize: 16.0,
+                );
+              }
             }
 
             return Dialog(
@@ -229,13 +278,18 @@ class _CustomerSelectionModalState extends State<CustomerSelectionModal> {
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           TextButton(
-                            onPressed: () => Navigator.pop(context),
+                            onPressed: isDialogLoading
+                                ? null
+                                : () => Navigator.pop(context),
                             child: const Text("Cancel"),
                           ),
                           ElevatedButton(
-                            onPressed: _handleAddCustomer,
+                            onPressed: isDialogLoading
+                                ? null
+                                : _handleAddCustomerInDialog,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green,
+                              backgroundColor:
+                                  isDialogLoading ? Colors.grey : Colors.green,
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 20, vertical: 12),
@@ -243,9 +297,15 @@ class _CustomerSelectionModalState extends State<CustomerSelectionModal> {
                                 borderRadius: BorderRadius.circular(10),
                               ),
                             ),
-                            child: _isUploading
-                                ? const CircularProgressIndicator(
-                                    color: Colors.white)
+                            child: isDialogLoading
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2.5,
+                                    ),
+                                  )
                                 : const Text(
                                     "Save",
                                     style: TextStyle(
@@ -278,92 +338,6 @@ class _CustomerSelectionModalState extends State<CustomerSelectionModal> {
       }
     });
     return _phoneError == null;
-  }
-
-  /// ✅ Handles adding a new customer with image upload
-  void _handleAddCustomer() async {
-    String name = _nameController.text.trim();
-    String phone = _phoneController.text.trim();
-
-    if (name.isEmpty || phone.isEmpty) {
-      Fluttertoast.showToast(
-        msg: "Please fill in all required fields.",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.BOTTOM,
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-        fontSize: 16.0,
-      );
-      return;
-    }
-
-    if (!_validatePhoneNumber(phone)) return; // ✅ Stop if phone is invalid
-
-    setState(() => _isUploading = true);
-
-    // Default Image URL
-    String imageUrl =
-        "https://firebasestorage.googleapis.com/v0/b/valgrow-new.firebasestorage.app/o/uploaded_images%2Fdefault.jpg?alt=media";
-
-    try {
-      if (_selectedImage != null) {
-        String imageName = "customer-${DateTime.now().millisecondsSinceEpoch}";
-        String? uploadedUrl =
-            await Provider.of<StorageService>(context, listen: false)
-                .uploadImage(_selectedImage!, imageName, context);
-        imageUrl = uploadedUrl ?? imageUrl;
-      }
-
-      bool success = await Provider.of<DatabaseProvider>(context, listen: false)
-          .addNewCustomer(name: name, phone: phone, imageUrl: imageUrl);
-
-      if (!success) {
-        Fluttertoast.showToast(
-          msg: "Customer already exists.",
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.BOTTOM,
-          backgroundColor: Colors.orange,
-          textColor: Colors.white,
-          fontSize: 16.0,
-        );
-        return;
-      }
-
-      _fetchCustomers();
-      final newCustomer = Provider.of<DatabaseProvider>(context, listen: false)
-          .customers
-          .firstWhereOrNull((c) => c.name == name);
-
-      if (newCustomer != null) {
-        widget.onItemSelected(newCustomer);
-      }
-
-      Fluttertoast.showToast(
-        msg: "Customer successfully added.",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.TOP,
-        backgroundColor: Colors.green,
-        textColor: Colors.white,
-        fontSize: 16.0,
-      );
-
-      if (mounted) {
-        Navigator.pop(context);
-      }
-    } catch (e) {
-      Fluttertoast.showToast(
-        msg: "Error adding customer. Try again.",
-        toastLength: Toast.LENGTH_SHORT,
-        gravity: ToastGravity.TOP,
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-        fontSize: 16.0,
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _isUploading = false);
-      }
-    }
   }
 
   @override

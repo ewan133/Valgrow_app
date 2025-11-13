@@ -7,6 +7,7 @@ class MyAutoCompleteTextField extends StatefulWidget {
   final TextEditingController controller;
   final Color color;
   final bool isReadOnly;
+  final bool showRedAsterisk; // Show red asterisk for required fields
 
   const MyAutoCompleteTextField({
     super.key,
@@ -16,6 +17,7 @@ class MyAutoCompleteTextField extends StatefulWidget {
     required this.controller,
     required this.color,
     this.isReadOnly = false,
+    this.showRedAsterisk = false, // Default to false
   });
 
   @override
@@ -29,15 +31,40 @@ class _MyAutoCompleteTextFieldState extends State<MyAutoCompleteTextField> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          widget.label,
-          style: const TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: Colors.black,
-          ),
-        ),
+        widget.showRedAsterisk
+            ? Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: widget.label,
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.black,
+                      ),
+                    ),
+                    const TextSpan(
+                      text: ' *',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.red,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            : Text(
+                widget.label,
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black,
+                ),
+              ),
         Autocomplete<String>(
           optionsBuilder: (TextEditingValue textEditingValue) {
             if (textEditingValue.text.isEmpty) {
