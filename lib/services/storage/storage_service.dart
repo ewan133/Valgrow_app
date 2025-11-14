@@ -80,9 +80,9 @@ class StorageService with ChangeNotifier {
 
       // ✅ Ensure the widget is still mounted before showing snackbar
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("✅ Image uploaded successfully!")),
-        );
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   const SnackBar(content: Text("✅ Image uploaded successfully!")),
+        // );
       }
 
       print("✅ Upload successful: $downloadUrl"); // Debugging log
@@ -93,9 +93,9 @@ class StorageService with ChangeNotifier {
 
       // ✅ Ensure the widget is still mounted before showing snackbar
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("❌ Image upload failed: $e")),
-        );
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   SnackBar(content: Text("❌ Image upload failed: $e")),
+        // );
       }
 
       return null; // Return null if upload fails

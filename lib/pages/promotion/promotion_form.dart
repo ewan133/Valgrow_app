@@ -1518,7 +1518,7 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
 
   Widget _buildBottomNavigationBar() {
     return Container(
-      padding: EdgeInsets.all(16),
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: primaryWhite,
         boxShadow: [
@@ -1580,6 +1580,9 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
 
   @override
   Widget build(BuildContext context) {
+    // Calculate bottom padding to avoid overlap with bottom navigation bar
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+
     return Scaffold(
       backgroundColor: primaryWhite,
       appBar: MyAppbar(
@@ -1594,11 +1597,13 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
               physics: NeverScrollableScrollPhysics(),
               children: [
                 SingleChildScrollView(
-                  padding: EdgeInsets.fromLTRB(16, 0, 16, 100),
+                  padding:
+                      EdgeInsets.fromLTRB(16, 0, 16, 80 + bottomPadding + 16),
                   child: _buildPart1(),
                 ),
                 SingleChildScrollView(
-                  padding: EdgeInsets.fromLTRB(16, 0, 16, 100),
+                  padding:
+                      EdgeInsets.fromLTRB(16, 0, 16, 80 + bottomPadding + 16),
                   child: _buildPart2(),
                 ),
               ],
@@ -1606,7 +1611,9 @@ class _StorePromotionFormState extends State<StorePromotionForm> {
           ),
         ],
       ),
-      bottomNavigationBar: _buildBottomNavigationBar(),
+      bottomNavigationBar: SafeArea(
+        child: _buildBottomNavigationBar(),
+      ),
     );
   }
 }
