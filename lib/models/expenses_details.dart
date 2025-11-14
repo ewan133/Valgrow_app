@@ -6,6 +6,7 @@ class ExpenseModel {
   final String category;
   final String? note;
   final String storeId;
+  final String? userId; // ✅ Added userId to track who created the expense
   final DateTime date;
   final DateTime createdAt;
 
@@ -15,6 +16,7 @@ class ExpenseModel {
     required this.category,
     this.note,
     required this.storeId,
+    this.userId, // ✅ Optional userId
     required this.date,
     required this.createdAt,
   });
@@ -28,6 +30,7 @@ class ExpenseModel {
       category: data['category'] as String? ?? '',
       note: data['note'] as String?,
       storeId: data['storeId'] as String? ?? '',
+      userId: data['userId'] as String?, // ✅ Extract userId from Firestore
       date: (data['date'] as Timestamp?)?.toDate() ?? DateTime.now(),
       createdAt: (data['created_at'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
@@ -38,10 +41,11 @@ class ExpenseModel {
     return {
       'amount': amount,
       'category': category,
-      'note': note,
+      'note': note ?? '',
       'storeId': storeId,
+      'userId': userId, // ✅ Include userId in Firestore document
       'date': Timestamp.fromDate(date),
-      'created_at': FieldValue.serverTimestamp(),
+      'createdAt': FieldValue.serverTimestamp(),
     };
   }
 

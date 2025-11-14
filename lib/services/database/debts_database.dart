@@ -1,9 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:valgrow_ui/models/customer_model.dart';
 import 'package:valgrow_ui/models/debts_model.dart';
+import 'package:valgrow_ui/services/database/audit_database.dart';
 
 class DebtsDatabase {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final AuditDatabase _auditDb = AuditDatabase();
 
   /// ✅ Fetch all customers by storeId (not just debt-related)
   Future<List<CustomerDetails>> fetchAllCustomersByStoreId(
@@ -38,6 +40,7 @@ class DebtsDatabase {
   /// ✅ Add a new customer to Firestore
   Future<CustomerDetails?> addNewCustomer({
     required String storeId,
+    String? userId, // ✅ Added userId parameter
     required String name,
     required String phone,
     required String imageUrl,
@@ -70,6 +73,21 @@ class DebtsDatabase {
 
       // ✅ Save the new customer to Firestore
       await newCustomerRef.set(newCustomer.toMap());
+
+      // ✅ Log audit trail
+      await _auditDb.logAudit(
+        storeId: storeId,
+        userId: userId ?? storeId, // ✅ Use actual userId if provided
+        action: 'CREATE_CUSTOMER',
+        entityType: 'customer',
+        entityId: newCustomer.customerId,
+        description:
+            'New customer added: ${newCustomer.name} (${newCustomer.phone})',
+        metadata: {
+          'customerName': newCustomer.name,
+          'phone': newCustomer.phone,
+        },
+      );
 
       print(
           "✅ New customer added: ${newCustomer.name} (ID: ${newCustomer.customerId})");
@@ -228,101 +246,125 @@ class DebtsDatabase {
     }
   }
 
- Future<String?> processDebtPayment({
-  required String debtId,
-  required double amountPaid,
-  required String paymentMethod,
-  required String storeId,
-  required String customerId,
-  String? reference_number,
-}) async {
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
-  final WriteBatch batch = _db.batch();
+  Future<String?> processDebtPayment({
+    required String debtId,
+    required double amountPaid,
+    required String paymentMethod,
+    required String storeId,
+    required String customerId,
+    String? userId, // ✅ Added userId parameter
+    String? reference_number,
+  }) async {
+    final FirebaseFirestore _db = FirebaseFirestore.instance;
+    final WriteBatch batch = _db.batch();
 
-  try {
-    // ✅ Fetch the debt document
-    DocumentReference debtRef = _db.collection('debts').doc(debtId);
-    DocumentSnapshot debtSnapshot = await debtRef.get();
+    try {
+      // ✅ Fetch the debt document
+      DocumentReference debtRef = _db.collection('debts').doc(debtId);
+      DocumentSnapshot debtSnapshot = await debtRef.get();
 
-    if (!debtSnapshot.exists) {
-      print("❌ Error: Debt record not found.");
+      if (!debtSnapshot.exists) {
+        print("❌ Error: Debt record not found.");
+        return null;
+      }
+
+      Map<String, dynamic> debtData =
+          debtSnapshot.data() as Map<String, dynamic>;
+
+      double currentBalance = (debtData['balance'] ?? 0).toDouble();
+      double alreadyPaid = (debtData['amount_paid'] ?? 0).toDouble();
+      String transactionId =
+          debtData['transactionId'] ?? ""; // ✅ Original Transaction ID
+
+      // ✅ Handle change
+      double change = 0;
+      double effectivePayment = amountPaid;
+
+      if (amountPaid > currentBalance) {
+        change = amountPaid - currentBalance; // ✅ Calculate change
+        effectivePayment = currentBalance; // ✅ Only pay what’s due
+        print("⚠️ Payment exceeds balance. Returning change: $change");
+      }
+
+      // ✅ Calculate new values
+      double newBalance = currentBalance - effectivePayment;
+      double newTotalPaid = alreadyPaid + effectivePayment;
+      String newStatus = newBalance == 0 ? "paid" : "partial";
+
+      // ✅ Create a **debt payment entry** linked to the original transaction
+      DocumentReference paymentRef = _db.collection('debt_payments').doc();
+      batch.set(paymentRef, {
+        'debt_id': debtId,
+        'amount_paid': effectivePayment,
+        'change': change, // ✅ Added field for change
+        'payment_date': FieldValue.serverTimestamp(),
+        'payment_method': paymentMethod,
+        'storeId': storeId,
+        'transactionId': transactionId,
+        'reference_number': reference_number ?? "",
+      });
+
+      // ✅ Update the debt document
+      batch.update(debtRef, {
+        'amount_paid': newTotalPaid,
+        'balance': newBalance,
+        'status': newStatus,
+        'updated_at': FieldValue.serverTimestamp(),
+        'last_payment_date': FieldValue.serverTimestamp(),
+      });
+
+      // ✅ Update customer's total debt
+      DocumentReference customerRef =
+          _db.collection('customers').doc(customerId);
+      batch.update(customerRef, {
+        'total_debt':
+            FieldValue.increment(-effectivePayment), // ✅ Use effective payment
+      });
+
+      // ✅ (Optional) Update original transaction status if debt is fully paid
+      if (newBalance == 0 && transactionId.isNotEmpty) {
+        DocumentReference originalTransactionRef =
+            _db.collection('transactions').doc(transactionId);
+        batch.update(originalTransactionRef, {
+          'status': 'paid',
+          'updated_at': FieldValue.serverTimestamp(),
+        });
+      }
+
+      // ✅ Commit all updates
+      await batch.commit();
+
+      // ✅ Log audit trail for debt payment
+      await _auditDb.logAudit(
+        storeId: storeId,
+        userId: userId ??
+            customerId, // ✅ Use actual userId (employee/owner) if provided, fallback to customerId
+        action: newStatus == 'paid' ? 'DEBT_PAID_FULL' : 'DEBT_PARTIAL_PAYMENT',
+        entityType: 'debt',
+        entityId: debtId,
+        description:
+            'Debt payment of ₱${effectivePayment.toStringAsFixed(2)} (Balance: ₱${newBalance.toStringAsFixed(2)})',
+        metadata: {
+          'amountPaid': effectivePayment,
+          'previousBalance': currentBalance,
+          'newBalance': newBalance,
+          'paymentMethod': paymentMethod,
+          'status': newStatus,
+          'change': change,
+          'transactionId': transactionId,
+          'customerId': customerId,
+          'customerName': '', // Will be fetched from customerId by audit system
+        },
+      );
+
+      print(
+          "✅ Debt payment processed successfully. Transaction ID: $transactionId | Change: $change");
+      return transactionId; // ✅ Return the **original** debt transaction ID
+    } catch (e) {
+      print("❌ Error processing debt payment: $e");
       return null;
     }
-
-    Map<String, dynamic> debtData =
-        debtSnapshot.data() as Map<String, dynamic>;
-
-    double currentBalance = (debtData['balance'] ?? 0).toDouble();
-    double alreadyPaid = (debtData['amount_paid'] ?? 0).toDouble();
-    String transactionId =
-        debtData['transactionId'] ?? ""; // ✅ Original Transaction ID
-
-    // ✅ Handle change
-    double change = 0;
-    double effectivePayment = amountPaid;
-
-    if (amountPaid > currentBalance) {
-      change = amountPaid - currentBalance; // ✅ Calculate change
-      effectivePayment = currentBalance;    // ✅ Only pay what’s due
-      print("⚠️ Payment exceeds balance. Returning change: $change");
-    }
-
-    // ✅ Calculate new values
-    double newBalance = currentBalance - effectivePayment;
-    double newTotalPaid = alreadyPaid + effectivePayment;
-    String newStatus = newBalance == 0 ? "paid" : "partial";
-
-    // ✅ Create a **debt payment entry** linked to the original transaction
-    DocumentReference paymentRef = _db.collection('debt_payments').doc();
-    batch.set(paymentRef, {
-      'debt_id': debtId,
-      'amount_paid': effectivePayment,
-      'change': change, // ✅ Added field for change
-      'payment_date': FieldValue.serverTimestamp(),
-      'payment_method': paymentMethod,
-      'storeId': storeId,
-      'transactionId': transactionId,
-      'reference_number': reference_number ?? "",
-    });
-
-    // ✅ Update the debt document
-    batch.update(debtRef, {
-      'amount_paid': newTotalPaid,
-      'balance': newBalance,
-      'status': newStatus,
-      'updated_at': FieldValue.serverTimestamp(),
-      'last_payment_date': FieldValue.serverTimestamp(),
-    });
-
-    // ✅ Update customer's total debt
-    DocumentReference customerRef =
-        _db.collection('customers').doc(customerId);
-    batch.update(customerRef, {
-      'total_debt': FieldValue.increment(-effectivePayment), // ✅ Use effective payment
-    });
-
-    // ✅ (Optional) Update original transaction status if debt is fully paid
-    if (newBalance == 0 && transactionId.isNotEmpty) {
-      DocumentReference originalTransactionRef =
-          _db.collection('transactions').doc(transactionId);
-      batch.update(originalTransactionRef, {
-        'status': 'paid',
-        'updated_at': FieldValue.serverTimestamp(),
-      });
-    }
-
-    // ✅ Commit all updates
-    await batch.commit();
-
-    print(
-        "✅ Debt payment processed successfully. Transaction ID: $transactionId | Change: $change");
-    return transactionId; // ✅ Return the **original** debt transaction ID
-  } catch (e) {
-    print("❌ Error processing debt payment: $e");
-    return null;
   }
-}
-
 
   // ✅ Fetch a single customer by ID (for updating after payment)
   Future<CustomerDetails?> fetchCustomerById(String customerId) async {
@@ -391,24 +433,25 @@ class DebtsDatabase {
           .collection('admin_reports')
           .where('storeId', isEqualTo: storeId)
           .where('respondent', isEqualTo: reportedId)
-          .where('status', whereIn: ['Pending', 'pending'])
-          .get();
+          .where('status', whereIn: ['Pending', 'pending']).get();
 
       final balanceDuplicate = existingQuery.docs.any((doc) {
         final data = doc.data();
         final existingBalance = (data['reportedBalance'] as num?)?.toDouble();
         final existingComplainant = data['complainant'] as String?;
-        
+
         // Check if same balance amount exists, regardless of who filed it
         if (existingBalance != null && existingBalance == reportedBalance) {
           // If it's the same complainant, it's a duplicate from same user
           if (existingComplainant == reportedByUserId) {
-            print("⚠️ User already reported this balance amount. Skipping submission.");
+            print(
+                "⚠️ User already reported this balance amount. Skipping submission.");
             return true;
           }
           // If it's a different complainant, it's overlap between owner/employee
           else {
-            print("⚠️ This balance amount already reported by another store member. Preventing overlap.");
+            print(
+                "⚠️ This balance amount already reported by another store member. Preventing overlap.");
             return true;
           }
         }
@@ -423,20 +466,23 @@ class DebtsDatabase {
           final existingBalance = (data['reportedBalance'] as num?)?.toDouble();
           return existingBalance == reportedBalance;
         });
-        
+
         final existingComplainant = existingReport['complainant'] as String?;
-        
+
         // Check if it's the same user or different user
         final existingByCurrentUser = existingComplainant == reportedByUserId;
-        
+
         if (existingByCurrentUser) {
           return 'DUPLICATE_BY_USER';
         } else {
           // Try to get the name of the person who originally filed the report
           try {
-            final originalReporterDoc = await _db.collection('users').doc(existingComplainant!).get();
-            final originalReporterName = originalReporterDoc.exists 
-                ? (originalReporterDoc.data() as Map<String, dynamic>)['name'] as String? ?? 'Another store member'
+            final originalReporterDoc =
+                await _db.collection('users').doc(existingComplainant!).get();
+            final originalReporterName = originalReporterDoc.exists
+                ? (originalReporterDoc.data() as Map<String, dynamic>)['name']
+                        as String? ??
+                    'Another store member'
                 : 'Another store member';
             return 'DUPLICATE_BY_COLLEAGUE|$originalReporterName';
           } catch (e) {

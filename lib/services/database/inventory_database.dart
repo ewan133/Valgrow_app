@@ -1,11 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:valgrow_ui/models/batch_details.dart';
 import 'package:valgrow_ui/models/item_details.dart';
+import 'package:valgrow_ui/services/database/audit_database.dart';
 
 class InventoryDatabase {
   final _db = FirebaseFirestore.instance;
+  final AuditDatabase _auditDb = AuditDatabase();
 
-  Future<void> addItem(ItemDetails item) async {
+  Future<void> addItem(ItemDetails item, {String? userId}) async {
     try {
       // Reference to Firestore collection
       final itemRef = _db.collection('items').doc();
@@ -17,6 +19,20 @@ class InventoryDatabase {
 
       // Add the remaining fields to Firestore
       await itemRef.set(itemMap);
+
+      // ✅ Log audit trail
+      await _auditDb.logAudit(
+        storeId: item.storeId,
+        userId: userId ?? item.storeId, // ✅ Use actual userId if provided
+        action: 'CREATE_ITEM',
+        entityType: 'inventory',
+        entityId: itemRef.id,
+        description: 'New item added: ${item.item_name}',
+        metadata: {
+          'itemName': item.item_name,
+          'category': item.category,
+        },
+      );
 
       print("✅ Item added successfully: ${item.item_name}");
     } catch (e) {
@@ -113,54 +129,72 @@ class InventoryDatabase {
     }
   }
 
-  Future<void> addBatch(ItemBatch batch) async {
-  try {
-    // 🔹 Reference Firestore batch collection
-    final batchRef = _db.collection('item_batch').doc();
+  Future<void> addBatch(ItemBatch batch, {String? userId}) async {
+    try {
+      // 🔹 Reference Firestore batch collection
+      final batchRef = _db.collection('item_batch').doc();
 
-    // 🔹 Convert batch to a Map and remove the 'batchId' field before adding
-    Map<String, dynamic> batchMap = batch.toMap();
-    batchMap.remove('batchId');
+      // 🔹 Convert batch to a Map and remove the 'batchId' field before adding
+      Map<String, dynamic> batchMap = batch.toMap();
+      batchMap.remove('batchId');
 
-    // 🔹 Add batch to Firestore
-    await batchRef.set(batchMap);
+      // 🔹 Add batch to Firestore
+      await batchRef.set(batchMap);
 
-    print("✅ Batch added successfully for item: ${batch.itemId}");
+      print("✅ Batch added successfully for item: ${batch.itemId}");
 
-    // ✅ Insert into inventory_log
-    await _insertInventoryLog(
-      itemId: batch.itemId,
-      quantity: batch.quantity,
-      reason: "New Stock Added",
-      storeId: batch.storeId,
-      type: "Addition",
-    );
+      // ✅ Insert into inventory_log
+      await _insertInventoryLog(
+        itemId: batch.itemId,
+        quantity: batch.quantity,
+        reason: "New Stock Added",
+        storeId: batch.storeId,
+        type: "Addition",
+      );
 
-    // ✅ Update item stock
-    await _updateItemStock(batch.itemId);
+      // ✅ Update item stock
+      await _updateItemStock(batch.itemId);
 
-    // 🔍 Fetch item name from Firestore
-    final itemSnapshot = await _db.collection('items').doc(batch.itemId).get();
-    final itemData = itemSnapshot.data();
-    final itemName = itemData?['item_name'] ?? 'Unknown Item';
+      // 🔍 Fetch item name from Firestore
+      final itemSnapshot =
+          await _db.collection('items').doc(batch.itemId).get();
+      final itemData = itemSnapshot.data();
+      final itemName = itemData?['item_name'] ?? 'Unknown Item';
 
-    // ✅ Insert capital expense with detailed note
-    await _db.collection('expenses').add({
-      'amount': batch.purchasePrice,
-      'category': 'Capital',
-      'note':
-          'Purchased ${batch.quantity}x $itemName for ₱${batch.purchasePrice.toStringAsFixed(2)} in total',
-      'date': DateTime.now(),
-      'storeId': batch.storeId,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
+      // ✅ Insert capital expense with detailed note and userId
+      await _db.collection('expenses').add({
+        'amount': batch.purchasePrice,
+        'category': 'Capital',
+        'note':
+            'Purchased ${batch.quantity}x $itemName for ₱${batch.purchasePrice.toStringAsFixed(2)} in total',
+        'date': DateTime.now(),
+        'storeId': batch.storeId,
+        'userId': userId ?? batch.storeId, // ✅ Use userId if provided
+        'createdAt': FieldValue.serverTimestamp(),
+      });
 
-    print("✅ Capital expense logged.");
-  } catch (e) {
-    print("❌ Error adding batch: $e");
-    throw e;
+      print("✅ Capital expense logged.");
+
+      // ✅ Log audit trail for batch addition
+      await _auditDb.logAudit(
+        storeId: batch.storeId,
+        userId: userId ?? batch.storeId, // ✅ Use actual userId if provided
+        action: 'ADD_STOCK_BATCH',
+        entityType: 'inventory',
+        entityId: batch.itemId,
+        description: 'Added ${batch.quantity} units of $itemName (Batch)',
+        metadata: {
+          'quantity': batch.quantity,
+          'purchasePrice': batch.purchasePrice,
+          'itemName': itemName,
+          'expirationDate': batch.expirationDate?.toIso8601String(),
+        },
+      );
+    } catch (e) {
+      print("❌ Error adding batch: $e");
+      throw e;
+    }
   }
-}
 
   /// 🔹 **Insert a record into inventory_log**
   Future<void> _insertInventoryLog({
@@ -276,6 +310,7 @@ class InventoryDatabase {
     required int quantity,
     required String reason,
     required String storeId,
+    String? userId, // ✅ Added userId parameter
   }) async {
     final DocumentReference itemRef = _db.collection('items').doc(itemId);
     final DocumentReference logRef = _db.collection('inventory_log').doc();
@@ -326,8 +361,22 @@ class InventoryDatabase {
 
       // ✅ **Fix: Recalculate stock after reducing to ensure accuracy**
       await _updateItemStock(itemId);
+
+      // ✅ Log audit trail for stock reduction
+      await _auditDb.logAudit(
+        storeId: storeId,
+        userId: userId ?? storeId, // ✅ Use actual userId if provided
+        action: 'REDUCE_STOCK',
+        entityType: 'inventory',
+        entityId: itemId,
+        description: 'Reduced stock by $quantity units. Reason: $reason',
+        metadata: {
+          'quantity': quantity,
+          'reason': reason,
+        },
+      );
     } catch (e) {
-      print("❌ Error reducing stock: $e");
+      print("❌ Error reducing stock for item $itemId: $e");
       throw e;
     }
   }

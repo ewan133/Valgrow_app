@@ -18,6 +18,7 @@ import 'package:valgrow_ui/services/database/management_database.dart';
 import 'package:valgrow_ui/services/database/notifications_database.dart';
 import 'package:valgrow_ui/services/database/pos_database.dart';
 import 'package:valgrow_ui/services/database/reports_database.dart';
+import 'package:valgrow_ui/services/database/audit_database.dart';
 
 class DatabaseProvider extends ChangeNotifier {
   final DatabaseService _db = DatabaseService();
@@ -29,6 +30,7 @@ class DatabaseProvider extends ChangeNotifier {
   final NotificationsDatabase _notificationsDatabase = NotificationsDatabase();
   final ReportsDatabase _reportsDatabase = ReportsDatabase();
   final ExpensesDatabase _expensesDatabase = ExpensesDatabase();
+  final AuditDatabase _auditDatabase = AuditDatabase();
 
   // loading status
   bool _isLoading = false;
@@ -341,10 +343,16 @@ class DatabaseProvider extends ChangeNotifier {
 
   /// Add a new batch and update item stock
   Future<void> addNewBatch(ItemBatch batch) async {
+    if (_user == null) {
+      print("❌ User information not available");
+      return;
+    }
+
     _isLoading = true;
     notifyListeners();
     try {
-      await _inventoryDatabase.addBatch(batch);
+      await _inventoryDatabase.addBatch(batch,
+          userId: _user!.uid); // ✅ Pass userId
       await fetchItemsByStoreId(); // Refresh items to reflect updated stock
     } catch (e) {
       print("❌ Error adding batch: $e");
@@ -778,6 +786,11 @@ class DatabaseProvider extends ChangeNotifier {
       required String customerName,
       required double remainingBalance,
       String? reference_number}) async {
+    if (_user == null) {
+      print("❌ User information not available");
+      return null;
+    }
+
     _isLoading = true;
     notifyListeners();
 
@@ -789,6 +802,7 @@ class DatabaseProvider extends ChangeNotifier {
         paymentMethod: paymentMethod,
         storeId: storeId,
         customerId: customerId,
+        userId: _user!.uid, // ✅ Pass actual userId
         reference_number: reference_number,
       );
 
@@ -1396,9 +1410,15 @@ class DatabaseProvider extends ChangeNotifier {
     DateTime? date,
     String? note,
   }) async {
+    if (_user == null) {
+      print("❌ User information not available");
+      return;
+    }
+
     try {
       await _expensesDatabase.updateExpense(
         expenseId: expenseId,
+        userId: _user!.uid, // ✅ Pass actual userId
         amount: amount,
         category: category,
         date: date,
@@ -1432,5 +1452,105 @@ class DatabaseProvider extends ChangeNotifier {
       print("❌ Provider error deleting expense $expenseId: $e");
       rethrow;
     }
+  }
+
+  /*
+    Audit Trail Management
+  */
+
+  // List of audit logs
+  List<Map<String, dynamic>> _auditLogs = [];
+  List<Map<String, dynamic>> get auditLogs => _auditLogs;
+  bool _isLoadingAuditLogs = false;
+  bool get isLoadingAuditLogs => _isLoadingAuditLogs;
+
+  /// Fetch audit trail for the store
+  Future<void> fetchAuditTrail({
+    DateTime? startDate,
+    DateTime? endDate,
+    String? userId,
+    String? entityType,
+    String? action,
+    int limit = 100,
+  }) async {
+    if (_store == null) {
+      print("❌ Store information not available");
+      return;
+    }
+
+    try {
+      _isLoadingAuditLogs = true;
+      notifyListeners();
+
+      _auditLogs = await _auditDatabase.getAuditTrail(
+        storeId: _store!.storeId,
+        startDate: startDate,
+        endDate: endDate,
+        userId: userId,
+        entityType: entityType,
+        action: action,
+        limit: limit,
+      );
+
+      print("✅ Provider: Fetched ${_auditLogs.length} audit logs");
+    } catch (e) {
+      print("❌ Provider error fetching audit logs: $e");
+      _auditLogs = [];
+    } finally {
+      _isLoadingAuditLogs = false;
+      notifyListeners();
+    }
+  }
+
+  /// Get audit history for a specific entity (e.g., a specific transaction)
+  Future<List<Map<String, dynamic>>> getEntityAuditHistory({
+    required String entityId,
+    required String entityType,
+  }) async {
+    try {
+      return await _auditDatabase.getEntityAuditHistory(
+        entityId: entityId,
+        entityType: entityType,
+      );
+    } catch (e) {
+      print("❌ Provider error fetching entity audit history: $e");
+      return [];
+    }
+  }
+
+  /// Get user activity summary
+  Future<Map<String, dynamic>> getUserActivitySummary({
+    required String userId,
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
+    if (_store == null) {
+      print("❌ Store information not available");
+      return {};
+    }
+
+    try {
+      return await _auditDatabase.getUserActivitySummary(
+        storeId: _store!.storeId,
+        userId: userId,
+        startDate: startDate,
+        endDate: endDate,
+      );
+    } catch (e) {
+      print("❌ Provider error fetching user activity summary: $e");
+      return {};
+    }
+  }
+
+  /// Stream audit trail for real-time updates
+  Stream<List<Map<String, dynamic>>> streamAuditTrail({int limit = 50}) {
+    if (_store == null) {
+      return Stream.value([]);
+    }
+
+    return _auditDatabase.streamAuditTrail(
+      storeId: _store!.storeId,
+      limit: limit,
+    );
   }
 }

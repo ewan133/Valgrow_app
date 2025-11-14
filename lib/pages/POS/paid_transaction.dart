@@ -18,6 +18,7 @@ class PaidTransaction extends StatefulWidget {
 class _PaidTransactionState extends State<PaidTransaction> {
   TutorialCoachMark? tutorialCoachMark;
   List<TargetFocus> myTargets = [];
+  bool _isProcessing = false;
 
   void initState() {
     super.initState();
@@ -162,116 +163,144 @@ class _PaidTransactionState extends State<PaidTransaction> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        return SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header Section
-                const Text(
-                  "Payment Details",
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-
-                const SizedBox(height: 15),
-
-                // Total Amount (Dynamic)
-                _buildSummaryCard(
-                  key: totalAmountKey,
-                  title: "Total Amount",
-                  value: "₱${totalAmount.toStringAsFixed(2)}",
-                ),
-
-                const SizedBox(height: 15),
-
-                // Receiving Amount (User Input)
-                _buildInputField(
-                  key: receivedAmountKey,
-                  label: "Enter Received Amount",
-                  controller: _receivingAmountController,
-                  onChanged: (value) => _calculateChange(value, totalAmount),
-                ),
-
-                if (!_isAmountValid || _receivingAmountController.text.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 5),
-                    child: Text(
-                      "⚠ Please enter a valid amount",
-                      style: TextStyle(color: Colors.red, fontSize: 14),
+        return SafeArea(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header Section
+                  const Text(
+                    "Payment Details",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
 
-                const SizedBox(height: 15),
+                  const SizedBox(height: 15),
 
-                // Change (Read-Only)
-                _buildSummaryCard(
-                  key: changeAmountKey,
-                  title: "Change",
-                  value: "₱${_change.toStringAsFixed(2)}",
-                ),
+                  // Total Amount (Dynamic)
+                  _buildSummaryCard(
+                    key: totalAmountKey,
+                    title: "Total Amount",
+                    value: "₱${totalAmount.toStringAsFixed(2)}",
+                  ),
 
-                const SizedBox(height: 15),
+                  const SizedBox(height: 15),
 
-                // Payment Method Dropdown
-                _buildDropdownField(
-                  key: paymentMethodKey,
-                  label: "Select Payment Method",
-                  items: ["Cash", "Gcash"],
-                ),
-
-                const SizedBox(height: 15),
-
-                if (_selectedPaymentMethod == "Gcash")
                   // Receiving Amount (User Input)
                   _buildInputField(
-                    label: "Enter last 4 digit of Reference No.",
-                    hint: "Enter reference number",
-                    maxLength: 4,
-                    controller: _referenceController,
+                    key: receivedAmountKey,
+                    label: "Enter Received Amount",
+                    controller: _receivingAmountController,
+                    onChanged: (value) => _calculateChange(value, totalAmount),
                   ),
 
-                const SizedBox(height: 25),
-
-                // Confirm Payment Button (Disabled if amount is insufficient)
-                SizedBox(
-                  key: confirmButtonKey,
-                  width: double.infinity,
-                  height: 55,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _isAmountValid
-                          ? const Color(0xFF14AE5C)
-                          : Colors.grey,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(100),
+                  if (!_isAmountValid ||
+                      _receivingAmountController.text.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.only(top: 5),
+                      child: Text(
+                        "⚠ Please enter a valid amount",
+                        style: TextStyle(color: Colors.red, fontSize: 14),
                       ),
                     ),
-                    onPressed: _isAmountValid &&
-                            _receivingAmountController.text.isNotEmpty &&
-                            ((_selectedPaymentMethod == "Gcash" &&
-                                    _referenceController.text.isNotEmpty &&
-                                    _referenceController.text.length == 4) ||
-                                (_selectedPaymentMethod == "Cash"))
-                        ? () {
-                            _confirmPayment(totalAmount);
-                          }
-                        : null, // Disable button if amount is empty or invalid
-                    child: const Text(
-                      "Confirm Payment",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
+
+                  const SizedBox(height: 15),
+
+                  // Change (Read-Only)
+                  _buildSummaryCard(
+                    key: changeAmountKey,
+                    title: "Change",
+                    value: "₱${_change.toStringAsFixed(2)}",
+                  ),
+
+                  const SizedBox(height: 15),
+
+                  // Payment Method Dropdown
+                  _buildDropdownField(
+                    key: paymentMethodKey,
+                    label: "Select Payment Method",
+                    items: ["Cash", "Gcash"],
+                  ),
+
+                  const SizedBox(height: 15),
+
+                  if (_selectedPaymentMethod == "Gcash")
+                    // Receiving Amount (User Input)
+                    _buildInputField(
+                      label: "Enter last 4 digit of Reference No.",
+                      hint: "Enter reference number",
+                      maxLength: 4,
+                      controller: _referenceController,
+                    ),
+
+                  const SizedBox(height: 25),
+
+                  // Confirm Payment Button (Disabled if amount is insufficient)
+                  SizedBox(
+                    key: confirmButtonKey,
+                    width: double.infinity,
+                    height: 55,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _isAmountValid && !_isProcessing
+                            ? const Color(0xFF14AE5C)
+                            : Colors.grey,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(100),
+                        ),
                       ),
+                      onPressed: _isAmountValid &&
+                              !_isProcessing &&
+                              _receivingAmountController.text.isNotEmpty &&
+                              ((_selectedPaymentMethod == "Gcash" &&
+                                      _referenceController.text.isNotEmpty &&
+                                      _referenceController.text.length == 4) ||
+                                  (_selectedPaymentMethod == "Cash"))
+                          ? () {
+                              _confirmPayment(totalAmount);
+                            }
+                          : null, // Disable button if amount is empty or invalid
+                      child: _isProcessing
+                          ? Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                                SizedBox(width: 12),
+                                Text(
+                                  "Processing...",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            )
+                          : const Text(
+                              "Confirm Payment",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 20), // Extra space for keyboard safety
-              ],
+                  const SizedBox(
+                      height: 60), // Extra space to avoid navigation bar
+                ],
+              ),
             ),
           ),
         );
@@ -509,6 +538,10 @@ class _PaidTransactionState extends State<PaidTransaction> {
 // ✅ Function to process the payment after confirmation
   void _processPayment(
       double totalAmount, double receivedAmount, bool isDebt) async {
+    setState(() {
+      _isProcessing = true;
+    });
+
     try {
       final databaseProvider =
           Provider.of<DatabaseProvider>(context, listen: false);
@@ -573,6 +606,7 @@ class _PaidTransactionState extends State<PaidTransaction> {
         _receivingAmountController.clear();
         _change = 0.00;
         _selectedPaymentMethod = "Cash";
+        _isProcessing = false;
       });
 
       // ✅ Navigate to Success Page
@@ -585,6 +619,10 @@ class _PaidTransactionState extends State<PaidTransaction> {
         ),
       );
     } catch (e) {
+      setState(() {
+        _isProcessing = false;
+      });
+
       Fluttertoast.showToast(
         msg: "❌ Something went wrong: $e",
         toastLength: Toast.LENGTH_LONG,

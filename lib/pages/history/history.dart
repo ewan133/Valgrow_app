@@ -6,6 +6,7 @@ import 'package:valgrow_ui/components/history_components.dart/date_container.dar
 import 'package:valgrow_ui/components/history_components.dart/history_tile.dart';
 import 'package:valgrow_ui/components/general_components/text.dart';
 import 'package:valgrow_ui/services/database/database_provider.dart';
+import 'package:valgrow_ui/pages/audit/audit_trail_page.dart';
 
 class HistoryPage extends StatefulWidget {
   const HistoryPage({super.key});
@@ -46,9 +47,11 @@ class _HistoryPageState extends State<HistoryPage> {
       await databaseProvider.fetchTransactionHistory(
         databaseProvider.store!.storeId,
       );
-      setState(() {
-        _showAllTransactions = true;
-      });
+      if (mounted) {
+        setState(() {
+          _showAllTransactions = true;
+        });
+      }
     }
   }
 
@@ -64,11 +67,11 @@ class _HistoryPageState extends State<HistoryPage> {
               children: [
                 _buildDateHeader(), // ✅ Header with current date
 
-                if (databaseProvider.isLoadingTransactions && 
+                if (databaseProvider.isLoadingTransactions &&
                     databaseProvider.transactionHistory.isEmpty)
                   _buildLoadingIndicator() // ✅ Show loading indicator only if no data yet
-                else if (!databaseProvider.isLoadingTransactions && 
-                         databaseProvider.transactionHistory.isEmpty)
+                else if (!databaseProvider.isLoadingTransactions &&
+                    databaseProvider.transactionHistory.isEmpty)
                   _buildNoTransactionsMessage() // ✅ Show no data message
                 else
                   _buildTransactionList(
@@ -83,30 +86,88 @@ class _HistoryPageState extends State<HistoryPage> {
 
   // ✅ Builds the fixed date header
   Widget _buildDateHeader() {
-    return Container(
-      height: 57,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey,
-            blurRadius: 10,
-            spreadRadius: 1,
-            offset: const Offset(0, 2),
+    return Builder(
+      builder: (context) {
+        // Use Provider.of with listen: false to avoid triggering rebuilds
+        final databaseProvider =
+            Provider.of<DatabaseProvider>(context, listen: false);
+
+        // Check if user is store owner
+        final isOwner = databaseProvider.user != null &&
+            databaseProvider.store != null &&
+            databaseProvider.user!.uid == databaseProvider.store!.ownerId;
+
+        return Container(
+          height: 57,
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey,
+                blurRadius: 10,
+                spreadRadius: 1,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-        ],
-      ),
-      alignment: Alignment.centerLeft,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: MyText(
-          text: "As of $formattedDate",
-          fontSize: 14,
-          color: Colors.black,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                Expanded(
+                  child: MyText(
+                    text: "As of $formattedDate",
+                    fontSize: 14,
+                    color: Colors.black,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                // Show Audit Trail button only for store owners
+                if (isOwner)
+                  InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => AuditTrailPage(),
+                        ),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(6),
+                    child: Container(
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Color(0xFF14AE5C).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.analytics_outlined,
+                            color: Color(0xFF14AE5C),
+                            size: 18,
+                          ),
+                          SizedBox(width: 6),
+                          Text(
+                            'Audit Trail',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF14AE5C),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -138,9 +199,9 @@ class _HistoryPageState extends State<HistoryPage> {
   // ✅ Builds the transaction list grouped by date
   Widget _buildTransactionList(DatabaseProvider databaseProvider) {
     final allTransactions = databaseProvider.transactionHistory;
-    
+
     // Check if there might be more transactions (if we got exactly the limit)
-    final hasMoreTransactions = !_showAllTransactions && 
+    final hasMoreTransactions = !_showAllTransactions &&
         allTransactions.length >= _initialLimit &&
         !databaseProvider.isLoadingTransactions;
 
@@ -182,8 +243,8 @@ class _HistoryPageState extends State<HistoryPage> {
                           child: Padding(
                             padding: const EdgeInsets.only(bottom: 2),
                             child: MyHistoryTile(
-                              transactionType:
-                                  transaction.transactionType, // Sales / Expense
+                              transactionType: transaction
+                                  .transactionType, // Sales / Expense
                               amount: transaction.totalAmount,
                               timestamp: transaction.createdAt,
                             ),
@@ -194,7 +255,7 @@ class _HistoryPageState extends State<HistoryPage> {
               },
             ),
           ),
-          
+
           // ✅ Show loading indicator at bottom while streaming
           if (databaseProvider.isLoadingTransactions)
             Padding(
@@ -206,7 +267,7 @@ class _HistoryPageState extends State<HistoryPage> {
                 ),
               ),
             ),
-          
+
           // ✅ "See More" button at the end
           if (hasMoreTransactions)
             Padding(
@@ -306,7 +367,8 @@ class _HistoryPageState extends State<HistoryPage> {
                               ),
                             ),
                             MyText(
-                              text: "₱${(item.unitPrice * item.quantity).toStringAsFixed(2) }",
+                              text:
+                                  "₱${(item.unitPrice * item.quantity).toStringAsFixed(2)}",
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
                               color: Colors.black87,

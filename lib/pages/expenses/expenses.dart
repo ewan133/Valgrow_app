@@ -73,10 +73,20 @@ class _ExpensesPageState extends State<ExpensesPage> {
       try {
         final provider = Provider.of<DatabaseProvider>(context, listen: false);
         final storeId = provider.store?.storeId;
+        final userId = provider.user?.uid; // ✅ Get current user's ID
 
         if (storeId == null) {
           Fluttertoast.showToast(
             msg: "❌ Store not found.",
+            backgroundColor: Colors.red,
+            textColor: Colors.white,
+          );
+          return;
+        }
+
+        if (userId == null) {
+          Fluttertoast.showToast(
+            msg: "❌ User not found.",
             backgroundColor: Colors.red,
             textColor: Colors.white,
           );
@@ -89,6 +99,7 @@ class _ExpensesPageState extends State<ExpensesPage> {
           category: result['category'],
           note: result['note'],
           storeId: storeId,
+          userId: userId, // ✅ Set the actual user ID
           date: result['date'] ?? DateTime.now(),
           createdAt: DateTime.now(),
         );

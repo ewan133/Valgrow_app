@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:valgrow_ui/services/database/audit_database.dart';
 
 class POSDatabase {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final AuditDatabase _auditDb = AuditDatabase();
 
   Future<String?> processTransaction({
     required String storeId,
@@ -94,6 +96,27 @@ class POSDatabase {
 
       print("✅ Transaction Processed Successfully: $transactionId");
 
+      // ✅ Log audit trail
+      await _auditDb.logAudit(
+        storeId: storeId,
+        userId: userId,
+        action: paymentMethod == 'debt'
+            ? 'CREATE_DEBT_TRANSACTION'
+            : 'CREATE_SALE_TRANSACTION',
+        entityType: 'transaction',
+        entityId: transactionId,
+        description:
+            'Transaction ${paymentMethod == 'debt' ? 'with debt' : 'completed'} for ₱${totalAmount.toStringAsFixed(2)} (${items.length} items)',
+        metadata: {
+          'totalAmount': totalAmount,
+          'amountPaid': amountPaid,
+          'paymentMethod': paymentMethod,
+          'itemCount': items.length,
+          'customerName': customerName,
+          'status': status,
+        },
+      );
+
       // ✅ Return the Transaction ID
       return transactionId;
     } catch (e) {
@@ -179,59 +202,56 @@ class POSDatabase {
     }
   }
 
- Future<void> _createDebtEntry(
-  String transactionId,
-  String customerId,
-  String storeId,
-  double totalAmount,
-  double amountPaid,
-  DateTime? due_date,
-  String? reference_number
-) async {
-  try {
-    final debtRef = _db.collection('debts').doc();
-    final String debtId = debtRef.id;
-    double balance = totalAmount - amountPaid;
-    String status = (amountPaid >= totalAmount)
-        ? "paid"
-        : (amountPaid > 0.0 ? "partial" : "unpaid");
+  Future<void> _createDebtEntry(
+      String transactionId,
+      String customerId,
+      String storeId,
+      double totalAmount,
+      double amountPaid,
+      DateTime? due_date,
+      String? reference_number) async {
+    try {
+      final debtRef = _db.collection('debts').doc();
+      final String debtId = debtRef.id;
+      double balance = totalAmount - amountPaid;
+      String status = (amountPaid >= totalAmount)
+          ? "paid"
+          : (amountPaid > 0.0 ? "partial" : "unpaid");
 
-    // ✅ Create the debt entry
-    await debtRef.set({
-      "storeId": storeId,
-      "customerId": customerId,
-      "transactionId": transactionId,
-      "total_amount": totalAmount,
-      "amount_paid": amountPaid,
-      "balance": balance,
-      "status": status,
-      "created_at": FieldValue.serverTimestamp(),
-      "updated_at": FieldValue.serverTimestamp(),
-      "due_date": due_date ??
-          Timestamp.fromDate(DateTime.now().add(Duration(days: 14))),
-    });
+      // ✅ Create the debt entry
+      await debtRef.set({
+        "storeId": storeId,
+        "customerId": customerId,
+        "transactionId": transactionId,
+        "total_amount": totalAmount,
+        "amount_paid": amountPaid,
+        "balance": balance,
+        "status": status,
+        "created_at": FieldValue.serverTimestamp(),
+        "updated_at": FieldValue.serverTimestamp(),
+        "due_date": due_date ??
+            Timestamp.fromDate(DateTime.now().add(Duration(days: 14))),
+      });
 
-    print("✅ Debt recorded for customer: $customerId | Balance: $balance");
+      print("✅ Debt recorded for customer: $customerId | Balance: $balance");
 
-    // ✅ Update the customer's total_debt field
-    await _updateCustomerTotalDebt(customerId, balance);
+      // ✅ Update the customer's total_debt field
+      await _updateCustomerTotalDebt(customerId, balance);
 
-    // ✅ If some amount was paid at the time of debt creation, log it as a payment
-    if (amountPaid > 0) {
-      await _insertInitialDebtPayment(
-        debtId: debtId,
-        transactionId: transactionId,
-        storeId: storeId,
-        amountPaid: amountPaid,
-        reference_number: reference_number ?? ""
-      );
+      // ✅ If some amount was paid at the time of debt creation, log it as a payment
+      if (amountPaid > 0) {
+        await _insertInitialDebtPayment(
+            debtId: debtId,
+            transactionId: transactionId,
+            storeId: storeId,
+            amountPaid: amountPaid,
+            reference_number: reference_number ?? "");
+      }
+    } catch (e) {
+      print("❌ Error creating debt entry: $e");
+      throw e;
     }
-  } catch (e) {
-    print("❌ Error creating debt entry: $e");
-    throw e;
   }
-}
-
 
   Future<void> _updateCustomerTotalDebt(
       String customerId, double newDebt) async {
@@ -489,30 +509,30 @@ class POSDatabase {
   }
 
   Future<void> _insertInitialDebtPayment({
-  required String debtId,
-  required String transactionId,
-  required String storeId,
-  required double amountPaid,
-   String? reference_number,
-}) async {
-  try {
-    final paymentRef = _db.collection('debt_payments').doc();
+    required String debtId,
+    required String transactionId,
+    required String storeId,
+    required double amountPaid,
+    String? reference_number,
+  }) async {
+    try {
+      final paymentRef = _db.collection('debt_payments').doc();
 
-    await paymentRef.set({
-      'debt_id': debtId,
-      'transactionId': transactionId,
-      'storeId': storeId,
-      'amount_paid': amountPaid,
-      'payment_method': 'initial', // Tag as initial payment
-      'payment_date': FieldValue.serverTimestamp(),
-      'reference_number': reference_number ?? "", // Optional: leave blank or set default
-    });
+      await paymentRef.set({
+        'debt_id': debtId,
+        'transactionId': transactionId,
+        'storeId': storeId,
+        'amount_paid': amountPaid,
+        'payment_method': 'initial', // Tag as initial payment
+        'payment_date': FieldValue.serverTimestamp(),
+        'reference_number':
+            reference_number ?? "", // Optional: leave blank or set default
+      });
 
-    print("💰 Initial debt payment recorded for debt: $debtId");
-  } catch (e) {
-    print("❌ Error inserting initial debt payment: $e");
-    throw e;
+      print("💰 Initial debt payment recorded for debt: $debtId");
+    } catch (e) {
+      print("❌ Error inserting initial debt payment: $e");
+      throw e;
+    }
   }
-}
-
 }

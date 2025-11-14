@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:valgrow_ui/services/database/audit_database.dart';
 
 class PromotionDatabase {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final AuditDatabase _auditDb = AuditDatabase();
 
   /// ✅ Add a new promotion with receipt, store images, and date range
   Future<void> addPromotion({
@@ -11,6 +13,7 @@ class PromotionDatabase {
     required String description,
     required double amount,
     required String storeId,
+    String? userId, // ✅ Added userId parameter
     required DateTime? startDate, // ✅ New start date
     required DateTime? endDate,
     required String paymentMethod, // ✅ New payment method
@@ -31,7 +34,26 @@ class PromotionDatabase {
         "created_at": FieldValue.serverTimestamp(),
       };
 
-      await _db.collection('promotions').add(promotionData);
+      final docRef = await _db.collection('promotions').add(promotionData);
+
+      // ✅ Log audit trail
+      await _auditDb.logAudit(
+        storeId: storeId,
+        userId: userId ?? storeId, // ✅ Use actual userId if provided
+        action: 'CREATE_PROMOTION',
+        entityType: 'promotion',
+        entityId: docRef.id,
+        description:
+            'Promotion created: $title - ₱${amount.toStringAsFixed(2)} ($paymentMethod)',
+        metadata: {
+          'title': title,
+          'amount': amount,
+          'paymentMethod': paymentMethod,
+          'startDate': startDate.toIso8601String(),
+          'endDate': endDate.toIso8601String(),
+          'status': status,
+        },
+      );
 
       print("✅ Promotion added successfully with date range");
     } catch (e) {
@@ -78,12 +100,38 @@ class PromotionDatabase {
   }
 
   /// ✅ Update promotion status
-  Future<void> updatePromotionStatus(String promotionId, String status) async {
+  Future<void> updatePromotionStatus(String promotionId, String status,
+      {String? userId}) async {
     try {
-      await _db.collection('promotions').doc(promotionId).update({
+      final promotionRef = _db.collection('promotions').doc(promotionId);
+      final promotionDoc = await promotionRef.get();
+      final promotionData = promotionDoc.data();
+
+      await promotionRef.update({
         'status': status,
         'updated_at': FieldValue.serverTimestamp(),
       });
+
+      // ✅ Log audit trail
+      if (promotionData != null) {
+        await _auditDb.logAudit(
+          storeId: promotionData['storeId'] ?? '',
+          userId: userId ??
+              promotionData['storeId'] ??
+              '', // ✅ Use actual userId if provided
+          action: 'UPDATE_PROMOTION_STATUS',
+          entityType: 'promotion',
+          entityId: promotionId,
+          description: 'Promotion status changed to: $status',
+          metadata: {
+            'oldStatus': promotionData['status'],
+            'newStatus': status,
+            'title': promotionData['title'],
+            'amount': promotionData['amount'],
+          },
+        );
+      }
+
       print("✅ Promotion status updated successfully");
     } catch (e) {
       print("❌ Failed to update promotion status: $e");
@@ -92,9 +140,35 @@ class PromotionDatabase {
   }
 
   /// ✅ Delete a promotion
-  Future<void> deletePromotion(String promotionId) async {
+  Future<void> deletePromotion(String promotionId, {String? userId}) async {
     try {
-      await _db.collection('promotions').doc(promotionId).delete();
+      final promotionRef = _db.collection('promotions').doc(promotionId);
+      final promotionDoc = await promotionRef.get();
+      final promotionData = promotionDoc.data();
+
+      await promotionRef.delete();
+
+      // ✅ Log audit trail
+      if (promotionData != null) {
+        await _auditDb.logAudit(
+          storeId: promotionData['storeId'] ?? '',
+          userId: userId ??
+              promotionData['storeId'] ??
+              '', // ✅ Use actual userId if provided
+          action: 'DELETE_PROMOTION',
+          entityType: 'promotion',
+          entityId: promotionId,
+          description:
+              'Promotion deleted: ${promotionData['title']} - ₱${promotionData['amount']}',
+          metadata: {
+            'title': promotionData['title'],
+            'amount': promotionData['amount'],
+            'status': promotionData['status'],
+            'paymentMethod': promotionData['payment_method'],
+          },
+        );
+      }
+
       print("✅ Promotion deleted successfully");
     } catch (e) {
       print("❌ Failed to delete promotion: $e");
@@ -105,6 +179,7 @@ class PromotionDatabase {
   /// ✅ Update promotion details
   Future<void> updatePromotion({
     required String promotionId,
+    String? userId, // ✅ Added userId parameter
     String? title,
     String? description,
     double? amount,
@@ -130,7 +205,32 @@ class PromotionDatabase {
         updateData['receipt_image'] = receiptImageUrl;
       if (storeImageUrl != null) updateData['store_image'] = storeImageUrl;
 
-      await _db.collection('promotions').doc(promotionId).update(updateData);
+      final promotionRef = _db.collection('promotions').doc(promotionId);
+      final promotionDoc = await promotionRef.get();
+      final oldData = promotionDoc.data();
+
+      await promotionRef.update(updateData);
+
+      // ✅ Log audit trail
+      if (oldData != null) {
+        await _auditDb.logAudit(
+          storeId: oldData['storeId'] ?? '',
+          userId: userId ??
+              oldData['storeId'] ??
+              '', // ✅ Use actual userId if provided
+          action: 'UPDATE_PROMOTION',
+          entityType: 'promotion',
+          entityId: promotionId,
+          description: 'Promotion updated: ${title ?? oldData['title']}',
+          metadata: {
+            'updatedFields': updateData.keys.toList(),
+            'title': title ?? oldData['title'],
+            'newAmount': amount,
+            'oldAmount': oldData['amount'],
+          },
+        );
+      }
+
       print("✅ Promotion updated successfully");
     } catch (e) {
       print("❌ Failed to update promotion: $e");
@@ -213,7 +313,8 @@ class PromotionDatabase {
 
   /// ✅ Bulk update promotion status
   Future<void> bulkUpdatePromotionStatus(
-      List<String> promotionIds, String status) async {
+      List<String> promotionIds, String status,
+      {String? userId}) async {
     try {
       final batch = _db.batch();
 
@@ -226,6 +327,32 @@ class PromotionDatabase {
       }
 
       await batch.commit();
+
+      // ✅ Log audit trail for bulk update
+      for (String id in promotionIds) {
+        final promotionDoc = await _db.collection('promotions').doc(id).get();
+        final promotionData = promotionDoc.data();
+
+        if (promotionData != null) {
+          await _auditDb.logAudit(
+            storeId: promotionData['storeId'] ?? '',
+            userId: userId ??
+                promotionData['storeId'] ??
+                '', // ✅ Use actual userId if provided
+            action: 'BULK_UPDATE_PROMOTION_STATUS',
+            entityType: 'promotion',
+            entityId: id,
+            description: 'Bulk status update to: $status',
+            metadata: {
+              'oldStatus': promotionData['status'],
+              'newStatus': status,
+              'title': promotionData['title'],
+              'bulkOperationCount': promotionIds.length,
+            },
+          );
+        }
+      }
+
       print("✅ Bulk status update completed successfully");
     } catch (e) {
       print("❌ Failed to bulk update promotion status: $e");

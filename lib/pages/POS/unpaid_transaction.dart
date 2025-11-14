@@ -27,6 +27,7 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
   double totalAmount = 0.00;
   DateTime? _selectedDueDate; // Default Due Date
   String _selectedPaymentMethod = "Cash"; // Default selection
+  bool _isProcessing = false; // Loading state
 
   TutorialCoachMark? tutorialCoachMark;
   List<TargetFocus> myTargets = [];
@@ -312,6 +313,11 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
 
   /// ✅ Function to Process Payment (Moved from `_confirmPayment()`)
   void _processPayment() async {
+    if (!mounted) return;
+    setState(() {
+      _isProcessing = true;
+    });
+
     try {
       final databaseProvider =
           Provider.of<DatabaseProvider>(context, listen: false);
@@ -328,14 +334,17 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
           reference_number: _referenceController.text);
 
       // ✅ Reset UI
+      if (!mounted) return;
       setState(() {
         _receivingAmountController.clear();
         _balance = 0.00;
         _selectedCustomer = null;
         _selectedDueDate = null;
+        _isProcessing = false;
       });
 
       // ✅ Navigate to Success Page
+      if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
@@ -345,6 +354,10 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
         ),
       );
     } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isProcessing = false;
+      });
       Fluttertoast.showToast(
         msg: "Something Went Wrong!",
         toastLength: Toast.LENGTH_SHORT,
@@ -441,10 +454,6 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
                           "6. Dispute and Verification",
                           "In case of discrepancies or disputes:\n\n• The Customer and Business Owner should attempt to resolve issues through direct communication.\n\n• If unresolved, either party may seek assistance from the Barangay Representative who supervises ValGrow usage in the area.",
                         ),
-                        _buildTermSection(
-                          "7. Agreement Confirmation",
-                          "By checking the box below, both the Business Owner and Customer confirm that:\n\n• All information provided is true and accurate.\n\n• Both parties voluntarily agree to the transaction.\n\n• This digital consent serves as a legally binding acknowledgment of financial responsibility.",
-                        ),
                       ],
                     ),
                   ),
@@ -529,157 +538,184 @@ class _UnpaidTransactionState extends State<UnpaidTransaction> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        return SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header
-                const Text(
-                  "Unpaid Transaction Details",
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+        return SafeArea(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header
+                  const Text(
+                    "Unpaid Transaction Details",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
 
-                const SizedBox(height: 15),
+                  const SizedBox(height: 15),
 
-                // Total Amount (Read-Only)
-                _buildSummaryCard(
-                  key: totalUnpaidAmountKey,
-                  title: "Total Amount",
-                  value: "₱${totalAmount.toStringAsFixed(2)}",
-                ),
+                  // Total Amount (Read-Only)
+                  _buildSummaryCard(
+                    key: totalUnpaidAmountKey,
+                    title: "Total Amount",
+                    value: "₱${totalAmount.toStringAsFixed(2)}",
+                  ),
 
-                const SizedBox(height: 15),
+                  const SizedBox(height: 15),
 
-                // Receiving Amount (User Input)
-                _buildInputField(
-                  key: unpaidReceivedAmountKey,
-                  label: "Customer Money (for partial payments)",
-                  controller: _receivingAmountController,
-                  maxLength: 6,
-                  onChanged: (value) => _calculateBalance(value, totalAmount),
-                ),
-
-                const SizedBox(height: 15),
-
-                // Payment Method Dropdown
-                _buildDropdownField(
-                  key: unpaidPaymentMethodKey,
-                  label: "Select Payment Method",
-                  items: ["Cash", "Gcash"],
-                ),
-
-                const SizedBox(height: 15),
-
-                if (_selectedPaymentMethod == "Gcash")
                   // Receiving Amount (User Input)
                   _buildInputField(
-                    label: "Enter last 4 digit of Reference No.",
-                    hint: "Enter reference number",
-                    maxLength: 4,
-                    controller: _referenceController,
+                    key: unpaidReceivedAmountKey,
+                    label: "Customer Money (for partial payments)",
+                    controller: _receivingAmountController,
+                    maxLength: 6,
+                    onChanged: (value) => _calculateBalance(value, totalAmount),
                   ),
-                const SizedBox(height: 15),
-                // Balance (Auto Calculated)
-                _buildSummaryCard(
-                  key: unpaidBalanceKey,
-                  title: "Balance",
-                  value: "₱${_balance.toStringAsFixed(2)}",
-                ),
 
-                const SizedBox(height: 15),
+                  const SizedBox(height: 15),
 
-                // Customer Name Selection Field
-                _buildSelectionField(
-                  key: selectCustomerKey,
-                  label: "Select Customer",
-                  selectedValue: _selectedCustomer?.name ??
-                      "Select or Add", // ✅ Fix: Avoid force unwrapping null
-                  onItemSelected: (newValue) {
-                    setState(() {
-                      if (newValue == "+ New Customer") {
-                        //_showNewCustomerDialog();
-                      } else {
-                        _selectedCustomer = newValue;
-                      }
-                    });
-                  },
-                  context: context,
-                ),
-
-                const SizedBox(height: 2),
-
-                // Terms and Conditions Button
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton.icon(
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
-                      foregroundColor: Colors.blue.shade700,
-                    ),
-                    onPressed: () => _showTermsAndConditions(context),
-                    icon: Icon(Icons.description_outlined, size: 16),
-                    label: Text(
-                      "View Terms and Conditions",
-                      style: TextStyle(
-                        fontSize: 14,
-                        decoration: TextDecoration.underline,
-                      ),
-                    ),
+                  // Payment Method Dropdown
+                  _buildDropdownField(
+                    key: unpaidPaymentMethodKey,
+                    label: "Select Payment Method",
+                    items: ["Cash", "Gcash"],
                   ),
-                ),
 
-                const SizedBox(height: 15),
+                  const SizedBox(height: 15),
 
-                // Due Date Picker
-                _buildDatePickerField(
-                  key: setUnpaidDuedateKey,
-                  label: "Due Date (default 2 weeks from now)",
-                  value: _selectedDueDate,
-                  onDatePicked: (newDate) {
-                    setState(() {
-                      _selectedDueDate = newDate;
-                    });
-                  },
-                  context: context,
-                ),
-
-                const SizedBox(height: 25),
-
-                // Save Transaction Button
-                SizedBox(
-                  key: unpaidSaveButtonKey,
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF14AE5C),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(100),
-                      ),
+                  if (_selectedPaymentMethod == "Gcash")
+                    // Receiving Amount (User Input)
+                    _buildInputField(
+                      label: "Enter last 4 digit of Reference No.",
+                      hint: "Enter reference number",
+                      maxLength: 4,
+                      controller: _referenceController,
                     ),
-                    onPressed: () {
-                      _confirmPayment();
+                  const SizedBox(height: 15),
+                  // Balance (Auto Calculated)
+                  _buildSummaryCard(
+                    key: unpaidBalanceKey,
+                    title: "Balance",
+                    value: "₱${_balance.toStringAsFixed(2)}",
+                  ),
+
+                  const SizedBox(height: 15),
+
+                  // Customer Name Selection Field
+                  _buildSelectionField(
+                    key: selectCustomerKey,
+                    label: "Select Customer",
+                    selectedValue: _selectedCustomer?.name ??
+                        "Select or Add", // ✅ Fix: Avoid force unwrapping null
+                    onItemSelected: (newValue) {
+                      setState(() {
+                        if (newValue == "+ New Customer") {
+                          //_showNewCustomerDialog();
+                        } else {
+                          _selectedCustomer = newValue;
+                        }
+                      });
                     },
-                    child: const Text(
-                      "Save Transaction",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
+                    context: context,
+                  ),
+
+                  const SizedBox(height: 2),
+
+                  // Terms and Conditions Button
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        foregroundColor: Colors.blue.shade700,
+                      ),
+                      onPressed: () => _showTermsAndConditions(context),
+                      icon: Icon(Icons.description_outlined, size: 16),
+                      label: Text(
+                        "View Terms and Conditions",
+                        style: TextStyle(
+                          fontSize: 14,
+                          decoration: TextDecoration.underline,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(
-                    height:
-                        40), // Extra space to avoid keyboard and nav bar overlap
-              ],
+
+                  const SizedBox(height: 15),
+
+                  // Due Date Picker
+                  _buildDatePickerField(
+                    key: setUnpaidDuedateKey,
+                    label: "Due Date (default 2 weeks from now)",
+                    value: _selectedDueDate,
+                    onDatePicked: (newDate) {
+                      setState(() {
+                        _selectedDueDate = newDate;
+                      });
+                    },
+                    context: context,
+                  ),
+
+                  const SizedBox(height: 25),
+
+                  // Save Transaction Button
+                  SizedBox(
+                    key: unpaidSaveButtonKey,
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF14AE5C),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                      ),
+                      onPressed: _isProcessing
+                          ? null
+                          : () {
+                              _confirmPayment();
+                            },
+                      child: _isProcessing
+                          ? Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: const [
+                                SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                ),
+                                SizedBox(width: 12),
+                                Text(
+                                  "Processing...",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            )
+                          : const Text(
+                              "Save Transaction",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(
+                      height:
+                          60), // Extra space to avoid keyboard and nav bar overlap
+                ],
+              ),
             ),
           ),
         );
