@@ -10,6 +10,7 @@ class MyTextfieldLabeled extends StatefulWidget {
   final bool isObscure; // Toggle for password fields
   final bool isReadOnly;
   final bool showRedAsterisk; // Show red asterisk for required fields
+  final int? maxLength; // Optional max length for input
 
   const MyTextfieldLabeled({
     super.key,
@@ -21,6 +22,7 @@ class MyTextfieldLabeled extends StatefulWidget {
     this.isObscure = false, // Default to false (not a password field)
     this.isReadOnly = false,
     this.showRedAsterisk = false, // Default to false
+    this.maxLength, // Optional max length
   });
 
   @override
@@ -84,11 +86,14 @@ class _MyTextfieldLabeledState extends State<MyTextfieldLabeled> {
           inputFormatters: widget.isNumeric
               ? [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*$'))]
               : [],
+          maxLength: widget.maxLength,
           obscureText: _obscureText, // Obscure text if enabled
           decoration: InputDecoration(
             hintText: widget.hint,
             filled: true,
             fillColor: const Color(0xFFF6F6F6), // Background color
+            counterText:
+                widget.maxLength != null ? '' : null, // Hide counter text
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(color: widget.color),

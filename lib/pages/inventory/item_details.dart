@@ -205,16 +205,18 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
               showDialog(
                 context: context,
                 builder: (context) {
-                  return AddBatchModal(
-                    onAddBatch: (purchasePrice, quantity, expirationDate) {
-                      // ✅ Ensure the function is executed AFTER closing AddBatchModal
-                      Future.delayed(Duration(milliseconds: 100), () {
-                        if (mounted) {
-                          _showConfirmationDialog(
-                              purchasePrice, quantity, expirationDate);
-                        }
-                      });
-                    },
+                  return SafeArea(
+                    child: AddBatchModal(
+                      onAddBatch: (purchasePrice, quantity, expirationDate) {
+                        // ✅ Ensure the function is executed AFTER closing AddBatchModal
+                        Future.delayed(Duration(milliseconds: 100), () {
+                          if (mounted) {
+                            _showConfirmationDialog(
+                                purchasePrice, quantity, expirationDate);
+                          }
+                        });
+                      },
+                    ),
                   );
                 },
               );
@@ -234,180 +236,185 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
 
               showDialog(
                 context: context,
-                builder: (context) => ReduceStocksModal(
-                  currentStock:
-                      currentItem.total_stock, // ✅ Pass updated stock count
-                  onSave: (int quantity, String reason) {
-                    // ✅ Call reduceStock method from provider
-                    Provider.of<DatabaseProvider>(context, listen: false)
-                        .reduceStock(
-                      itemId: widget.item.itemId, // ✅ Use item's ID
-                      quantity: quantity,
-                      reason: reason,
-                    );
-                  },
+                builder: (context) => SafeArea(
+                  child: ReduceStocksModal(
+                    currentStock:
+                        currentItem.total_stock, // ✅ Pass updated stock count
+                    onSave: (int quantity, String reason) {
+                      // ✅ Call reduceStock method from provider
+                      Provider.of<DatabaseProvider>(context, listen: false)
+                          .reduceStock(
+                        itemId: widget.item.itemId, // ✅ Use item's ID
+                        quantity: quantity,
+                        reason: reason,
+                      );
+                    },
+                  ),
                 ),
               );
             },
           }
         ],
       ),
-      body: SingleChildScrollView(
-        padding:
-            const EdgeInsets.only(top: 13.0, left: 8, right: 8, bottom: 80),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ✅ Item Details Card
-            Card(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              elevation: 3,
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 10.0, horizontal: 5),
-                child: Consumer<DatabaseProvider>(
-                  builder: (context, provider, child) {
-                    final item = provider.items.firstWhere(
-                      (i) => i.itemId == widget.item.itemId,
-                      orElse: () => widget.item,
-                    );
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding:
+              const EdgeInsets.only(top: 13.0, left: 8, right: 8, bottom: 80),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ✅ Item Details Card
+              Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                elevation: 3,
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 10.0, horizontal: 5),
+                  child: Consumer<DatabaseProvider>(
+                    builder: (context, provider, child) {
+                      final item = provider.items.firstWhere(
+                        (i) => i.itemId == widget.item.itemId,
+                        orElse: () => widget.item,
+                      );
 
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // image code
-                        Center(
-                          child: Container(
-                            key: itemDetailsImage,
-                            width: 200, // ✅ Fixed width
-                            height: 200, // ✅ Fixed height
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(
-                                  15), // ✅ Rounded Corners
-                              border: Border.all(
-                                  color: Colors.grey.shade300,
-                                  width: 2), // ✅ Border
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black12,
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 4),
-                                )
-                              ],
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(
-                                  15), // ✅ Match Border Radius
-                              child: item.item_image.isNotEmpty
-                                  ? Image.network(
-                                      item.item_image,
-                                      width: double.infinity,
-                                      height: double.infinity,
-                                      fit: BoxFit.cover,
-                                    )
-                                  : Image.asset(
-                                      'assets/placeholder.png',
-                                      width: double.infinity,
-                                      height: double.infinity,
-                                      fit: BoxFit.cover,
-                                    ),
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // image code
+                          Center(
+                            child: Container(
+                              key: itemDetailsImage,
+                              width: 200, // ✅ Fixed width
+                              height: 200, // ✅ Fixed height
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(
+                                    15), // ✅ Rounded Corners
+                                border: Border.all(
+                                    color: Colors.grey.shade300,
+                                    width: 2), // ✅ Border
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black12,
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 4),
+                                  )
+                                ],
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(
+                                    15), // ✅ Match Border Radius
+                                child: item.item_image.isNotEmpty
+                                    ? Image.network(
+                                        item.item_image,
+                                        width: double.infinity,
+                                        height: double.infinity,
+                                        fit: BoxFit.cover,
+                                      )
+                                    : Image.asset(
+                                        'assets/placeholder.png',
+                                        width: double.infinity,
+                                        height: double.infinity,
+                                        fit: BoxFit.cover,
+                                      ),
+                              ),
                             ),
                           ),
-                        ),
 
-                        const SizedBox(height: 10),
-                        Column(
-                          key: itemDetails,
-                          children: [
-                            _buildDetailRow("Name:", item.item_name),
-                            _buildDetailRow("Category:", item.category),
-                            _buildDetailRow("Unit:", item.unit),
-                            _buildDetailRow("Barcode:", item.barcode),
-                            _buildDetailRow(
-                              "Regular Price:",
-                              "₱${item.regular_price.toStringAsFixed(2)}",
-                            ),
-                            _buildDetailRow(
-                              "Utang Price:",
-                              "₱${item.unpaid_price.toStringAsFixed(2)}",
-                            ),
-                            _buildDetailRow(
-                                "Total Stock:", "${item.total_stock}"),
-                            _buildDetailRow(
-                              "Last Updated:",
-                              DateFormat('yyyy-MM-dd HH:mm')
-                                  .format(item.last_updated),
-                            ),
-                          ],
-                        ),
-                      ],
-                    );
-                  },
+                          const SizedBox(height: 10),
+                          Column(
+                            key: itemDetails,
+                            children: [
+                              _buildDetailRow("Name:", item.item_name),
+                              _buildDetailRow("Category:", item.category),
+                              _buildDetailRow("Unit:", item.unit),
+                              _buildDetailRow("Barcode:", item.barcode),
+                              _buildDetailRow(
+                                "Regular Price:",
+                                "₱${item.regular_price.toStringAsFixed(2)}",
+                              ),
+                              _buildDetailRow(
+                                "Utang Price:",
+                                "₱${item.unpaid_price.toStringAsFixed(2)}",
+                              ),
+                              _buildDetailRow(
+                                  "Total Stock:", "${item.total_stock}"),
+                              _buildDetailRow(
+                                "Last Updated:",
+                                DateFormat('yyyy-MM-dd HH:mm')
+                                    .format(item.last_updated),
+                              ),
+                            ],
+                          ),
+                        ],
+                      );
+                    },
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 20),
+              const SizedBox(height: 20),
 
-            // ✅ Batch List Section
-            const MyText(
-              text: "Batch List",
-              fontSize: 16,
-              color: Colors.black,
-              fontWeight: FontWeight.bold,
-            ),
-            const SizedBox(height: 10),
+              // ✅ Batch List Section
+              const MyText(
+                text: "Batch List",
+                fontSize: 16,
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+              ),
+              const SizedBox(height: 10),
 
-            Consumer<DatabaseProvider>(
-              builder: (context, provider, child) {
-                final batches = provider.batch;
+              Consumer<DatabaseProvider>(
+                builder: (context, provider, child) {
+                  final batches = provider.batch;
 
-                if (provider.isLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+                  if (provider.isLoading) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-                if (batches.isEmpty) {
-                  return const Center(child: Text("No batches available"));
-                }
+                  if (batches.isEmpty) {
+                    return const Center(child: Text("No batches available"));
+                  }
 
-                return ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: batches.length,
-                  itemBuilder: (context, index) {
-                    final batch = batches[index];
+                  return ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: batches.length,
+                    itemBuilder: (context, index) {
+                      final batch = batches[index];
 
-                    return Card(
-                      margin: const EdgeInsets.symmetric(vertical: 5),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      elevation: 2,
-                      child: ListTile(
-                        title: Text("Batch Name: ${batch.batchName}"),
-                        subtitle: Text(
-                          batch.expirationDate != null
-                              ? "Expiration: ${DateFormat('yyyy-MM-dd').format(batch.expirationDate!)}"
-                              : "NOEXP", // ✅ Show if expirationDate is null
+                      return Card(
+                        margin: const EdgeInsets.symmetric(vertical: 5),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
                         ),
-                        trailing: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Text("Qty:",
-                                style: TextStyle(
-                                    fontSize: 12, fontWeight: FontWeight.bold)),
-                            Text(batch.quantity.toString(),
-                                style: const TextStyle(fontSize: 14)),
-                          ],
+                        elevation: 2,
+                        child: ListTile(
+                          title: Text("Batch Name: ${batch.batchName}"),
+                          subtitle: Text(
+                            batch.expirationDate != null
+                                ? "Expiration: ${DateFormat('yyyy-MM-dd').format(batch.expirationDate!)}"
+                                : "NOEXP", // ✅ Show if expirationDate is null
+                          ),
+                          trailing: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Text("Qty:",
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold)),
+                              Text(batch.quantity.toString(),
+                                  style: const TextStyle(fontSize: 14)),
+                            ],
+                          ),
                         ),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          ],
+                      );
+                    },
+                  );
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -41,6 +41,25 @@ class _EditItemModalState extends State<EditItemModal> {
     _loadItemData();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // ✅ Update fields whenever the item data changes
+    final databaseProvider =
+        Provider.of<DatabaseProvider>(context, listen: false);
+    final currentItem = databaseProvider.items.firstWhere(
+      (i) => i.itemId == widget.item.itemId,
+      orElse: () => widget.item,
+    );
+
+    _nameController.text = currentItem.item_name;
+    _regularPriceController.text = currentItem.regular_price.toString();
+    _unpaidPriceController.text = currentItem.unpaid_price.toString();
+    _barcodeController.text = currentItem.barcode;
+    categoryValue = currentItem.category;
+    unitValue = currentItem.unit;
+  }
+
   void _loadItemData() {
     _getCategories();
     _nameController.text = widget.item.item_name;
@@ -98,25 +117,27 @@ class _EditItemModalState extends State<EditItemModal> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
       ),
       builder: (BuildContext context) {
-        return Wrap(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.camera_alt, color: Colors.black),
-              title: const Text("Take a Photo"),
-              onTap: () {
-                Navigator.pop(context);
-                _pickImage(ImageSource.camera);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.photo_library, color: Colors.black),
-              title: const Text("Choose from Gallery"),
-              onTap: () {
-                Navigator.pop(context);
-                _pickImage(ImageSource.gallery);
-              },
-            ),
-          ],
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.camera_alt, color: Colors.black),
+                title: const Text("Take a Photo"),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library, color: Colors.black),
+                title: const Text("Choose from Gallery"),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
         );
       },
     );
@@ -141,10 +162,42 @@ class _EditItemModalState extends State<EditItemModal> {
       return;
     }
 
+    String itemName = _nameController.text.trim();
     num regularPrice = num.parse(_regularPriceController.text.trim());
     num unpaidPrice = num.parse(_unpaidPriceController.text.trim());
-    // Check if the unpaid price is right
 
+    // Check if another item with the same name already exists in this store (excluding current item)
+    if (databaseProvider.items.any((item) =>
+        item.item_name.toLowerCase() == itemName.toLowerCase() &&
+        item.itemId != widget.item.itemId)) {
+      Fluttertoast.showToast(
+        msg: "An item with this name already exists in your store!",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+      return;
+    }
+
+    // Check if another item with the same barcode already exists (excluding current item)
+    String barcode = _barcodeController.text.trim();
+    if (barcode.isNotEmpty &&
+        databaseProvider.items.any((item) =>
+            item.barcode == barcode && item.itemId != widget.item.itemId)) {
+      Fluttertoast.showToast(
+        msg: "An item with this barcode already exists!",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+      return;
+    }
+
+    // Check if the unpaid price is right
     if (unpaidPrice < regularPrice) {
       Fluttertoast.showToast(
         msg:
@@ -189,6 +242,7 @@ class _EditItemModalState extends State<EditItemModal> {
 
     await databaseProvider.editItem(updatedItem);
 
+    setState(() => _isUploading = false);
 
     Fluttertoast.showToast(
       msg: "Item Successfully Updated",
@@ -233,198 +287,201 @@ class _EditItemModalState extends State<EditItemModal> {
 
   @override
   Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      initialChildSize: 0.85,
-      minChildSize: 0.5,
-      maxChildSize: 0.95,
-      builder: (context, scrollController) {
-        return GestureDetector(
-          onTap: () =>
-              FocusScope.of(context).unfocus(), // Dismiss keyboard on tap
-          child: Padding(
-            padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context)
-                    .viewInsets
-                    .bottom), // Adjust for keyboard
-            child: Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-              ),
-              child: SingleChildScrollView(
-                controller: scrollController,
-                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior
-                    .manual, // Dismiss keyboard on drag
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 5,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[400],
-                          borderRadius: BorderRadius.circular(10),
+    return SafeArea(
+      child: DraggableScrollableSheet(
+        initialChildSize: 0.85,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (context, scrollController) {
+          return GestureDetector(
+            onTap: () =>
+                FocusScope.of(context).unfocus(), // Dismiss keyboard on tap
+            child: Padding(
+              padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context)
+                      .viewInsets
+                      .bottom), // Adjust for keyboard
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                ),
+                child: SingleChildScrollView(
+                  controller: scrollController,
+                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior
+                      .manual, // Dismiss keyboard on drag
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 40,
+                          height: 5,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[400],
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 10),
+                        const SizedBox(height: 10),
 
-                      /// Image Upload Section
-                      Stack(
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Container(
-                              width: 150,
-                              height: 150,
-                              color: Colors.grey[300],
-                              child: _image == null
-                                  ? Image.network(widget.item.item_image,
-                                      fit: BoxFit.cover)
-                                  : Image.file(_image!, fit: BoxFit.cover),
-                            ),
-                          ),
-                          Positioned(
-                            bottom: 5,
-                            right: 5,
-                            child: GestureDetector(
-                              onTap: () => _chooseImageSource(),
+                        /// Image Upload Section
+                        Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
                               child: Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.black54,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                padding: const EdgeInsets.all(6),
-                                child: const Icon(Icons.camera_alt,
-                                    color: Colors.white, size: 20),
+                                width: 150,
+                                height: 150,
+                                color: Colors.grey[300],
+                                child: _image == null
+                                    ? Image.network(widget.item.item_image,
+                                        fit: BoxFit.cover)
+                                    : Image.file(_image!, fit: BoxFit.cover),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 15),
-
-                      /// Input Fields
-                      MyTextfieldLabeled(
-                        color: Colors.grey.shade400,
-                        controller: _nameController,
-                        label: "Item Name:",
-                        hint: '',
-                      ),
-                      const SizedBox(height: 8),
-                      MyTextfieldLabeled(
-                        color: Colors.grey.shade400,
-                        controller: _regularPriceController,
-                        label: "Regular Price:",
-                        isNumeric: true,
-                        hint: '',
-                      ),
-                      const SizedBox(height: 8),
-                      MyTextfieldLabeled(
-                        color: Colors.grey.shade400,
-                        controller: _unpaidPriceController,
-                        label: "Unpaid Price:",
-                        isNumeric: true,
-                        hint: '',
-                      ),
-                      const SizedBox(height: 8),
-                      MyDropdown(
-                        text: 'Category:',
-                        color: Colors.grey.shade400,
-                        choices: categories,
-                        selectedValue: categoryValue,
-                        onChanged: (newValue) {
-                          if (newValue != null) {
-                            setState(() {
-                              if (!categories.contains(newValue)) {
-                                categories.add(newValue);
-                              }
-                              categoryValue = newValue;
-                            });
-                          }
-                        },
-                        showAddNew: true,
-                      ),
-                      const SizedBox(height: 8),
-                      MyDropdown(
-                        text: "Unit:",
-                        color: Colors.grey.shade400,
-                        choices: units,
-                        selectedValue: unitValue,
-                        onChanged: (value) =>
-                            setState(() => unitValue = value!),
-                        showAddNew: false,
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: MyTextfieldLabeled(
-                              color: Colors.grey.shade400,
-                              controller: _barcodeController,
-                              label: "Barcode:",
-                              hint: '',
-                            ),
-                          ),
-                          const SizedBox(
-                              width: 8), // Space between text field and button
-                          Padding(
-                            padding: const EdgeInsets.only(top: 22.0),
-                            child: SizedBox(
-                              height:
-                                  53, // Set the same height as the text field
-                              child: ElevatedButton.icon(
-                                onPressed: () => scanBarcode(
-                                    context), // Function to trigger barcode scan
-                                icon: const Icon(Icons.qr_code_scanner,
-                                    size: 30, color: Colors.black),
-                                label: const Text("Scan"),
-                                style: ElevatedButton.styleFrom(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(
-                                        8), // Circular border radius
-                                    side: BorderSide(
-                                      // Removed 'const' here
-                                      color:
-                                          Colors.grey.shade400, // Border color
-                                      width: 1, // Border width
-                                    ),
+                            Positioned(
+                              bottom: 5,
+                              right: 5,
+                              child: GestureDetector(
+                                onTap: () => _chooseImageSource(),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.black54,
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
-                                  backgroundColor:
-                                      Colors.white, // Adjust button color
-                                  foregroundColor:
-                                      Colors.black, // Text and icon color
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 16), // Better spacing
+                                  padding: const EdgeInsets.all(6),
+                                  child: const Icon(Icons.camera_alt,
+                                      color: Colors.white, size: 20),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
+                          ],
+                        ),
+                        const SizedBox(height: 15),
 
-                      /// Save Button
-                      _isUploading
-                          ? const CircularProgressIndicator(
-                              color: Color(0xFF14AE5C))
-                          : MyButton(
-                              text: "Save Changes",
-                              color: const Color(0xFF14AE5C),
-                              onTap: _saveItem,
-                              borderRadius: 100,
-                              width: double.infinity,
+                        /// Input Fields
+                        MyTextfieldLabeled(
+                          color: Colors.grey.shade400,
+                          controller: _nameController,
+                          label: "Item Name:",
+                          hint: '',
+                        ),
+                        const SizedBox(height: 8),
+                        MyTextfieldLabeled(
+                          color: Colors.grey.shade400,
+                          controller: _regularPriceController,
+                          label: "Regular Price:",
+                          isNumeric: true,
+                          hint: '',
+                        ),
+                        const SizedBox(height: 8),
+                        MyTextfieldLabeled(
+                          color: Colors.grey.shade400,
+                          controller: _unpaidPriceController,
+                          label: "Unpaid Price:",
+                          isNumeric: true,
+                          hint: '',
+                        ),
+                        const SizedBox(height: 8),
+                        MyDropdown(
+                          text: 'Category:',
+                          color: Colors.grey.shade400,
+                          choices: categories,
+                          selectedValue: categoryValue,
+                          onChanged: (newValue) {
+                            if (newValue != null) {
+                              setState(() {
+                                if (!categories.contains(newValue)) {
+                                  categories.add(newValue);
+                                }
+                                categoryValue = newValue;
+                              });
+                            }
+                          },
+                          showAddNew: true,
+                        ),
+                        const SizedBox(height: 8),
+                        MyDropdown(
+                          text: "Unit:",
+                          color: Colors.grey.shade400,
+                          choices: units,
+                          selectedValue: unitValue,
+                          onChanged: (value) =>
+                              setState(() => unitValue = value!),
+                          showAddNew: false,
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: MyTextfieldLabeled(
+                                color: Colors.grey.shade400,
+                                controller: _barcodeController,
+                                label: "Barcode:",
+                                hint: '',
+                              ),
                             ),
-                      const SizedBox(height: 10),
-                    ],
+                            const SizedBox(
+                                width:
+                                    8), // Space between text field and button
+                            Padding(
+                              padding: const EdgeInsets.only(top: 22.0),
+                              child: SizedBox(
+                                height:
+                                    53, // Set the same height as the text field
+                                child: ElevatedButton.icon(
+                                  onPressed: () => scanBarcode(
+                                      context), // Function to trigger barcode scan
+                                  icon: const Icon(Icons.qr_code_scanner,
+                                      size: 30, color: Colors.black),
+                                  label: const Text("Scan"),
+                                  style: ElevatedButton.styleFrom(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(
+                                          8), // Circular border radius
+                                      side: BorderSide(
+                                        // Removed 'const' here
+                                        color: Colors
+                                            .grey.shade400, // Border color
+                                        width: 1, // Border width
+                                      ),
+                                    ),
+                                    backgroundColor:
+                                        Colors.white, // Adjust button color
+                                    foregroundColor:
+                                        Colors.black, // Text and icon color
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16), // Better spacing
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+
+                        /// Save Button
+                        _isUploading
+                            ? const CircularProgressIndicator(
+                                color: Color(0xFF14AE5C))
+                            : MyButton(
+                                text: "Save Changes",
+                                color: const Color(0xFF14AE5C),
+                                onTap: _saveItem,
+                                borderRadius: 100,
+                                width: double.infinity,
+                              ),
+                        const SizedBox(height: 10),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }

@@ -56,20 +56,24 @@ class MyFloatingActionButtonMulti extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
-      builder: (context) => Wrap(
-        children: choices.map((choice) {
-          return ListTile(
-            leading: Icon(choice['icon'], color: Colors.green), // ✅ Custom icon
-            title: Text(
-              choice['label'],
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-            ),
-            onTap: () {
-              Navigator.pop(context); // ✅ Close modal before action
-              choice['action'](); // ✅ Execute action
-            },
-          );
-        }).toList(),
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: choices.map((choice) {
+            return ListTile(
+              leading:
+                  Icon(choice['icon'], color: Colors.green), // ✅ Custom icon
+              title: Text(
+                choice['label'],
+                style:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              ),
+              onTap: () {
+                Navigator.pop(context); // ✅ Close modal before action
+                choice['action'](); // ✅ Execute action
+              },
+            );
+          }).toList(),
+        ),
       ),
     );
   }

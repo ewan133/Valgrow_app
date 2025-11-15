@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:provider/provider.dart';
 import 'package:valgrow_ui/components/general_components/appbar.dart';
@@ -33,6 +34,30 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
     // Add listener to password field for real-time strength checking
     _passwordController.addListener(() {
       _checkPasswordStrength(_passwordController.text);
+    });
+
+    // Add listener to phone number field to ensure it starts with "09"
+    _numberController.addListener(() {
+      String text = _numberController.text;
+      if (text.isNotEmpty && !text.startsWith('09')) {
+        // If user tries to enter something that doesn't start with 09, prepend 09
+        if (text.length == 1 && text == '0') {
+          // User typed just '0', wait for next digit
+          return;
+        } else if (text.startsWith('0') && text.length == 2 && text[1] != '9') {
+          // User typed '0' + something other than '9'
+          _numberController.text = '09';
+          _numberController.selection = TextSelection.fromPosition(
+            TextPosition(offset: _numberController.text.length),
+          );
+        } else if (!text.startsWith('0')) {
+          // User didn't start with 0 at all
+          _numberController.text = '09$text';
+          _numberController.selection = TextSelection.fromPosition(
+            TextPosition(offset: _numberController.text.length),
+          );
+        }
+      }
     });
   }
 
@@ -204,6 +229,8 @@ class _AddEmployeePageState extends State<AddEmployeePage> {
               controller: _numberController,
               label: "Phone Number:",
               hint: "Enter 11-digit number",
+              isNumeric: true,
+              maxLength: 11,
             ),
             const SizedBox(height: 10),
             MyTextfieldLabeled(

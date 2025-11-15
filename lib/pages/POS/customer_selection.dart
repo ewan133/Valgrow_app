@@ -342,27 +342,28 @@ class _CustomerSelectionModalState extends State<CustomerSelectionModal> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      height: 600,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          /// ✅ Header with Close Button
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                "Select or Add a Customer",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              IconButton(
-                icon: const Icon(Icons.close, size: 24),
-                onPressed: () => Navigator.pop(context),
-              ),
-            ],
-          ),
-          const SizedBox(height: 5),
+    return SafeArea(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        height: 600,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            /// ✅ Header with Close Button
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  "Select or Add a Customer",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close, size: 24),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            const SizedBox(height: 5),
 
           /// ✅ Search Bar
           MySearchbar(
@@ -494,6 +495,7 @@ class _CustomerSelectionModalState extends State<CustomerSelectionModal> {
           ),
         ],
       ),
+    ),
     );
   }
 }

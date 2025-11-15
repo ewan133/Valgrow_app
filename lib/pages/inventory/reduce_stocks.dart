@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
 class ReduceStocksModal extends StatefulWidget {
@@ -50,6 +51,9 @@ class _ReduceStocksModalState extends State<ReduceStocksModal> {
             TextField(
               controller: _stockController,
               keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+              ],
               enabled: widget.currentStock > 0, // 🔹 Disable if stock is 0
               decoration: InputDecoration(
                 labelText: widget.currentStock > 0

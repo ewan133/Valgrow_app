@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 
 class AddBatchModal extends StatefulWidget {
@@ -38,6 +39,9 @@ class _AddBatchModalState extends State<AddBatchModal> {
             TextField(
               controller: _purchasePriceController,
               keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+              ],
               decoration: InputDecoration(
                 labelText: "Purchase Price",
                 border: OutlineInputBorder(
@@ -64,6 +68,9 @@ class _AddBatchModalState extends State<AddBatchModal> {
             TextField(
               controller: _quantityController,
               keyboardType: TextInputType.number,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+              ],
               decoration: InputDecoration(
                 labelText: "Quantity",
                 border: OutlineInputBorder(
@@ -119,7 +126,7 @@ class _AddBatchModalState extends State<AddBatchModal> {
             //   ),
             // ),
 
-           // const SizedBox(height: 20),
+            // const SizedBox(height: 20),
 
             // 🔹 Buttons (Cancel & Add) aligned to right
             Row(

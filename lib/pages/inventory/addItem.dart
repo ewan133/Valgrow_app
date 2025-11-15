@@ -122,25 +122,27 @@ class _AdditemPageState extends State<AdditemPage> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
       ),
       builder: (BuildContext context) {
-        return Wrap(
-          children: [
-            ListTile(
-              leading: Icon(Icons.camera_alt, color: Colors.black),
-              title: Text("Take a Photo"),
-              onTap: () {
-                Navigator.pop(context);
-                _pickImage(ImageSource.camera);
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.photo_library, color: Colors.black),
-              title: Text("Choose from Gallery"),
-              onTap: () {
-                Navigator.pop(context);
-                _pickImage(ImageSource.gallery);
-              },
-            ),
-          ],
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: Icon(Icons.camera_alt, color: Colors.black),
+                title: Text("Take a Photo"),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.photo_library, color: Colors.black),
+                title: Text("Choose from Gallery"),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
         );
       },
     );
@@ -212,9 +214,24 @@ class _AdditemPageState extends State<AdditemPage> {
       return;
     }
 
+    String itemName = _nameController.text.trim();
     String barcode = _barcodeController.text.trim();
     num regularPrice = num.parse(_regularPriceController.text.trim());
     num unpaidPrice = num.parse(_unpaidPriceController.text.trim());
+
+    // Check if an item with the same name already exists in this store
+    if (items.any(
+        (item) => item.item_name.toLowerCase() == itemName.toLowerCase())) {
+      Fluttertoast.showToast(
+        msg: "An item with this name already exists in your store!",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.red,
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+      return;
+    }
 
     // Check if a barcode is entered and ensure it's unique
     if (barcode.isNotEmpty && items.any((item) => item.barcode == barcode)) {
@@ -398,174 +415,178 @@ class _AdditemPageState extends State<AdditemPage> {
       appBar: MyAppbar(title: "Add Item"),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(20),
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Column(
-                  children: [
-                    Stack(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Container(
-                            width: 150,
-                            height: 150,
-                            color: Colors.grey[300],
-                            child: _image == null
-                                ? const Icon(Icons.image,
-                                    size: 50, color: Colors.grey)
-                                : Image.file(_image!, fit: BoxFit.cover),
-                          ),
-                        ),
-                        Positioned(
-                          key: addItemImage,
-                          bottom: 5,
-                          right: 5,
-                          child: GestureDetector(
-                            onTap: () => _chooseImageSource(),
+          : SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(
+                    children: [
+                      Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
                             child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.black54,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              padding: const EdgeInsets.all(6),
-                              child: const Icon(Icons.camera_alt,
-                                  color: Colors.white, size: 20),
+                              width: 150,
+                              height: 150,
+                              color: Colors.grey[300],
+                              child: _image == null
+                                  ? const Icon(Icons.image,
+                                      size: 50, color: Colors.grey)
+                                  : Image.file(_image!, fit: BoxFit.cover),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 15),
-                    MyTextfieldLabeled(
-                      key: addItemName,
-                      color: _invalidFields.contains('name')
-                          ? Colors.red
-                          : Colors.grey.shade400,
-                      controller: _nameController,
-                      label: "Item Name:",
-                      hint: '',
-                      showRedAsterisk: true,
-                    ),
-                    const SizedBox(height: 8),
-                    MyTextfieldLabeled(
-                      key: addItemRegularPrice,
-                      color: _invalidFields.contains('regularPrice')
-                          ? Colors.red
-                          : Colors.grey.shade400,
-                      controller: _regularPriceController,
-                      label: "Regular Price:",
-                      isNumeric: true,
-                      hint: '',
-                      showRedAsterisk: true,
-                    ),
-                    const SizedBox(height: 8),
-                    MyTextfieldLabeled(
-                      key: addItemUnpaidPrice,
-                      color: _invalidFields.contains('unpaidPrice')
-                          ? Colors.red
-                          : Colors.grey.shade400,
-                      controller: _unpaidPriceController,
-                      label: "Utang Price:",
-                      isNumeric: true,
-                      hint: '',
-                      showRedAsterisk: true,
-                    ),
-                    const SizedBox(height: 8),
-                    MyDropdown(
-                      key: addItemCategory,
-                      text: 'Category:',
-                      color: _invalidFields.contains('category')
-                          ? Colors.red
-                          : Colors.grey.shade400,
-                      choices: categories,
-                      selectedValue: categoryValue,
-                      showRedAsterisk: true,
-                      onChanged: (newValue) {
-                        if (newValue != null) {
-                          setState(() {
-                            if (!categories.contains(newValue)) {
-                              categories.add(newValue);
-                            }
-                            categoryValue = newValue;
-                          });
-                        }
-                      },
-                      showAddNew: true,
-                    ),
-                    const SizedBox(height: 8),
-                    MyDropdown(
-                      key: addItemUnit,
-                      text: "Unit:",
-                      color: _invalidFields.contains('unit')
-                          ? Colors.red
-                          : Colors.grey.shade400,
-                      choices: units,
-                      selectedValue: unitValue,
-                      onChanged: (value) => setState(() => unitValue = value),
-                      showAddNew: false,
-                      showRedAsterisk: true,
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      key: addItemBarcode,
-                      children: [
-                        Expanded(
-                          child: MyTextfieldLabeled(
-                            color: Colors.grey.shade400,
-                            controller: _barcodeController,
-                            label: "Barcode:",
-                            hint: '',
-                          ),
-                        ),
-                        const SizedBox(
-                            width: 8), // Space between text field and button
-                        Padding(
-                          padding: const EdgeInsets.only(top: 22.0),
-                          child: SizedBox(
-                            height: 53, // Set the same height as the text field
-                            child: ElevatedButton.icon(
-                              onPressed: () => scanBarcode(
-                                  context), // Function to trigger barcode scan
-                              icon: const Icon(Icons.qr_code_scanner,
-                                  size: 30, color: Colors.black),
-                              label: const Text("Scan"),
-                              style: ElevatedButton.styleFrom(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(
-                                      8), // Circular border radius
-                                  side: BorderSide(
-                                    // Removed 'const' here
-                                    color: Colors.grey.shade400, // Border color
-                                    width: 1, // Border width
-                                  ),
+                          Positioned(
+                            key: addItemImage,
+                            bottom: 5,
+                            right: 5,
+                            child: GestureDetector(
+                              onTap: () => _chooseImageSource(),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.black54,
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
-                                backgroundColor:
-                                    Colors.white, // Adjust button color
-                                foregroundColor:
-                                    Colors.black, // Text and icon color
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16), // Better spacing
+                                padding: const EdgeInsets.all(6),
+                                child: const Icon(Icons.camera_alt,
+                                    color: Colors.white, size: 20),
                               ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    _isUploading
-                        ? const CircularProgressIndicator(
-                            color: Color(0xFF14AE5C))
-                        : MyButton(
-                            key: addItemSaveButton,
-                            text: "Add Item",
-                            color: const Color(0xFF14AE5C),
-                            onTap: _addItem,
-                            borderRadius: 100,
-                            width: double.infinity,
+                        ],
+                      ),
+                      const SizedBox(height: 15),
+                      MyTextfieldLabeled(
+                        key: addItemName,
+                        color: _invalidFields.contains('name')
+                            ? Colors.red
+                            : Colors.grey.shade400,
+                        controller: _nameController,
+                        label: "Item Name:",
+                        hint: '',
+                        showRedAsterisk: true,
+                      ),
+                      const SizedBox(height: 8),
+                      MyTextfieldLabeled(
+                        key: addItemRegularPrice,
+                        color: _invalidFields.contains('regularPrice')
+                            ? Colors.red
+                            : Colors.grey.shade400,
+                        controller: _regularPriceController,
+                        label: "Regular Price:",
+                        isNumeric: true,
+                        hint: '',
+                        showRedAsterisk: true,
+                      ),
+                      const SizedBox(height: 8),
+                      MyTextfieldLabeled(
+                        key: addItemUnpaidPrice,
+                        color: _invalidFields.contains('unpaidPrice')
+                            ? Colors.red
+                            : Colors.grey.shade400,
+                        controller: _unpaidPriceController,
+                        label: "Utang Price:",
+                        isNumeric: true,
+                        hint: '',
+                        showRedAsterisk: true,
+                      ),
+                      const SizedBox(height: 8),
+                      MyDropdown(
+                        key: addItemCategory,
+                        text: 'Category:',
+                        color: _invalidFields.contains('category')
+                            ? Colors.red
+                            : Colors.grey.shade400,
+                        choices: categories,
+                        selectedValue: categoryValue,
+                        showRedAsterisk: true,
+                        onChanged: (newValue) {
+                          if (newValue != null) {
+                            setState(() {
+                              if (!categories.contains(newValue)) {
+                                categories.add(newValue);
+                              }
+                              categoryValue = newValue;
+                            });
+                          }
+                        },
+                        showAddNew: true,
+                      ),
+                      const SizedBox(height: 8),
+                      MyDropdown(
+                        key: addItemUnit,
+                        text: "Unit:",
+                        color: _invalidFields.contains('unit')
+                            ? Colors.red
+                            : Colors.grey.shade400,
+                        choices: units,
+                        selectedValue: unitValue,
+                        onChanged: (value) => setState(() => unitValue = value),
+                        showAddNew: false,
+                        showRedAsterisk: true,
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        key: addItemBarcode,
+                        children: [
+                          Expanded(
+                            child: MyTextfieldLabeled(
+                              color: Colors.grey.shade400,
+                              controller: _barcodeController,
+                              label: "Barcode:",
+                              hint: '',
+                            ),
                           ),
-                  ],
+                          const SizedBox(
+                              width: 8), // Space between text field and button
+                          Padding(
+                            padding: const EdgeInsets.only(top: 22.0),
+                            child: SizedBox(
+                              height:
+                                  53, // Set the same height as the text field
+                              child: ElevatedButton.icon(
+                                onPressed: () => scanBarcode(
+                                    context), // Function to trigger barcode scan
+                                icon: const Icon(Icons.qr_code_scanner,
+                                    size: 30, color: Colors.black),
+                                label: const Text("Scan"),
+                                style: ElevatedButton.styleFrom(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(
+                                        8), // Circular border radius
+                                    side: BorderSide(
+                                      // Removed 'const' here
+                                      color:
+                                          Colors.grey.shade400, // Border color
+                                      width: 1, // Border width
+                                    ),
+                                  ),
+                                  backgroundColor:
+                                      Colors.white, // Adjust button color
+                                  foregroundColor:
+                                      Colors.black, // Text and icon color
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16), // Better spacing
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      _isUploading
+                          ? const CircularProgressIndicator(
+                              color: Color(0xFF14AE5C))
+                          : MyButton(
+                              key: addItemSaveButton,
+                              text: "Add Item",
+                              color: const Color(0xFF14AE5C),
+                              onTap: _addItem,
+                              borderRadius: 100,
+                              width: double.infinity,
+                            ),
+                    ],
+                  ),
                 ),
               ),
             ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 class AddExpensesModal extends StatefulWidget {
@@ -122,6 +123,9 @@ class _AddExpensesModalState extends State<AddExpensesModal> {
                 controller: _amountController,
                 keyboardType:
                     const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),
+                ],
                 decoration: const InputDecoration(
                   labelText: "Amount",
                   border: OutlineInputBorder(),
