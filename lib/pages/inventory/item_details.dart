@@ -174,7 +174,14 @@ class _ItemDetailsPageState extends State<ItemDetailsPage> {
       appBar: MyAppbar(
         title: "Item Details",
         actionWidget: TextButton(
-          onPressed: () {
+          onPressed: () async {
+            // ✅ Refresh item data before opening edit modal
+            final databaseProvider =
+                Provider.of<DatabaseProvider>(context, listen: false);
+            await databaseProvider.fetchItemsByStoreId();
+
+            if (!mounted) return;
+
             showModalBottomSheet(
               context: context,
               isScrollControlled: true,

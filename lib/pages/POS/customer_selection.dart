@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -38,6 +39,30 @@ class _CustomerSelectionModalState extends State<CustomerSelectionModal> {
     super.initState();
     Future.delayed(Duration.zero, () {
       _fetchCustomers();
+    });
+
+    // Add listener to phone number field to ensure it starts with "09"
+    _phoneController.addListener(() {
+      String text = _phoneController.text;
+      if (text.isNotEmpty && !text.startsWith('09')) {
+        // If user tries to enter something that doesn't start with 09, prepend 09
+        if (text.length == 1 && text == '0') {
+          // User typed just '0', wait for next digit
+          return;
+        } else if (text.startsWith('0') && text.length >= 2 && text[1] != '9') {
+          // User typed '0' + something other than '9'
+          _phoneController.text = '09';
+          _phoneController.selection = TextSelection.fromPosition(
+            TextPosition(offset: _phoneController.text.length),
+          );
+        } else if (!text.startsWith('0')) {
+          // User didn't start with 0 at all
+          _phoneController.text = '09$text';
+          _phoneController.selection = TextSelection.fromPosition(
+            TextPosition(offset: _phoneController.text.length),
+          );
+        }
+      }
     });
   }
 
@@ -262,12 +287,16 @@ class _CustomerSelectionModalState extends State<CustomerSelectionModal> {
                         controller: _phoneController,
                         keyboardType: TextInputType.phone,
                         maxLength: 11,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
                         decoration: InputDecoration(
                           labelText: "Phone Number",
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
                           errorText: _phoneError,
+                          counterText: '', // Hide character counter
                         ),
                         onChanged: (value) {
                           _validatePhoneNumber(value);
@@ -365,137 +394,139 @@ class _CustomerSelectionModalState extends State<CustomerSelectionModal> {
             ),
             const SizedBox(height: 5),
 
-          /// ✅ Search Bar
-          MySearchbar(
-            controller: _searchController,
-            onChanged: _filterCustomers, // ✅ Calls filtering function
-          ),
-          const SizedBox(
-            height: 10,
-          ),
-
-          /// ✅ Customer List (Filtered with Consumer)
-          Expanded(
-            child: Consumer<DatabaseProvider>(
-              builder: (context, databaseProvider, child) {
-                final customers =
-                    databaseProvider.customers; // ✅ Listen for updates
-                final filteredCustomers = _searchController.text.isEmpty
-                    ? customers
-                    : customers
-                        .where((customer) => customer.name
-                            .toLowerCase()
-                            .contains(_searchController.text.toLowerCase()))
-                        .toList();
-
-                return filteredCustomers.isNotEmpty
-                    ? ListView.builder(
-                        itemCount: filteredCustomers.length,
-                        itemBuilder: (context, index) {
-                          final customer = filteredCustomers[index];
-
-                          return Card(
-                            margin: const EdgeInsets.symmetric(
-                                vertical: 6, horizontal: 10),
-                            elevation: 3, // ✅ Adds subtle shadow effect
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(
-                                  12), // ✅ Soft rounded corners
-                            ),
-                            child: ListTile(
-                              contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 10),
-
-                              // ✅ Profile Picture with Border & Placeholder
-                              leading: Container(
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                      color: Colors.black,
-                                      width: 2), // ✅ Border
-                                ),
-                                child: CircleAvatar(
-                                  radius: 26,
-                                  backgroundColor: Colors
-                                      .grey.shade300, // Default background
-                                  backgroundImage: customer.imageUrl.isNotEmpty
-                                      ? NetworkImage(
-                                          customer.imageUrl) // ✅ Load image
-                                      : null,
-                                  child: customer.imageUrl.isEmpty
-                                      ? const Icon(Icons.person,
-                                          color: Colors.white,
-                                          size: 30) // ✅ Placeholder icon
-                                      : null,
-                                ),
-                              ),
-
-                              // ✅ Name & Phone Number (Stylized)
-                              title: Text(
-                                customer.name,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.black87,
-                                ),
-                              ),
-                              subtitle: Text(
-                                customer.phone,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey,
-                                ),
-                              ),
-
-                              // ✅ Selection Indicator
-                              trailing: customer == widget.selectedCustomer
-                                  ? const Icon(Icons.check_circle,
-                                      color: Colors.green, size: 24)
-                                  : const Icon(Icons.chevron_right,
-                                      color: Colors.grey, size: 24),
-
-                              // ✅ Select Customer
-                              onTap: () {
-                                widget.onItemSelected(customer);
-                                Navigator.pop(context);
-                              },
-                            ),
-                          );
-                        },
-                      )
-                    : const Center(
-                        child: Text(
-                          "No customers found.",
-                          style: TextStyle(fontSize: 16, color: Colors.grey),
-                        ),
-                      );
-                // ✅ Empty state
-              },
+            /// ✅ Search Bar
+            MySearchbar(
+              controller: _searchController,
+              onChanged: _filterCustomers, // ✅ Calls filtering function
             ),
-          ),
+            const SizedBox(
+              height: 10,
+            ),
 
-          /// ✅ Button to open the alert dialog
-          Padding(
-            padding: const EdgeInsets.only(right: 20, left: 20, top: 15),
-            child: SizedBox(
-              width: double.infinity,
-              height: 55,
-              child: ElevatedButton(
-                onPressed: () => _showCustomerDetailsDialog(context),
-                style: ElevatedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  backgroundColor: Colors.blue, // Set the button color to blue
-                ),
-                child: const Text(
-                  "Add Customer Details",
-                  style: TextStyle(fontSize: 16), // Set text size to 16
+            /// ✅ Customer List (Filtered with Consumer)
+            Expanded(
+              child: Consumer<DatabaseProvider>(
+                builder: (context, databaseProvider, child) {
+                  final customers =
+                      databaseProvider.customers; // ✅ Listen for updates
+                  final filteredCustomers = _searchController.text.isEmpty
+                      ? customers
+                      : customers
+                          .where((customer) => customer.name
+                              .toLowerCase()
+                              .contains(_searchController.text.toLowerCase()))
+                          .toList();
+
+                  return filteredCustomers.isNotEmpty
+                      ? ListView.builder(
+                          itemCount: filteredCustomers.length,
+                          itemBuilder: (context, index) {
+                            final customer = filteredCustomers[index];
+
+                            return Card(
+                              margin: const EdgeInsets.symmetric(
+                                  vertical: 6, horizontal: 10),
+                              elevation: 3, // ✅ Adds subtle shadow effect
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(
+                                    12), // ✅ Soft rounded corners
+                              ),
+                              child: ListTile(
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 10),
+
+                                // ✅ Profile Picture with Border & Placeholder
+                                leading: Container(
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                        color: Colors.black,
+                                        width: 2), // ✅ Border
+                                  ),
+                                  child: CircleAvatar(
+                                    radius: 26,
+                                    backgroundColor: Colors
+                                        .grey.shade300, // Default background
+                                    backgroundImage: customer
+                                            .imageUrl.isNotEmpty
+                                        ? NetworkImage(
+                                            customer.imageUrl) // ✅ Load image
+                                        : null,
+                                    child: customer.imageUrl.isEmpty
+                                        ? const Icon(Icons.person,
+                                            color: Colors.white,
+                                            size: 30) // ✅ Placeholder icon
+                                        : null,
+                                  ),
+                                ),
+
+                                // ✅ Name & Phone Number (Stylized)
+                                title: Text(
+                                  customer.name,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  customer.phone,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+
+                                // ✅ Selection Indicator
+                                trailing: customer == widget.selectedCustomer
+                                    ? const Icon(Icons.check_circle,
+                                        color: Colors.green, size: 24)
+                                    : const Icon(Icons.chevron_right,
+                                        color: Colors.grey, size: 24),
+
+                                // ✅ Select Customer
+                                onTap: () {
+                                  widget.onItemSelected(customer);
+                                  Navigator.pop(context);
+                                },
+                              ),
+                            );
+                          },
+                        )
+                      : const Center(
+                          child: Text(
+                            "No customers found.",
+                            style: TextStyle(fontSize: 16, color: Colors.grey),
+                          ),
+                        );
+                  // ✅ Empty state
+                },
+              ),
+            ),
+
+            /// ✅ Button to open the alert dialog
+            Padding(
+              padding: const EdgeInsets.only(right: 20, left: 20, top: 15),
+              child: SizedBox(
+                width: double.infinity,
+                height: 55,
+                child: ElevatedButton(
+                  onPressed: () => _showCustomerDetailsDialog(context),
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    backgroundColor:
+                        Colors.blue, // Set the button color to blue
+                  ),
+                  child: const Text(
+                    "Add Customer Details",
+                    style: TextStyle(fontSize: 16), // Set text size to 16
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
     );
   }
 }

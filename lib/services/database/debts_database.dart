@@ -252,6 +252,7 @@ class DebtsDatabase {
     required String paymentMethod,
     required String storeId,
     required String customerId,
+    required String customerName, // ✅ Added customerName parameter
     String? userId, // ✅ Added userId parameter
     String? reference_number,
   }) async {
@@ -343,8 +344,9 @@ class DebtsDatabase {
         entityType: 'debt',
         entityId: debtId,
         description:
-            'Debt payment of ₱${effectivePayment.toStringAsFixed(2)} (Balance: ₱${newBalance.toStringAsFixed(2)})',
+            '$customerName paid ₱${effectivePayment.toStringAsFixed(2)} for debt (Balance: ₱${newBalance.toStringAsFixed(2)})',
         metadata: {
+          'customerName': customerName,
           'amountPaid': effectivePayment,
           'previousBalance': currentBalance,
           'newBalance': newBalance,
@@ -353,7 +355,6 @@ class DebtsDatabase {
           'change': change,
           'transactionId': transactionId,
           'customerId': customerId,
-          'customerName': '', // Will be fetched from customerId by audit system
         },
       );
 

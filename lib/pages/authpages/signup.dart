@@ -1,6 +1,7 @@
 import 'dart:developer';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:valgrow_ui/components/general_components/autocompleteTextfield.dart';
 import 'package:valgrow_ui/components/general_components/button.dart';
@@ -104,6 +105,30 @@ class _SignupPageState extends State<SignupPage> {
     // Add listener to password field for real-time strength checking
     _passwordController.addListener(() {
       _checkPasswordStrength(_passwordController.text);
+    });
+
+    // Add listener to phone number field to ensure it starts with "09"
+    _numberController.addListener(() {
+      String text = _numberController.text;
+      if (text.isNotEmpty && !text.startsWith('09')) {
+        // If user tries to enter something that doesn't start with 09, prepend 09
+        if (text.length == 1 && text == '0') {
+          // User typed just '0', wait for next digit
+          return;
+        } else if (text.startsWith('0') && text.length >= 2 && text[1] != '9') {
+          // User typed '0' + something other than '9'
+          _numberController.text = '09';
+          _numberController.selection = TextSelection.fromPosition(
+            TextPosition(offset: _numberController.text.length),
+          );
+        } else if (!text.startsWith('0')) {
+          // User didn't start with 0 at all
+          _numberController.text = '09$text';
+          _numberController.selection = TextSelection.fromPosition(
+            TextPosition(offset: _numberController.text.length),
+          );
+        }
+      }
     });
   }
 
@@ -286,10 +311,21 @@ class _SignupPageState extends State<SignupPage> {
 
     if (hasError) {
       setState(() {});
-      if (_invalidFields.isNotEmpty &&
-          !_invalidFields.contains('number') &&
-          !_invalidFields.contains('password') &&
-          !_invalidFields.contains('confirmPassword')) {
+      // Show generic message for empty required fields
+      bool hasEmptyFields = name.isEmpty ||
+          number.isEmpty ||
+          email.isEmpty ||
+          password.isEmpty ||
+          confirmPassword.isEmpty ||
+          (selectedItem == "Employee" && storecode.isEmpty);
+
+      bool hasSpecificError =
+          (_invalidFields.contains('number') && number.isNotEmpty) ||
+              (_invalidFields.contains('password') && password.isNotEmpty) ||
+              (_invalidFields.contains('confirmPassword') &&
+                  confirmPassword.isNotEmpty);
+
+      if (hasEmptyFields && !hasSpecificError) {
         Fluttertoast.showToast(
           msg: "Please fill in all required fields",
           toastLength: Toast.LENGTH_SHORT,
@@ -540,6 +576,8 @@ class _SignupPageState extends State<SignupPage> {
             controller: _numberController,
             label: "Phone Number:",
             hint: "09XXXXXXXXX",
+            isNumeric: true,
+            maxLength: 11,
             showRedAsterisk: true,
           ),
           if (_numberController.text.isNotEmpty &&

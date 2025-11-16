@@ -314,12 +314,18 @@ class DatabaseProvider extends ChangeNotifier {
 
   // add new id
   Future<void> addNewItem(ItemDetails item) async {
+    if (_user == null) {
+      print("❌ User information not available");
+      return;
+    }
+
     _isLoading = true;
     notifyListeners();
     try {
-      await _inventoryDatabase.addItem(item);
+      await _inventoryDatabase.addItem(item,
+          userId: _user!.uid); // ✅ Pass actual user ID
     } catch (e) {
-      print("Error fetching items: $e");
+      print("Error adding item: $e");
     } finally {
       await fetchItemsByStoreId();
       _isLoading = false;
@@ -802,6 +808,7 @@ class DatabaseProvider extends ChangeNotifier {
         paymentMethod: paymentMethod,
         storeId: storeId,
         customerId: customerId,
+        customerName: customerName, // ✅ Pass customer name
         userId: _user!.uid, // ✅ Pass actual userId
         reference_number: reference_number,
       );
